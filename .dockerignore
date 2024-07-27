@@ -1,0 +1,12 @@
+.idea
+.github
+
+vendor/
+
+.env*
+.gitignore
+.dockerignore
+
+Makefile
+Dockerfile
+docker-compose.yaml

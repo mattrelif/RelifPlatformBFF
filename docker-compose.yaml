@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: relif
+      MONGO_INITDB_ROOT_PASSWORD: relif2024!
+    ports:
+      - "27017:27017"
+
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    restart: always
+    environment:
+      DEBUG: 1
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
