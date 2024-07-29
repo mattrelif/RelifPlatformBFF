@@ -28,13 +28,12 @@ func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *
 	user := r.Context().Value("user").(entities.User)
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -46,14 +45,17 @@ func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *
 		return
 	}
 
-	id, err := handler.service.Create(user, req.ToEntity())
+	request, err := handler.service.Create(user, req.ToEntity())
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err = json.NewEncoder(w).Encode(map[string]interface{}{"id": id}); err != nil {
+	res := responses.NewOrganizationDataAccessRequest(request)
+
+	w.WriteHeader(http.StatusCreated)
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -146,13 +148,12 @@ func (handler *OrganizationDataAccessRequests) Reject(w http.ResponseWriter, r *
 	id := chi.URLParam(r, "id")
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

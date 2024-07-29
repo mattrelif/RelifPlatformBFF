@@ -12,6 +12,7 @@ import (
 type Email interface {
 	SendPasswordResetEmail(requestId string, user entities.User) error
 	SendPasswordChangedEmail(user entities.User) error
+	SendPlatformInviteEmail(inviter entities.User, invitedEmail, code string) error
 }
 
 type emailSes struct {
@@ -98,6 +99,27 @@ func (service *emailSes) SendPasswordChangedEmail(user entities.User) error {
 				subjectLanguageMap[user.Preferences.Language],
 				textLanguageMap[user.Preferences.Language],
 				user.FirstName,
+			)),
+	}
+
+	_, err := service.client.SendTemplatedEmail(context.Background(), input)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (service *emailSes) SendPlatformInviteEmail(inviter entities.User, invitedEmail, code string) error {
+	input := &ses.SendTemplatedEmailInput{
+		Source: aws.String("noreply@relif.com"),
+		Destination: &types.Destination{
+			ToAddresses: []string{invitedEmail},
+		},
+		Template: aws.String("PlatformInviteEmail"),
+		TemplateData: aws.String(
+			fmt.Sprintf(`{"invite_link": "%s"}`,
+				fmt.Sprintf(""),
 			)),
 	}
 

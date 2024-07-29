@@ -9,7 +9,7 @@ import (
 
 type Password interface {
 	PasswordChangeRequest(email string) error
-	UpdatePassword(id, password string) error
+	UpdatePassword(code, password string) error
 }
 
 type passwordImpl struct {
@@ -17,6 +17,7 @@ type passwordImpl struct {
 	userService    Users
 	repository     repositories.PasswordChangeRequests
 	passwordHashFn utils.PasswordHashFn
+	uuidGenerator  utils.UuidGenerator
 }
 
 func NewPassword(
@@ -24,12 +25,14 @@ func NewPassword(
 	usersService Users,
 	repository repositories.PasswordChangeRequests,
 	passwordHashFn utils.PasswordHashFn,
+	uuidGenerator utils.UuidGenerator,
 ) Password {
 	return &passwordImpl{
 		emailService:   emailService,
 		userService:    usersService,
 		repository:     repository,
 		passwordHashFn: passwordHashFn,
+		uuidGenerator:  uuidGenerator,
 	}
 }
 
@@ -42,24 +45,23 @@ func (service *passwordImpl) PasswordChangeRequest(email string) error {
 
 	request := entities.PasswordChangeRequest{
 		UserID:    user.ID,
+		Code:      service.uuidGenerator(),
 		ExpiresAt: time.Now().Add(time.Hour * 3),
 	}
 
-	id, err := service.repository.Create(request)
-
-	if err != nil {
+	if err = service.repository.Create(request); err != nil {
 		return err
 	}
 
-	if err = service.emailService.SendPasswordResetEmail(id, user); err != nil {
+	if err = service.emailService.SendPasswordResetEmail(request.Code, user); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (service *passwordImpl) UpdatePassword(id, password string) error {
-	request, err := service.repository.FindOneAndDeleteById(id)
+func (service *passwordImpl) UpdatePassword(code, password string) error {
+	request, err := service.repository.FindOneAndDeleteByCode(code)
 
 	if err != nil {
 		return err

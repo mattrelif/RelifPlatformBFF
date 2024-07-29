@@ -28,6 +28,7 @@ func (handler *JoinOrganizationRequests) Create(w http.ResponseWriter, r *http.R
 	user := r.Context().Value("user").(entities.User)
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -44,14 +45,17 @@ func (handler *JoinOrganizationRequests) Create(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	requestId, err := handler.service.Create(user.ID, req.ToEntity())
+	request, err := handler.service.Create(user.ID, req.ToEntity())
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err = json.NewEncoder(w).Encode(map[string]interface{}{"id": requestId}); err != nil {
+	res := responses.NewJoinOrganizationRequest(request)
+
+	w.WriteHeader(http.StatusCreated)
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

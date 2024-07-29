@@ -7,11 +7,11 @@ import (
 )
 
 type OrganizationDataAccessRequests interface {
-	Create(requester entities.User, request entities.OrganizationDataAccessRequest) (string, error)
+	Create(requester entities.User, data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error)
 	FindMany(limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
 	FindManyByRequesterOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
 	Accept(id string, userId string) error
-	Reject(id string, userId string, request entities.OrganizationDataAccessRequest) error
+	Reject(id string, userId string, data entities.OrganizationDataAccessRequest) error
 }
 
 type accessOrganizationDataRequestsImpl struct {
@@ -29,12 +29,10 @@ func NewOrganizationDataAccessRequests(
 	}
 }
 
-func (service *accessOrganizationDataRequestsImpl) Create(requester entities.User, request entities.OrganizationDataAccessRequest) (string, error) {
-	request.RequesterID = requester.ID
-	request.RequesterOrganizationID = requester.OrganizationID
-	request.CreatedAt = time.Now()
-
-	return service.repository.Create(request)
+func (service *accessOrganizationDataRequestsImpl) Create(requester entities.User, data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error) {
+	data.RequesterID = requester.ID
+	data.RequesterOrganizationID = requester.OrganizationID
+	return service.repository.Create(data)
 }
 
 func (service *accessOrganizationDataRequestsImpl) FindMany(limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
@@ -46,13 +44,13 @@ func (service *accessOrganizationDataRequestsImpl) FindManyByRequesterOrganizati
 }
 
 func (service *accessOrganizationDataRequestsImpl) Accept(id string, userId string) error {
-	request := entities.OrganizationDataAccessRequest{
+	data := entities.OrganizationDataAccessRequest{
 		AuditorID:  userId,
 		Status:     "ACCEPTED",
 		AcceptedAt: time.Now(),
 	}
 
-	updated, err := service.repository.FindOneAndUpdateById(id, request)
+	updated, err := service.repository.FindOneAndUpdateById(id, data)
 
 	if err != nil {
 		return err
@@ -72,12 +70,12 @@ func (service *accessOrganizationDataRequestsImpl) Accept(id string, userId stri
 	return nil
 }
 
-func (service *accessOrganizationDataRequestsImpl) Reject(id string, userId string, request entities.OrganizationDataAccessRequest) error {
-	request.RejectedAt = time.Now()
-	request.AuditorID = userId
-	request.Status = "REJECTED"
+func (service *accessOrganizationDataRequestsImpl) Reject(id string, userId string, data entities.OrganizationDataAccessRequest) error {
+	data.RejectedAt = time.Now()
+	data.AuditorID = userId
+	data.Status = "REJECTED"
 
-	if err := service.repository.UpdateOneById(id, request); err != nil {
+	if err := service.repository.UpdateOneById(id, data); err != nil {
 		return err
 	}
 

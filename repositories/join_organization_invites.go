@@ -8,10 +8,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
+	"time"
 )
 
 type JoinOrganizationInvites interface {
-	Create(invite entities.JoinOrganizationInvite) (string, error)
+	Create(data entities.JoinOrganizationInvite) (entities.JoinOrganizationInvite, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error)
 	FindOneAndDeleteById(id string) (entities.JoinOrganizationInvite, error)
 	DeleteOneById(id string) error
@@ -27,37 +28,28 @@ func NewMongoJoinOrganizationInvites(database *mongo.Database) JoinOrganizationI
 	}
 }
 
-func (repository *mongoJoinOrganizationInvites) Create(invite entities.JoinOrganizationInvite) (string, error) {
+func (repository *mongoJoinOrganizationInvites) Create(invite entities.JoinOrganizationInvite) (entities.JoinOrganizationInvite, error) {
 	model := models.JoinOrganizationInvite{
 		ID:             primitive.NewObjectID().Hex(),
 		UserID:         invite.UserID,
 		OrganizationID: invite.OrganizationID,
 		CreatorID:      invite.CreatorID,
-		CreatedAt:      invite.CreatedAt,
-		ExpiresAt:      invite.ExpiresAt,
+		CreatedAt:      time.Now(),
+		ExpiresAt:      time.Now().Add(4 * time.Hour),
 	}
 
-	result, err := repository.collection.InsertOne(context.Background(), model)
-
-	if err != nil {
-		return "", err
+	if _, err := repository.collection.InsertOne(context.Background(), model); err != nil {
+		return entities.JoinOrganizationInvite{}, err
 	}
 
-	return result.InsertedID.(primitive.ObjectID).Hex(), nil
+	return model.ToEntity(), nil
 }
 
 func (repository *mongoJoinOrganizationInvites) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
 	modelList := make([]models.JoinOrganizationInvite, 0)
 	entityList := make([]entities.JoinOrganizationInvite, 0)
 
-	oid, err := primitive.ObjectIDFromHex(organizationId)
-
-	if err != nil {
-		return 0, nil, err
-	}
-
-	filter := bson.M{"organization_id": oid}
-
+	filter := bson.M{"organization_id": organizationId}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -65,14 +57,13 @@ func (repository *mongoJoinOrganizationInvites) FindManyByOrganizationId(organiz
 	}
 
 	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-
 	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+
+	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
-
-	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -88,13 +79,7 @@ func (repository *mongoJoinOrganizationInvites) FindManyByOrganizationId(organiz
 func (repository *mongoJoinOrganizationInvites) FindOneAndDeleteById(id string) (entities.JoinOrganizationInvite, error) {
 	var model models.JoinOrganizationInvite
 
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		return entities.JoinOrganizationInvite{}, err
-	}
-
-	filter := bson.M{"_id": oid}
+	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Decode(&model); err != nil {
 		return entities.JoinOrganizationInvite{}, err
@@ -104,13 +89,7 @@ func (repository *mongoJoinOrganizationInvites) FindOneAndDeleteById(id string) 
 }
 
 func (repository *mongoJoinOrganizationInvites) DeleteOneById(id string) error {
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		return err
-	}
-
-	filter := bson.M{"_id": oid}
+	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
 		return err

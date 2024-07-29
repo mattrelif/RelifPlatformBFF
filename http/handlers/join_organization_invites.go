@@ -28,6 +28,7 @@ func (handler *JoinOrganizationInvites) Create(w http.ResponseWriter, r *http.Re
 	user := r.Context().Value("user").(entities.User)
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -44,14 +45,16 @@ func (handler *JoinOrganizationInvites) Create(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	requestId, err := handler.service.Create(user.ID, req.ToEntity())
+	invite, err := handler.service.Create(user.ID, req.ToEntity())
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err = json.NewEncoder(w).Encode(map[string]interface{}{"id": requestId}); err != nil {
+	res := responses.NewJoinOrganizationInvite(invite)
+
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

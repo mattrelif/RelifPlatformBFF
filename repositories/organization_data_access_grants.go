@@ -6,10 +6,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/bff/entities"
 	"relif/bff/models"
+	"time"
 )
 
 type OrganizationDataAccessGrants interface {
-	Create(grant entities.OrganizationDataAccessGrant) error
+	Create(data entities.OrganizationDataAccessGrant) error
 }
 
 type mongoOrganizationDataAccessGrants struct {
@@ -22,13 +23,13 @@ func NewMongoOrganizationDataAccessGrants(database *mongo.Database) Organization
 	}
 }
 
-func (m *mongoOrganizationDataAccessGrants) Create(access entities.OrganizationDataAccessGrant) error {
+func (m *mongoOrganizationDataAccessGrants) Create(data entities.OrganizationDataAccessGrant) error {
 	model := models.OrganizationDataAccess{
 		ID:                   primitive.NewObjectID().Hex(),
-		OrganizationID:       access.OrganizationID,
-		TargetOrganizationID: access.TargetOrganizationID,
-		AuditorID:            access.AuditorID,
-		CreatedAt:            access.CreatedAt,
+		OrganizationID:       data.OrganizationID,
+		TargetOrganizationID: data.TargetOrganizationID,
+		AuditorID:            data.AuditorID,
+		CreatedAt:            time.Now(),
 	}
 
 	if _, err := m.collection.InsertOne(context.Background(), &model); err != nil {

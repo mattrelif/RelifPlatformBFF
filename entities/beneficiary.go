@@ -2,34 +2,6 @@ package entities
 
 import "time"
 
-type BeneficiaryMedicalInformation struct {
-	Allergies                  []string
-	CurrentMedications         []string
-	RecurrentMedicalConditions []string
-	HealthInsurancePlans       []string
-	BloodType                  string
-	TakenVaccines              []string
-	MentalHealthHistory        []string
-	Height                     int
-	Weight                     int
-	CigarettesUsage            bool
-	AlcoholConsumption         bool
-	Disabilities               []string
-}
-
-type BeneficiaryEmergencyContactInformation struct {
-	Relationship string
-	FullName     string
-	Emails       []string
-	Phones       []string
-}
-
-type BeneficiaryExtraInformation struct {
-	CivilStatus     string
-	SpokenLanguages []string
-	Education       string
-}
-
 type Beneficiary struct {
 	ID                 string
 	FullName           string
@@ -37,11 +9,15 @@ type Beneficiary struct {
 	Document           Document
 	Birthdate          string
 	Phones             []string
+	CivilStatus        string
+	SpokenLanguages    []string
+	Education          string
 	Address            Address
 	Status             string
-	MedicalInformation BeneficiaryMedicalInformation
-	EmergencyContacts  []BeneficiaryEmergencyContactInformation
-	ExtraInformation   BeneficiaryExtraInformation
+	CurrentHousingID   string
+	CurrentRoomID      string
+	MedicalInformation MedicalInformation
+	EmergencyContacts  []EmergencyContact
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 	Notes              []string

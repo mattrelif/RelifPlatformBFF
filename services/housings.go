@@ -7,7 +7,7 @@ import (
 )
 
 type Housings interface {
-	Create(user entities.User, housing entities.Housing) (string, error)
+	Create(user entities.User, housing entities.Housing) (entities.Housing, error)
 	FindManyByOrganizationID(organizationId string, limit, offset int64) (int64, []entities.Housing, error)
 	FindOneByID(id string) (entities.Housing, error)
 	FindOneAndUpdateById(id string, housing entities.Housing) (entities.Housing, error)
@@ -24,7 +24,7 @@ func NewHousings(repository repositories.Housings) Housings {
 	}
 }
 
-func (service *housingsImpl) Create(user entities.User, housing entities.Housing) (string, error) {
+func (service *housingsImpl) Create(user entities.User, housing entities.Housing) (entities.Housing, error) {
 	housing.CreatedAt = time.Now()
 	housing.OrganizationID = user.OrganizationID
 

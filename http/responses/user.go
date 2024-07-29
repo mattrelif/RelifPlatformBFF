@@ -16,17 +16,17 @@ type User struct {
 	ID             string          `json:"id"`
 	FirstName      string          `json:"first_name"`
 	LastName       string          `json:"last_name"`
+	FullName       string          `json:"full_name"`
 	Email          string          `json:"email"`
 	Phones         []string        `json:"phones"`
 	OrganizationID string          `json:"organization_id"`
 	Role           string          `json:"role"`
-	PlatformRoleID string          `json:"platform_role_id"`
+	PlatformRole   string          `json:"platform_role"`
 	Status         string          `json:"status"`
 	Country        string          `json:"country"`
 	Preferences    UserPreferences `json:"preferences"`
 	CreatedAt      time.Time       `json:"created_at"`
 	UpdatedAt      time.Time       `json:"updated_at"`
-	LastActivityAt time.Time       `json:"last_activity_at"`
 }
 
 func NewUser(entity entities.User) User {
@@ -34,20 +34,20 @@ func NewUser(entity entities.User) User {
 		ID:             entity.ID,
 		FirstName:      entity.FirstName,
 		LastName:       entity.LastName,
+		FullName:       entity.FullName,
 		Email:          entity.Email,
 		Phones:         entity.Phones,
 		OrganizationID: entity.OrganizationID,
 		Role:           entity.Role,
-		PlatformRoleID: entity.PlatformRoleID,
+		PlatformRole:   entity.PlatformRole,
 		Status:         entity.Status,
 		Country:        entity.Country,
 		Preferences: UserPreferences{
 			Language: entity.Preferences.Language,
 			Timezone: entity.Preferences.Timezone,
 		},
-		CreatedAt:      entity.CreatedAt,
-		UpdatedAt:      entity.UpdatedAt,
-		LastActivityAt: entity.LastActivityAt,
+		CreatedAt: entity.CreatedAt,
+		UpdatedAt: entity.UpdatedAt,
 	}
 }
 

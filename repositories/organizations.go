@@ -8,13 +8,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
+	"time"
 )
 
 type Organizations interface {
-	Create(organization entities.Organization) (string, error)
+	Create(data entities.Organization) (entities.Organization, error)
 	FindMany(offset, limit int64) (int64, []entities.Organization, error)
-	FindOneAndUpdateById(id string, organization entities.Organization) (entities.Organization, error)
-	UpdateOneById(id string, organization entities.Organization) error
+	FindOneAndUpdateById(id string, data entities.Organization) (entities.Organization, error)
+	UpdateOneById(id string, data entities.Organization) error
 }
 
 type mongoOrganizations struct {
@@ -27,31 +28,29 @@ func NewMongoOrganizations(database *mongo.Database) Organizations {
 	}
 }
 
-func (repository *mongoOrganizations) Create(organization entities.Organization) (string, error) {
+func (repository *mongoOrganizations) Create(data entities.Organization) (entities.Organization, error) {
 	model := models.Organization{
 		ID:          primitive.NewObjectID().Hex(),
-		Name:        organization.Name,
-		Description: organization.Description,
-		Address: models.OrganizationAddress{
-			StreetName:   organization.Address.StreetName,
-			StreetNumber: organization.Address.StreetNumber,
-			ZipCode:      organization.Address.ZipCode,
-			District:     organization.Address.District,
-			City:         organization.Address.City,
-			Country:      organization.Address.Country,
+		Name:        data.Name,
+		Description: data.Description,
+		Address: models.Address{
+			StreetName:   data.Address.StreetName,
+			StreetNumber: data.Address.StreetNumber,
+			ZipCode:      data.Address.ZipCode,
+			District:     data.Address.District,
+			City:         data.Address.City,
+			Country:      data.Address.Country,
 		},
-		Type:      organization.Type,
-		CreatorID: organization.CreatorID,
-		CreatedAt: organization.CreatedAt,
+		Type:      data.Type,
+		CreatorID: data.CreatorID,
+		CreatedAt: time.Now(),
 	}
 
-	result, err := repository.collection.InsertOne(context.Background(), &model)
-
-	if err != nil {
-		return "", err
+	if _, err := repository.collection.InsertOne(context.Background(), &model); err != nil {
+		return entities.Organization{}, err
 	}
 
-	return result.InsertedID.(primitive.ObjectID).Hex(), nil
+	return model.ToEntity(), nil
 }
 
 func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []entities.Organization, error) {
@@ -67,11 +66,11 @@ func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []en
 	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"name": 1})
 	cursor, err := repository.collection.Find(context.Background(), bson.M{}, opts)
 
+	defer cursor.Close(context.Background())
+
 	if err != nil {
 		return 0, nil, err
 	}
-
-	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -84,68 +83,54 @@ func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []en
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizations) FindOneAndUpdateById(id string, organization entities.Organization) (entities.Organization, error) {
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		return entities.Organization{}, err
-	}
-
+func (repository *mongoOrganizations) FindOneAndUpdateById(id string, data entities.Organization) (entities.Organization, error) {
 	model := models.Organization{
-		Name:        organization.Name,
-		Description: organization.Description,
-		Address: models.OrganizationAddress{
-			StreetName:   organization.Address.StreetName,
-			StreetNumber: organization.Address.StreetNumber,
-			ZipCode:      organization.Address.ZipCode,
-			District:     organization.Address.District,
-			City:         organization.Address.City,
-			Country:      organization.Address.Country,
+		Name:        data.Name,
+		Description: data.Description,
+		Address: models.Address{
+			StreetName:   data.Address.StreetName,
+			StreetNumber: data.Address.StreetNumber,
+			ZipCode:      data.Address.ZipCode,
+			District:     data.Address.District,
+			City:         data.Address.City,
+			Country:      data.Address.Country,
 		},
-		Type:      organization.Type,
-		CreatorID: organization.CreatorID,
-		UpdatedAt: organization.UpdatedAt,
+		Type:      data.Type,
+		UpdatedAt: time.Now(),
 	}
 
-	filter := bson.M{"_id": oid}
+	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err = repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
+	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
 		return entities.Organization{}, err
 	}
 
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoOrganizations) UpdateOneById(id string, organization entities.Organization) error {
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		return err
-	}
-
+func (repository *mongoOrganizations) UpdateOneById(id string, data entities.Organization) error {
 	model := models.Organization{
-		Name:        organization.Name,
-		Description: organization.Description,
-		Address: models.OrganizationAddress{
-			StreetName:   organization.Address.StreetName,
-			StreetNumber: organization.Address.StreetNumber,
-			ZipCode:      organization.Address.ZipCode,
-			District:     organization.Address.District,
-			City:         organization.Address.City,
-			Country:      organization.Address.Country,
+		Name:        data.Name,
+		Description: data.Description,
+		Address: models.Address{
+			StreetName:   data.Address.StreetName,
+			StreetNumber: data.Address.StreetNumber,
+			ZipCode:      data.Address.ZipCode,
+			District:     data.Address.District,
+			City:         data.Address.City,
+			Country:      data.Address.Country,
 		},
-		Type:      organization.Type,
-		CreatorID: organization.CreatorID,
-		UpdatedAt: organization.UpdatedAt,
+		Type:      data.Type,
+		UpdatedAt: time.Now(),
 	}
 
-	filter := bson.M{"_id": oid}
+	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err = repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Err(); err != nil {
+	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Err(); err != nil {
 		return err
 	}
 

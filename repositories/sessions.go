@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
@@ -11,9 +10,9 @@ import (
 )
 
 type Sessions interface {
-	Generate(session entities.Session) (string, error)
-	FindOneById(id string) (entities.Session, error)
-	DeleteOneById(id string) error
+	Generate(data entities.Session) error
+	FindOneBySessionId(sessionId string) (entities.Session, error)
+	DeleteOneBySessionId(sessionId string) error
 }
 
 type sessionsMongo struct {
@@ -26,56 +25,38 @@ func NewSessionsMongo(database *mongo.Database) Sessions {
 	}
 }
 
-func (repositories *sessionsMongo) Generate(session entities.Session) (string, error) {
+func (repositories *sessionsMongo) Generate(data entities.Session) error {
 	model := models.Session{
-		ID:        primitive.NewObjectID().Hex(),
-		UserID:    session.UserID,
-		ExpiresAt: session.ExpiresAt,
+		UserID:    data.UserID,
+		SessionID: data.SessionID,
+		ExpiresAt: data.ExpiresAt,
 	}
 
-	oid, err := primitive.ObjectIDFromHex(session.UserID)
-
-	if err != nil {
-		return "", err
-	}
-
-	filter := bson.M{"user_id": oid}
+	filter := bson.M{"_id": model.UserID}
 	update := bson.M{"$set": &model}
 	opts := options.Update().SetUpsert(true)
 
-	result, err := repositories.collection.UpdateOne(context.Background(), filter, update, opts)
-	if err != nil {
-		return "", err
+	if _, err := repositories.collection.UpdateOne(context.Background(), filter, update, opts); err != nil {
+		return err
 	}
 
-	return result.UpsertedID.(primitive.ObjectID).Hex(), nil
+	return nil
 }
 
-func (repositories *sessionsMongo) FindOneById(id string) (entities.Session, error) {
+func (repositories *sessionsMongo) FindOneBySessionId(sessionId string) (entities.Session, error) {
 	var model models.Session
 
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		return entities.Session{}, err
-	}
-
-	filter := bson.M{"_id": oid}
-	if err = repositories.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+	filter := bson.M{"session_id": sessionId}
+	if err := repositories.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		return entities.Session{}, err
 	}
 
 	return model.ToEntity(), nil
 }
 
-func (repositories *sessionsMongo) DeleteOneById(id string) error {
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	filter := bson.M{"_id": oid}
-	if err = repositories.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
+func (repositories *sessionsMongo) DeleteOneBySessionId(sessionId string) error {
+	filter := bson.M{"session_id": sessionId}
+	if err := repositories.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
 		return err
 	}
 

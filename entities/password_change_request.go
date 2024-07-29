@@ -3,7 +3,7 @@ package entities
 import "time"
 
 type PasswordChangeRequest struct {
-	ID        string
 	UserID    string
+	Code      string
 	ExpiresAt time.Time
 }

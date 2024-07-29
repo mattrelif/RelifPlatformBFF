@@ -25,6 +25,8 @@ func (handler *Auth) SignUp(w http.ResponseWriter, r *http.Request) {
 	var req requests.SignUp
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -47,7 +49,41 @@ func (handler *Auth) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := cookies.NewSessionCookie(session.ID, session.ExpiresAt)
+	cookie := cookies.NewSessionCookie(session.SessionID, session.ExpiresAt)
+	http.SetCookie(w, cookie)
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (handler *Auth) OrganizationSignUp(w http.ResponseWriter, r *http.Request) {
+	var req requests.OrganizationSignUp
+
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(body, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	session, err := handler.service.OrganizationSignUp(req.ToEntity())
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	cookie := cookies.NewSessionCookie(session.SessionID, session.ExpiresAt)
 	http.SetCookie(w, cookie)
 
 	w.WriteHeader(http.StatusNoContent)
@@ -57,13 +93,12 @@ func (handler *Auth) SignIn(w http.ResponseWriter, r *http.Request) {
 	var req requests.SignIn
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -82,7 +117,7 @@ func (handler *Auth) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := cookies.NewSessionCookie(session.ID, session.ExpiresAt)
+	cookie := cookies.NewSessionCookie(session.SessionID, session.ExpiresAt)
 	http.SetCookie(w, cookie)
 
 	w.WriteHeader(http.StatusNoContent)

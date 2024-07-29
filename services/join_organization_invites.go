@@ -3,11 +3,10 @@ package services
 import (
 	"relif/bff/entities"
 	"relif/bff/repositories"
-	"time"
 )
 
 type JoinOrganizationInvites interface {
-	Create(userID string, invite entities.JoinOrganizationInvite) (string, error)
+	Create(userID string, data entities.JoinOrganizationInvite) (entities.JoinOrganizationInvite, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error)
 	Accept(id string) (string, error)
 	Reject(id string) error
@@ -25,11 +24,9 @@ func NewJoinOrganizationInvites(usersService Users, repository repositories.Join
 	}
 }
 
-func (service *joinOrganizationInvitesImpl) Create(userID string, invite entities.JoinOrganizationInvite) (string, error) {
-	invite.CreatorID = userID
-	invite.CreatedAt = time.Now()
-
-	return service.repository.Create(invite)
+func (service *joinOrganizationInvitesImpl) Create(userID string, data entities.JoinOrganizationInvite) (entities.JoinOrganizationInvite, error) {
+	data.CreatorID = userID
+	return service.repository.Create(data)
 }
 
 func (service *joinOrganizationInvitesImpl) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
@@ -46,6 +43,7 @@ func (service *joinOrganizationInvitesImpl) Accept(id string) (string, error) {
 	data := entities.User{
 		OrganizationID: invite.OrganizationID,
 	}
+
 	if err = service.usersService.UpdateOneById(invite.UserID, data); err != nil {
 		return "", err
 	}

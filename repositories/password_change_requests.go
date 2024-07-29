@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
@@ -11,8 +10,8 @@ import (
 )
 
 type PasswordChangeRequests interface {
-	Create(request entities.PasswordChangeRequest) (string, error)
-	FindOneAndDeleteById(id string) (entities.PasswordChangeRequest, error)
+	Create(data entities.PasswordChangeRequest) error
+	FindOneAndDeleteByCode(code string) (entities.PasswordChangeRequest, error)
 }
 
 type mongoPasswordChangeRequests struct {
@@ -25,42 +24,29 @@ func NewMongoPasswordChangeRequests(database *mongo.Database) PasswordChangeRequ
 	}
 }
 
-func (rep *mongoPasswordChangeRequests) Create(request entities.PasswordChangeRequest) (string, error) {
+func (rep *mongoPasswordChangeRequests) Create(data entities.PasswordChangeRequest) error {
 	model := models.PasswordChangeRequest{
-		ID:        primitive.NewObjectID().Hex(),
-		UserID:    request.UserID,
-		ExpiresAt: request.ExpiresAt,
+		UserID:    data.UserID,
+		Code:      data.Code,
+		ExpiresAt: data.ExpiresAt,
 	}
 
-	oid, err := primitive.ObjectIDFromHex(request.UserID)
-
-	if err != nil {
-		return "", err
-	}
-
-	filter := bson.M{"user_id": oid}
+	filter := bson.M{"_id": model.UserID}
 	update := bson.M{"$set": &model}
 	opts := options.Update().SetUpsert(true)
 
-	result, err := rep.collection.UpdateOne(context.Background(), filter, update, opts)
-	if err != nil {
-		return "", err
+	if _, err := rep.collection.UpdateOne(context.Background(), filter, update, opts); err != nil {
+		return err
 	}
 
-	return result.UpsertedID.(primitive.ObjectID).Hex(), nil
+	return nil
 }
 
-func (rep *mongoPasswordChangeRequests) FindOneAndDeleteById(id string) (entities.PasswordChangeRequest, error) {
+func (rep *mongoPasswordChangeRequests) FindOneAndDeleteByCode(code string) (entities.PasswordChangeRequest, error) {
 	var model models.PasswordChangeRequest
 
-	oid, err := primitive.ObjectIDFromHex(id)
-
-	if err != nil {
-		return entities.PasswordChangeRequest{}, err
-	}
-
-	filter := bson.M{"user_id": oid}
-	if err = rep.collection.FindOneAndDelete(context.Background(), filter).Decode(&model); err != nil {
+	filter := bson.M{"code": code}
+	if err := rep.collection.FindOneAndDelete(context.Background(), filter).Decode(&model); err != nil {
 		return entities.PasswordChangeRequest{}, err
 	}
 

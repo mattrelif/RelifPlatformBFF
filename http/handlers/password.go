@@ -23,12 +23,12 @@ func (handler *Password) RequestChange(w http.ResponseWriter, r *http.Request) {
 	var req requests.RequestPasswordChange
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -51,15 +51,15 @@ func (handler *Password) RequestChange(w http.ResponseWriter, r *http.Request) {
 func (handler *Password) Update(w http.ResponseWriter, r *http.Request) {
 	var req requests.UpdatePassword
 
-	id := chi.URLParam(r, "id")
+	code := chi.URLParam(r, "code")
 
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -71,7 +71,7 @@ func (handler *Password) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdatePassword(id, req.NewPassword); err != nil {
+	if err = handler.service.UpdatePassword(code, req.NewPassword); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

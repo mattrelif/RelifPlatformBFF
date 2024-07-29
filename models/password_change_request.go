@@ -6,15 +6,15 @@ import (
 )
 
 type PasswordChangeRequest struct {
-	ID        string    `bson:"_id"`
-	UserID    string    `bson:"user_id"`
+	UserID    string    `bson:"_id"`
+	Code      string    `bson:"code"`
 	ExpiresAt time.Time `bson:"expires_at"`
 }
 
 func (request *PasswordChangeRequest) ToEntity() entities.PasswordChangeRequest {
 	return entities.PasswordChangeRequest{
-		ID:        request.ID,
 		UserID:    request.UserID,
+		Code:      request.Code,
 		ExpiresAt: request.ExpiresAt,
 	}
 }

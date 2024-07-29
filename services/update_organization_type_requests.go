@@ -7,11 +7,11 @@ import (
 )
 
 type UpdateOrganizationTypeRequests interface {
-	Create(userId string, request entities.UpdateOrganizationTypeRequest) (string, error)
+	Create(userId string, data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error)
 	FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
 	Accept(id, userId string) error
-	Reject(id, userId string, request entities.UpdateOrganizationTypeRequest) error
+	Reject(id, userId string, data entities.UpdateOrganizationTypeRequest) error
 }
 
 type updateOrganizationTypeRequestsImpl struct {
@@ -29,12 +29,11 @@ func NewUpdateOrganizationTypeRequests(
 	}
 }
 
-func (service *updateOrganizationTypeRequestsImpl) Create(userId string, request entities.UpdateOrganizationTypeRequest) (string, error) {
-	request.CreatorID = userId
-	request.Status = "PENDING"
-	request.CreatedAt = time.Now()
+func (service *updateOrganizationTypeRequestsImpl) Create(userId string, data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error) {
+	data.CreatorID = userId
+	data.Status = "PENDING"
 
-	return service.repository.Create(request)
+	return service.repository.Create(data)
 }
 
 func (service *updateOrganizationTypeRequestsImpl) FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
@@ -59,10 +58,8 @@ func (service *updateOrganizationTypeRequestsImpl) Accept(id, userId string) err
 	return nil
 }
 
-func (service *updateOrganizationTypeRequestsImpl) Reject(id, userId string, request entities.UpdateOrganizationTypeRequest) error {
-	request, err := service.repository.FindOneAndUpdateById(id, entities.UpdateOrganizationTypeRequest{AuditorID: userId, Status: "REJECTED", RejectedAt: time.Now(), RejectReason: request.RejectReason})
-
-	if err != nil {
+func (service *updateOrganizationTypeRequestsImpl) Reject(id, userId string, data entities.UpdateOrganizationTypeRequest) error {
+	if err := service.repository.UpdateOneById(id, entities.UpdateOrganizationTypeRequest{AuditorID: userId, Status: "REJECTED", RejectedAt: time.Now(), RejectReason: data.RejectReason}); err != nil {
 		return err
 	}
 
