@@ -71,6 +71,8 @@ func main() {
 	beneficiariesRepository := repositories.NewMongoBeneficiares(database)
 	housingRoomsRepository := repositories.NewMongoHousingRooms(database)
 	beneficiaryAllocationsRepository := repositories.NewMongoBeneficiaryAllocations(database)
+	voluntaryPeopleRepository := repositories.NewMongoVoluntaryPeople(database)
+	productTypesRepository := repositories.NewMongoProductTypesRepository(database)
 
 	sesEmailService := services.NewSesEmail(sesClient)
 
@@ -89,6 +91,8 @@ func main() {
 	beneficiariesService := services.NewBeneficiaries(beneficiariesRepository)
 	housingRoomsService := services.NewHousingRooms(housingRoomsRepository)
 	beneficiaryAllocationsService := services.NewBeneficiaryAllocations(beneficiaryAllocationsRepository, beneficiariesService, housingRoomsService)
+	voluntaryPeopleService := services.NewVoluntaryPeople(voluntaryPeopleRepository)
+	productTypesService := services.NewProductTypes(productTypesRepository)
 
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByCookie(authService)
 	rbacMiddleware := middlewares.NewRoleBasedAccessControl()
@@ -106,6 +110,8 @@ func main() {
 	beneficiariesHandler := handlers.NewBeneficiaries(beneficiariesService)
 	housingRoomsHandler := handlers.NewHousingRooms(housingRoomsService)
 	beneficiaryAllocationsHandler := handlers.NewBeneficiaryAllocations(beneficiaryAllocationsService)
+	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(voluntaryPeopleService)
+	productTypesHandler := handlers.NewProductTypes(productTypesService)
 
 	router := http.NewRouter(
 		environment.Router.Context,
@@ -122,8 +128,10 @@ func main() {
 		organizationsHandler,
 		organizationsDataAccessRequestsHandler,
 		passwordHandler,
+		productTypesHandler,
 		updateOrganizationTypeRequestsHandler,
 		usersHandler,
+		voluntaryPeopleHandler,
 	)
 	server := http.NewServer(router, environment.Server.Port, environment.Server.ReadTimeout, environment.Server.WriteTimeout)
 

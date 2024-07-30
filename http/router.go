@@ -23,8 +23,10 @@ func NewRouter(
 	organizationsHandler *handlers.Organizations,
 	organizationDataAccessRequestsHandler *handlers.OrganizationDataAccessRequests,
 	passwordHandler *handlers.Password,
+	productTypesHandler *handlers.ProductTypes,
 	updateOrganizationTypeRequestsHandler *handlers.UpdateOrganizationTypeRequests,
 	usersHandler *handlers.Users,
+	voluntaryPeopleHandler *handlers.VoluntaryPeople,
 ) http.Handler {
 	router := chi.NewRouter()
 
@@ -71,6 +73,8 @@ func NewRouter(
 				r.Get("/{id}/update-organization-type-requests", updateOrganizationTypeRequestsHandler.FindManyByOrganizationId)
 				r.Get("/{id}/housings", housingsHandler.FindManyByOrganizationId)
 				r.Get("/{id}/join-platform-invites", joinPlatformInvitesHandler.FindManyByOrganizationId)
+				r.Get("/{id}/voluntary-people", voluntaryPeopleHandler.FindManyByOrganizationId)
+				r.Get("/{id}/product-types", productTypesHandler.FindManyByOrganizationId)
 			})
 
 			r.Route("/join-organization-invites", func(r chi.Router) {
@@ -127,6 +131,20 @@ func NewRouter(
 				r.With(rbacMiddleware.Middleware([]string{})).Post("/{id}/allocate", beneficiaryAllocationsHandler.Allocate)
 				r.With(rbacMiddleware.Middleware([]string{})).Post("/{id}/reallocate", beneficiaryAllocationsHandler.Reallocate)
 				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryId)
+			})
+
+			r.Route("/voluntary-people", func(r chi.Router) {
+				r.Post("/", voluntaryPeopleHandler.Create)
+				r.Get("/{id}", voluntaryPeopleHandler.FindOneById)
+				r.Put("/{id}", voluntaryPeopleHandler.Update)
+				r.Delete("/{id}", voluntaryPeopleHandler.DeleteById)
+			})
+
+			r.Route("/product-types", func(r chi.Router) {
+				r.Post("/", productTypesHandler.Create)
+				r.Get("/{id}", productTypesHandler.FindOneById)
+				r.Put("/{id}", productTypesHandler.Update)
+				r.Delete("/{id}", productTypesHandler.Delete)
 			})
 		})
 	})

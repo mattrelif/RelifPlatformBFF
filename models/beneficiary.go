@@ -27,7 +27,7 @@ type Beneficiary struct {
 }
 
 func (beneficiary *Beneficiary) ToEntity() entities.Beneficiary {
-	emergencyContacts := make([]entities.EmergencyContact, len(beneficiary.EmergencyContacts))
+	emergencyContacts := make([]entities.EmergencyContact, 0)
 
 	for _, c := range beneficiary.EmergencyContacts {
 		contact := entities.EmergencyContact{
@@ -41,36 +41,23 @@ func (beneficiary *Beneficiary) ToEntity() entities.Beneficiary {
 	}
 
 	return entities.Beneficiary{
-		ID:               beneficiary.ID,
-		FullName:         beneficiary.FullName,
-		Email:            beneficiary.Email,
-		Document:         beneficiary.Document.ToEntity(),
-		Birthdate:        beneficiary.Birthdate,
-		Phones:           beneficiary.Phones,
-		CivilStatus:      beneficiary.CivilStatus,
-		SpokenLanguages:  beneficiary.SpokenLanguages,
-		Education:        beneficiary.Education,
-		Address:          beneficiary.Address.ToEntity(),
-		Status:           beneficiary.Status,
-		CurrentHousingID: beneficiary.CurrentHousingID,
-		CurrentRoomID:    beneficiary.CurrentRoomID,
-		MedicalInformation: entities.MedicalInformation{
-			Allergies:                  beneficiary.MedicalInformation.Allergies,
-			CurrentMedications:         beneficiary.MedicalInformation.CurrentMedications,
-			RecurrentMedicalConditions: beneficiary.MedicalInformation.RecurrentMedicalConditions,
-			HealthInsurancePlans:       beneficiary.MedicalInformation.HealthInsurancePlans,
-			BloodType:                  beneficiary.MedicalInformation.BloodType,
-			TakenVaccines:              beneficiary.MedicalInformation.TakenVaccines,
-			MentalHealthHistory:        beneficiary.MedicalInformation.MentalHealthHistory,
-			Height:                     beneficiary.MedicalInformation.Height,
-			Weight:                     beneficiary.MedicalInformation.Weight,
-			CigarettesUsage:            beneficiary.MedicalInformation.CigarettesUsage,
-			AlcoholConsumption:         beneficiary.MedicalInformation.AlcoholConsumption,
-			Disabilities:               beneficiary.MedicalInformation.Disabilities,
-		},
-		EmergencyContacts: emergencyContacts,
-		CreatedAt:         beneficiary.CreatedAt,
-		UpdatedAt:         beneficiary.UpdatedAt,
-		Notes:             beneficiary.Notes,
+		ID:                 beneficiary.ID,
+		FullName:           beneficiary.FullName,
+		Email:              beneficiary.Email,
+		Document:           beneficiary.Document.ToEntity(),
+		Birthdate:          beneficiary.Birthdate,
+		Phones:             beneficiary.Phones,
+		CivilStatus:        beneficiary.CivilStatus,
+		SpokenLanguages:    beneficiary.SpokenLanguages,
+		Education:          beneficiary.Education,
+		Address:            beneficiary.Address.ToEntity(),
+		Status:             beneficiary.Status,
+		CurrentHousingID:   beneficiary.CurrentHousingID,
+		CurrentRoomID:      beneficiary.CurrentRoomID,
+		MedicalInformation: beneficiary.MedicalInformation.ToEntity(),
+		EmergencyContacts:  emergencyContacts,
+		CreatedAt:          beneficiary.CreatedAt,
+		UpdatedAt:          beneficiary.UpdatedAt,
+		Notes:              beneficiary.Notes,
 	}
 }
