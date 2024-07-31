@@ -6,6 +6,8 @@ import (
 )
 
 type Environment struct {
+	Environment string `default:"development"`
+
 	AWS struct {
 		Region string `default:"us-east-1"`
 	}

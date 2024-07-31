@@ -3,12 +3,14 @@ package http
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"net/http"
 	"relif/bff/http/handlers"
 	"relif/bff/http/middlewares"
 )
 
 func NewRouter(
+	environment,
 	routerContext string,
 	authenticateByCookieMiddleware *middlewares.AuthenticateByCookie,
 	rbacMiddleware *middlewares.RoleBasedAccessControl,
@@ -33,6 +35,17 @@ func NewRouter(
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
+
+	if environment == "development" {
+		router.Use(cors.Handler(cors.Options{
+			AllowedOrigins:   []string{"http://localhost:3000"},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"*"},
+			ExposedHeaders:   []string{"*"},
+			AllowCredentials: true,
+			MaxAge:           300,
+		}))
+	}
 
 	router.Route(routerContext, func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {

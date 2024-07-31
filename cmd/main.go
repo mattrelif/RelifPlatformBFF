@@ -114,6 +114,7 @@ func main() {
 	productTypesHandler := handlers.NewProductTypes(productTypesService)
 
 	router := http.NewRouter(
+		environment.Environment,
 		environment.Router.Context,
 		authenticateByCookieMiddleware,
 		rbacMiddleware,
