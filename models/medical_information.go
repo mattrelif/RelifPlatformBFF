@@ -12,9 +12,9 @@ type MedicalInformation struct {
 	MentalHealthHistory        []string `bson:"mental_health_history"`
 	Height                     int      `bson:"height"`
 	Weight                     int      `bson:"weight"`
-	CigarettesUsage            bool     `bson:"cigarettes_usage"`
-	AlcoholConsumption         bool     `bson:"alcohol_consumption"`
+	Addictions                 []string `bson:"addictions"`
 	Disabilities               []string `bson:"disabilities"`
+	ProthesisOrMedicalDevices  []string `bson:"prothesis_or_medical_devices"`
 }
 
 func (medical *MedicalInformation) ToEntity() entities.MedicalInformation {
@@ -28,9 +28,9 @@ func (medical *MedicalInformation) ToEntity() entities.MedicalInformation {
 		MentalHealthHistory:        medical.MentalHealthHistory,
 		Height:                     medical.Height,
 		Weight:                     medical.Weight,
-		CigarettesUsage:            medical.CigarettesUsage,
-		AlcoholConsumption:         medical.AlcoholConsumption,
+		Addictions:                 medical.Addictions,
 		Disabilities:               medical.Disabilities,
+		ProthesisOrMedicalDevices:  medical.ProthesisOrMedicalDevices,
 	}
 }
 
@@ -45,8 +45,8 @@ func NewMedicalInformation(entity entities.MedicalInformation) MedicalInformatio
 		MentalHealthHistory:        entity.MentalHealthHistory,
 		Height:                     entity.Height,
 		Weight:                     entity.Weight,
-		CigarettesUsage:            entity.CigarettesUsage,
-		AlcoholConsumption:         entity.AlcoholConsumption,
+		Addictions:                 entity.Addictions,
 		Disabilities:               entity.Disabilities,
+		ProthesisOrMedicalDevices:  entity.ProthesisOrMedicalDevices,
 	}
 }

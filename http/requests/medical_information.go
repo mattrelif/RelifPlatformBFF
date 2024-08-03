@@ -15,9 +15,9 @@ type MedicalInformation struct {
 	MentalHealthHistory        []string `json:"mental_health_history"`
 	Height                     int      `json:"height"`
 	Weight                     int      `json:"weight"`
-	CigarettesUsage            bool     `json:"cigarettes_usage"`
-	AlcoholConsumption         bool     `json:"alcohol_consumption"`
+	Addictions                 []string `json:"addictions"`
 	Disabilities               []string `json:"disabilities"`
+	ProthesisOrMedicalDevices  []string `json:"prothesis_or_medical_devices"`
 }
 
 func (req *MedicalInformation) Validate() error {
@@ -30,8 +30,6 @@ func (req *MedicalInformation) Validate() error {
 		validation.Field(&req.TakenVaccines, validation.Each(validation.Required)),
 		validation.Field(&req.Weight, validation.Required),
 		validation.Field(&req.Height, validation.Required),
-		validation.Field(&req.CigarettesUsage, validation.Required),
-		validation.Field(&req.AlcoholConsumption, validation.Required),
 	)
 }
 
@@ -46,8 +44,8 @@ func (req *MedicalInformation) ToEntity() entities.MedicalInformation {
 		MentalHealthHistory:        req.MentalHealthHistory,
 		Height:                     req.Height,
 		Weight:                     req.Weight,
-		CigarettesUsage:            req.CigarettesUsage,
-		AlcoholConsumption:         req.AlcoholConsumption,
+		Addictions:                 req.Addictions,
 		Disabilities:               req.Disabilities,
+		ProthesisOrMedicalDevices:  req.ProthesisOrMedicalDevices,
 	}
 }

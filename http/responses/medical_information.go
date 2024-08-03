@@ -14,9 +14,9 @@ type MedicalInformation struct {
 	MentalHealthHistory        []string `json:"mental_health_history"`
 	Height                     int      `json:"height"`
 	Weight                     int      `json:"weight"`
-	CigarettesUsage            bool     `json:"cigarettes_usage"`
-	AlcoholConsumption         bool     `json:"alcohol_consumption"`
+	Addictions                 []string `json:"addictions"`
 	Disabilities               []string `json:"disabilities"`
+	ProthesisOrMedicalDevices  []string `json:"prothesis_or_medical_devices"`
 }
 
 func NewMedicalInformation(entity entities.MedicalInformation) MedicalInformation {
@@ -30,8 +30,8 @@ func NewMedicalInformation(entity entities.MedicalInformation) MedicalInformatio
 		MentalHealthHistory:        entity.MentalHealthHistory,
 		Height:                     entity.Height,
 		Weight:                     entity.Weight,
-		CigarettesUsage:            entity.CigarettesUsage,
-		AlcoholConsumption:         entity.AlcoholConsumption,
+		Addictions:                 entity.Addictions,
 		Disabilities:               entity.Disabilities,
+		ProthesisOrMedicalDevices:  entity.ProthesisOrMedicalDevices,
 	}
 }

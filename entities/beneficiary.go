@@ -14,6 +14,7 @@ type Beneficiary struct {
 	SpokenLanguages       []string
 	Education             string
 	Gender                string
+	Occupation            string
 	Address               Address
 	Status                string
 	CurrentHousingID      string

@@ -10,7 +10,7 @@ type MedicalInformation struct {
 	MentalHealthHistory        []string
 	Height                     int
 	Weight                     int
-	CigarettesUsage            bool
-	AlcoholConsumption         bool
+	Addictions                 []string
 	Disabilities               []string
+	ProthesisOrMedicalDevices  []string
 }

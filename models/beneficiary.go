@@ -19,6 +19,7 @@ type Beneficiary struct {
 	SpokenLanguages       []string           `bson:"spoken_languages,omitempty"`
 	Education             string             `bson:"education,omitempty"`
 	Gender                string             `bson:"gender,omitempty"`
+	Occupation            string             `bson:"occupation,omitempty"`
 	Address               Address            `bson:"address,omitempty"`
 	Status                string             `bson:"status,omitempty"`
 	CurrentHousingID      string             `bson:"current_housing_id,omitempty"`
@@ -49,6 +50,7 @@ func (beneficiary *Beneficiary) ToEntity() entities.Beneficiary {
 		SpokenLanguages:       beneficiary.SpokenLanguages,
 		Education:             beneficiary.Education,
 		Gender:                beneficiary.Gender,
+		Occupation:            beneficiary.Occupation,
 		Address:               beneficiary.Address.ToEntity(),
 		Status:                beneficiary.Status,
 		CurrentHousingID:      beneficiary.CurrentHousingID,
@@ -80,6 +82,7 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		SpokenLanguages:       entity.SpokenLanguages,
 		Education:             entity.Education,
 		Gender:                entity.Gender,
+		Occupation:            entity.Occupation,
 		Address:               NewAddress(entity.Address),
 		Status:                utils.ActiveStatus,
 		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),
@@ -107,6 +110,7 @@ func NewUpdatedBeneficiary(entity entities.Beneficiary) Beneficiary {
 		SpokenLanguages:       entity.SpokenLanguages,
 		Education:             entity.Education,
 		Gender:                entity.Gender,
+		Occupation:            entity.Occupation,
 		Address:               NewAddress(entity.Address),
 		Status:                utils.ActiveStatus,
 		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),
