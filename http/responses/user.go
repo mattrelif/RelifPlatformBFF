@@ -23,7 +23,6 @@ type User struct {
 	Role           string          `json:"role"`
 	PlatformRole   string          `json:"platform_role"`
 	Status         string          `json:"status"`
-	Country        string          `json:"country"`
 	Preferences    UserPreferences `json:"preferences"`
 	CreatedAt      time.Time       `json:"created_at"`
 	UpdatedAt      time.Time       `json:"updated_at"`
@@ -41,7 +40,6 @@ func NewUser(entity entities.User) User {
 		Role:           entity.Role,
 		PlatformRole:   entity.PlatformRole,
 		Status:         entity.Status,
-		Country:        entity.Country,
 		Preferences: UserPreferences{
 			Language: entity.Preferences.Language,
 			Timezone: entity.Preferences.Timezone,

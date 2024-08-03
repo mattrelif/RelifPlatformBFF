@@ -6,12 +6,12 @@ import (
 )
 
 type JoinPlatformInvite struct {
-	InvitedEmail   string    `bson:"_id"`
-	Code           string    `bson:"code"`
-	OrganizationID string    `bson:"organization_id"`
-	InviterID      string    `bson:"inviter_id"`
-	CreatedAt      time.Time `bson:"created_at"`
-	ExpiresAt      time.Time `bson:"expires_at"`
+	InvitedEmail   string    `bson:"_id,omitempty"`
+	Code           string    `bson:"code,omitempty"`
+	OrganizationID string    `bson:"organization_id,omitempty"`
+	InviterID      string    `bson:"inviter_id,omitempty"`
+	CreatedAt      time.Time `bson:"created_at,omitempty"`
+	ExpiresAt      time.Time `bson:"expires_at,omitempty"`
 }
 
 func (invite *JoinPlatformInvite) ToEntity() entities.JoinPlatformInvite {
@@ -22,5 +22,16 @@ func (invite *JoinPlatformInvite) ToEntity() entities.JoinPlatformInvite {
 		InviterID:      invite.InviterID,
 		CreatedAt:      invite.CreatedAt,
 		ExpiresAt:      invite.ExpiresAt,
+	}
+}
+
+func NewJoinPlatformInvite(entity entities.JoinPlatformInvite) JoinPlatformInvite {
+	return JoinPlatformInvite{
+		InvitedEmail:   entity.InvitedEmail,
+		Code:           entity.Code,
+		OrganizationID: entity.OrganizationID,
+		InviterID:      entity.InviterID,
+		CreatedAt:      time.Now(),
+		ExpiresAt:      time.Now().Add(4 * time.Hour),
 	}
 }

@@ -8,7 +8,7 @@ type Organization struct {
 	Description string
 	Address     Address
 	Type        string
-	CreatorID   string
+	OwnerID     string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

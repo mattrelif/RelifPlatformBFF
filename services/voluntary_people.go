@@ -3,6 +3,7 @@ package services
 import (
 	"relif/bff/entities"
 	"relif/bff/repositories"
+	"relif/bff/utils"
 )
 
 type VoluntaryPeople interface {
@@ -24,8 +25,18 @@ func NewVoluntaryPeople(repository repositories.VoluntaryPeople) VoluntaryPeople
 }
 
 func (service *voluntaryPeopleImpl) Create(user entities.User, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
-	data.Status = "ACTIVE"
+	count, err := service.repository.CountByEmail(data.Email)
+
+	if err != nil {
+		return entities.VoluntaryPerson{}, err
+	}
+
+	if count > 0 {
+		return entities.VoluntaryPerson{}, utils.ErrVoluntaryPersonAlreadyExists
+	}
+
 	data.OrganizationID = user.OrganizationID
+	
 	return service.repository.Create(data)
 }
 

@@ -1,63 +1,119 @@
 package models
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"relif/bff/entities"
+	"relif/bff/utils"
 	"time"
 )
 
 type Beneficiary struct {
-	ID                 string             `bson:"_id"`
-	FullName           string             `bson:"full_name"`
-	Email              string             `bson:"email"`
-	Document           Document           `bson:"document"`
-	Birthdate          string             `bson:"birthdate"`
-	Phones             []string           `bson:"phones"`
-	CivilStatus        string             `bson:"civil_status"`
-	SpokenLanguages    []string           `bson:"spoken_languages"`
-	Education          string             `bson:"education"`
-	Address            Address            `bson:"address"`
-	Status             string             `bson:"status"`
-	CurrentHousingID   string             `bson:"current_housing_id"`
-	CurrentRoomID      string             `bson:"current_room_id"`
-	MedicalInformation MedicalInformation `bson:"medical_information"`
-	EmergencyContacts  []EmergencyContact `bson:"emergency_contacts"`
-	CreatedAt          time.Time          `bson:"created_at"`
-	UpdatedAt          time.Time          `bson:"updated_at"`
-	Notes              []string           `bson:"notes"`
+	ID                    string             `bson:"_id,omitempty"`
+	CurrentOrganizationID string             `bson:"current_organization_id"`
+	FullName              string             `bson:"full_name,omitempty"`
+	Email                 string             `bson:"email,omitempty"`
+	Document              Document           `bson:"document,omitempty"`
+	Birthdate             string             `bson:"birthdate,omitempty"`
+	Phones                []string           `bson:"phones,omitempty"`
+	CivilStatus           string             `bson:"civil_status,omitempty"`
+	SpokenLanguages       []string           `bson:"spoken_languages,omitempty"`
+	Education             string             `bson:"education,omitempty"`
+	Gender                string             `bson:"gender,omitempty"`
+	Address               Address            `bson:"address,omitempty"`
+	Status                string             `bson:"status,omitempty"`
+	CurrentHousingID      string             `bson:"current_housing_id,omitempty"`
+	CurrentRoomID         string             `bson:"current_room_id,omitempty"`
+	MedicalInformation    MedicalInformation `bson:"medical_information,omitempty"`
+	EmergencyContacts     []EmergencyContact `bson:"emergency_contacts,omitempty"`
+	CreatedAt             time.Time          `bson:"created_at,omitempty"`
+	UpdatedAt             time.Time          `bson:"updated_at,omitempty"`
+	Notes                 []string           `bson:"notes,omitempty"`
 }
 
 func (beneficiary *Beneficiary) ToEntity() entities.Beneficiary {
 	emergencyContacts := make([]entities.EmergencyContact, 0)
 
-	for _, c := range beneficiary.EmergencyContacts {
-		contact := entities.EmergencyContact{
-			Relationship: c.Relationship,
-			FullName:     c.FullName,
-			Emails:       c.Emails,
-			Phones:       c.Phones,
-		}
-
-		emergencyContacts = append(emergencyContacts, contact)
+	for _, contact := range beneficiary.EmergencyContacts {
+		emergencyContacts = append(emergencyContacts, contact.ToEntity())
 	}
 
 	return entities.Beneficiary{
-		ID:                 beneficiary.ID,
-		FullName:           beneficiary.FullName,
-		Email:              beneficiary.Email,
-		Document:           beneficiary.Document.ToEntity(),
-		Birthdate:          beneficiary.Birthdate,
-		Phones:             beneficiary.Phones,
-		CivilStatus:        beneficiary.CivilStatus,
-		SpokenLanguages:    beneficiary.SpokenLanguages,
-		Education:          beneficiary.Education,
-		Address:            beneficiary.Address.ToEntity(),
-		Status:             beneficiary.Status,
-		CurrentHousingID:   beneficiary.CurrentHousingID,
-		CurrentRoomID:      beneficiary.CurrentRoomID,
-		MedicalInformation: beneficiary.MedicalInformation.ToEntity(),
-		EmergencyContacts:  emergencyContacts,
-		CreatedAt:          beneficiary.CreatedAt,
-		UpdatedAt:          beneficiary.UpdatedAt,
-		Notes:              beneficiary.Notes,
+		ID:                    beneficiary.ID,
+		CurrentOrganizationID: beneficiary.CurrentOrganizationID,
+		FullName:              beneficiary.FullName,
+		Email:                 beneficiary.Email,
+		Document:              beneficiary.Document.ToEntity(),
+		Birthdate:             beneficiary.Birthdate,
+		Phones:                beneficiary.Phones,
+		CivilStatus:           beneficiary.CivilStatus,
+		SpokenLanguages:       beneficiary.SpokenLanguages,
+		Education:             beneficiary.Education,
+		Gender:                beneficiary.Gender,
+		Address:               beneficiary.Address.ToEntity(),
+		Status:                beneficiary.Status,
+		CurrentHousingID:      beneficiary.CurrentHousingID,
+		CurrentRoomID:         beneficiary.CurrentRoomID,
+		MedicalInformation:    beneficiary.MedicalInformation.ToEntity(),
+		EmergencyContacts:     emergencyContacts,
+		CreatedAt:             beneficiary.CreatedAt,
+		UpdatedAt:             beneficiary.UpdatedAt,
+		Notes:                 beneficiary.Notes,
+	}
+}
+
+func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
+	emergencyContacts := make([]EmergencyContact, 0)
+
+	for _, contact := range entity.EmergencyContacts {
+		emergencyContacts = append(emergencyContacts, NewEmergencyContact(contact))
+	}
+
+	return Beneficiary{
+		ID:                    primitive.NewObjectID().Hex(),
+		CurrentOrganizationID: entity.CurrentOrganizationID,
+		FullName:              entity.FullName,
+		Email:                 entity.Email,
+		Document:              NewDocument(entity.Document),
+		Birthdate:             entity.Birthdate,
+		Phones:                entity.Phones,
+		CivilStatus:           entity.CivilStatus,
+		SpokenLanguages:       entity.SpokenLanguages,
+		Education:             entity.Education,
+		Gender:                entity.Gender,
+		Address:               NewAddress(entity.Address),
+		Status:                utils.ActiveStatus,
+		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),
+		EmergencyContacts:     emergencyContacts,
+		CreatedAt:             time.Now(),
+		Notes:                 entity.Notes,
+	}
+}
+
+func NewUpdatedBeneficiary(entity entities.Beneficiary) Beneficiary {
+	emergencyContacts := make([]EmergencyContact, 0)
+
+	for _, contact := range entity.EmergencyContacts {
+		emergencyContacts = append(emergencyContacts, NewEmergencyContact(contact))
+	}
+
+	return Beneficiary{
+		CurrentOrganizationID: entity.CurrentOrganizationID,
+		FullName:              entity.FullName,
+		Email:                 entity.Email,
+		Document:              NewDocument(entity.Document),
+		Birthdate:             entity.Birthdate,
+		Phones:                entity.Phones,
+		CivilStatus:           entity.CivilStatus,
+		SpokenLanguages:       entity.SpokenLanguages,
+		Education:             entity.Education,
+		Gender:                entity.Gender,
+		Address:               NewAddress(entity.Address),
+		Status:                utils.ActiveStatus,
+		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),
+		EmergencyContacts:     emergencyContacts,
+		UpdatedAt:             time.Now(),
+		Notes:                 entity.Notes,
+		CurrentHousingID:      entity.CurrentHousingID,
+		CurrentRoomID:         entity.CurrentRoomID,
 	}
 }

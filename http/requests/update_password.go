@@ -8,6 +8,6 @@ type UpdatePassword struct {
 
 func (req *UpdatePassword) Validate() error {
 	return validation.ValidateStruct(req,
-		validation.Field(req.NewPassword, validation.Required),
+		validation.Field(&req.NewPassword, validation.Required),
 	)
 }

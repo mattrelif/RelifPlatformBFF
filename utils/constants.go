@@ -1,0 +1,21 @@
+package utils
+
+var (
+	NoOrgPlatformRole       = "NO_ORG"
+	OrgMemberPlatformRole   = "ORG_MEMBER"
+	OrgAdminPlatformRole    = "ORG_ADMIN"
+	RelifMemberPlatformRole = "RELIF_MEMBER"
+)
+
+var (
+	ActiveStatus   = "ACTIVE"
+	InactiveStatus = "INACTIVE"
+	PendingStatus  = "PENDING"
+	AcceptedStatus = "ACCEPTED"
+	RejectedStatus = "REJECTED"
+)
+
+var (
+	ManagerOrganizationType     = "MANAGER"
+	CoordinatorOrganizationType = "COORDINATOR"
+)

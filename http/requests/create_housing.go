@@ -25,14 +25,7 @@ func (req *CreateHousing) Validate() error {
 
 func (req *CreateHousing) ToEntity() entities.Housing {
 	return entities.Housing{
-		Name: req.Name,
-		Address: entities.Address{
-			StreetNumber: req.Address.StreetNumber,
-			StreetName:   req.Address.StreetName,
-			City:         req.Address.City,
-			ZipCode:      req.Address.ZipCode,
-			District:     req.Address.District,
-			Country:      req.Address.Country,
-		},
+		Name:    req.Name,
+		Address: req.Address.ToEntity(),
 	}
 }

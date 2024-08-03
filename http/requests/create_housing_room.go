@@ -2,33 +2,26 @@ package requests
 
 import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"relif/bff/entities"
 )
 
 type CreateManyHousingRooms []CreateHousingRoom
 
 type CreateHousingRoom struct {
-	HousingID      string `json:"housing_id"`
 	Name           string `json:"name"`
-	Status         string `json:"status"`
 	TotalVacancies int    `json:"total_vacancies"`
 }
 
 func (req *CreateHousingRoom) Validate() error {
 	return validation.ValidateStruct(req,
-		validation.Field(&req.HousingID, validation.Required, is.MongoID),
 		validation.Field(&req.Name, validation.Required),
-		validation.Field(&req.Status, validation.Required),
 		validation.Field(&req.TotalVacancies, validation.Required),
 	)
 }
 
 func (req *CreateHousingRoom) ToEntity() entities.HousingRoom {
 	return entities.HousingRoom{
-		HousingID:      req.HousingID,
 		Name:           req.Name,
-		Status:         req.Status,
 		TotalVacancies: req.TotalVacancies,
 	}
 }

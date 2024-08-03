@@ -13,7 +13,6 @@ type SignUp struct {
 	Password    string          `json:"password"`
 	Phones      []string        `json:"phones"`
 	Role        string          `json:"role"`
-	Country     string          `json:"country"`
 	Preferences UserPreferences `json:"preferences"`
 }
 
@@ -25,7 +24,6 @@ func (req SignUp) Validate() error {
 		validation.Field(&req.Password, validation.Required),
 		validation.Field(&req.Phones, validation.Each(validation.Required)),
 		validation.Field(&req.Role, validation.Required),
-		validation.Field(&req.Country, validation.Required),
 		validation.Field(&req.Preferences, validation.By(func(value interface{}) error {
 			if preferences, ok := value.(UserPreferences); ok {
 				return preferences.Validate()
@@ -44,7 +42,6 @@ func (req SignUp) ToEntity() entities.User {
 		Password:  req.Password,
 		Phones:    req.Phones,
 		Role:      req.Role,
-		Country:   req.Country,
 		Preferences: entities.UserPreferences{
 			Language: req.Preferences.Language,
 			Timezone: req.Preferences.Timezone,

@@ -22,18 +22,16 @@ type MedicalInformation struct {
 
 func (req *MedicalInformation) Validate() error {
 	return validation.ValidateStruct(req,
-		validation.Field(req.Allergies, validation.Each(validation.Required)),
-		validation.Field(req.CurrentMedications, validation.Each(validation.Required)),
-		validation.Field(req.RecurrentMedicalConditions, validation.Each(validation.Required)),
-		validation.Field(req.HealthInsurancePlans, validation.Each(validation.Required)),
-		validation.Field(req.BloodType, validation.Required),
-		validation.Field(req.TakenVaccines, validation.Each(validation.Required)),
-		validation.Field(req.MentalHealthHistory, validation.Each(validation.Required)),
-		validation.Field(req.Weight, validation.Required),
-		validation.Field(req.Height, validation.Required),
-		validation.Field(req.CigarettesUsage, validation.Required),
-		validation.Field(req.AlcoholConsumption, validation.Required),
-		validation.Field(req.Disabilities, validation.Each(validation.Required)),
+		validation.Field(&req.Allergies, validation.Each(validation.Required)),
+		validation.Field(&req.CurrentMedications, validation.Each(validation.Required)),
+		validation.Field(&req.RecurrentMedicalConditions, validation.Each(validation.Required)),
+		validation.Field(&req.HealthInsurancePlans, validation.Each(validation.Required)),
+		validation.Field(&req.BloodType, validation.Required),
+		validation.Field(&req.TakenVaccines, validation.Each(validation.Required)),
+		validation.Field(&req.Weight, validation.Required),
+		validation.Field(&req.Height, validation.Required),
+		validation.Field(&req.CigarettesUsage, validation.Required),
+		validation.Field(&req.AlcoholConsumption, validation.Required),
 	)
 }
 

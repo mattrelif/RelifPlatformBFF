@@ -2,21 +2,20 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
+	"relif/bff/utils"
 )
 
 type Housings interface {
 	Create(data entities.Housing) (entities.Housing, error)
 	FindManyByOrganizationID(organizationId string, limit, offset int64) (int64, []entities.Housing, error)
 	FindOneByID(id string) (entities.Housing, error)
-	FindOneAndUpdateById(id string, data entities.Housing) (entities.Housing, error)
-	DeleteOneById(id string) error
+	UpdateOneById(id string, data entities.Housing) error
 }
 
 type mongoHousings struct {
@@ -30,21 +29,7 @@ func NewMongoHousings(database *mongo.Database) Housings {
 }
 
 func (repository *mongoHousings) Create(data entities.Housing) (entities.Housing, error) {
-	model := models.Housing{
-		ID:             primitive.NewObjectID().Hex(),
-		Name:           data.Name,
-		OrganizationID: data.OrganizationID,
-		Status:         data.Status,
-		Address: models.Address{
-			StreetName:   data.Address.StreetName,
-			StreetNumber: data.Address.StreetNumber,
-			City:         data.Address.City,
-			ZipCode:      data.Address.ZipCode,
-			Country:      data.Address.Country,
-			District:     data.Address.District,
-		},
-		CreatedAt: time.Now(),
-	}
+	model := models.NewHousing(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), model); err != nil {
 		return entities.Housing{}, err
@@ -90,41 +75,22 @@ func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error
 	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.Housing{}, utils.ErrHousingNotFound
+		}
+
 		return entities.Housing{}, err
 	}
 
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoHousings) FindOneAndUpdateById(id string, data entities.Housing) (entities.Housing, error) {
-	model := models.Housing{
-		Name:   data.Name,
-		Status: data.Status,
-		Address: models.Address{
-			StreetName:   data.Address.StreetName,
-			StreetNumber: data.Address.StreetNumber,
-			City:         data.Address.City,
-			ZipCode:      data.Address.ZipCode,
-			Country:      data.Address.Country,
-			District:     data.Address.District,
-		},
-		UpdatedAt: time.Now(),
-	}
+func (repository *mongoHousings) UpdateOneById(id string, data entities.Housing) error {
+	model := models.NewUpdatedHousing(data)
 
-	filter := bson.M{"_id": id}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	update := bson.M{"$set": &model}
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, model, opts).Decode(&model); err != nil {
-		return entities.Housing{}, err
-	}
-
-	return model.ToEntity(), nil
-}
-
-func (repository *mongoHousings) DeleteOneById(id string) error {
-	filter := bson.M{"_id": id}
-
-	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 

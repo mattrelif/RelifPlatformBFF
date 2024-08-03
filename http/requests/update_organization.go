@@ -14,7 +14,6 @@ type UpdateOrganization struct {
 func (req *UpdateOrganization) Validate() error {
 	return validation.ValidateStruct(req,
 		validation.Field(&req.Name, validation.Required),
-		validation.Field(&req.Description, validation.Required),
 		validation.Field(&req.Address, validation.By(func(value interface{}) error {
 			if address, ok := value.(Address); ok {
 				return address.Validate()
@@ -29,13 +28,6 @@ func (req *UpdateOrganization) ToEntity() entities.Organization {
 	return entities.Organization{
 		Name:        req.Name,
 		Description: req.Description,
-		Address: entities.Address{
-			StreetName:   req.Address.StreetName,
-			StreetNumber: req.Address.StreetNumber,
-			ZipCode:      req.Address.ZipCode,
-			District:     req.Address.District,
-			City:         req.Address.City,
-			Country:      req.Address.Country,
-		},
+		Address:     req.Address.ToEntity(),
 	}
 }

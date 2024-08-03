@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
@@ -23,29 +25,22 @@ func NewOrganizationDataAccessRequests(service services.OrganizationDataAccessRe
 }
 
 func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *http.Request) {
-	var req requests.CreateOrganizationDataAccessRequest
-
+	targetOrganizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := handler.service.AuthorizeCreate(user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
-	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err = req.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	request, err := handler.service.Create(user, req.ToEntity())
+	request, err := handler.service.Create(user, targetOrganizationId)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -61,40 +56,14 @@ func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *
 	}
 }
 
-func (handler *OrganizationDataAccessRequests) FindMany(w http.ResponseWriter, r *http.Request) {
-	offsetParam := r.URL.Query().Get("offset")
-	offset, err := strconv.Atoi(offsetParam)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	limitParam := r.URL.Query().Get("limit")
-	limit, err := strconv.Atoi(limitParam)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	count, reqs, err := handler.service.FindMany(int64(limit), int64(offset))
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	res := responses.FindMany[responses.OrganizationDataAccessRequests]{Data: responses.NewNewOrganizationDataAccessRequests(reqs), Count: count}
-
-	if err = json.NewEncoder(w).Encode(res); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
 func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationId(w http.ResponseWriter, r *http.Request) {
 	organizationId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -127,13 +96,60 @@ func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationId
 	}
 }
 
+func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationId(w http.ResponseWriter, r *http.Request) {
+	organizationId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	offsetParam := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, reqs, err := handler.service.FindManyByTargetOrganizationId(organizationId, int64(limit), int64(offset))
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := responses.FindMany[responses.OrganizationDataAccessRequests]{Data: responses.NewNewOrganizationDataAccessRequests(reqs), Count: count}
+
+	if err = json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (handler *OrganizationDataAccessRequests) Accept(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(entities.User)
 
 	id := chi.URLParam(r, "id")
 
-	if err := handler.service.Accept(id, user.ID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := handler.service.Accept(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -165,8 +181,15 @@ func (handler *OrganizationDataAccessRequests) Reject(w http.ResponseWriter, r *
 		return
 	}
 
-	if err = handler.service.Reject(id, user.ID, req.ToEntity()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = handler.service.Reject(id, user, req.ToEntity()); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

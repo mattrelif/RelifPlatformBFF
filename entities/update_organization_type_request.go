@@ -9,6 +9,7 @@ type UpdateOrganizationTypeRequest struct {
 	AuditorID      string
 	Status         string
 	CreatedAt      time.Time
+	AcceptedAt     time.Time
 	RejectReason   string
 	RejectedAt     time.Time
 }

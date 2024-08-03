@@ -2,30 +2,31 @@ package models
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"relif/bff/entities"
+	"relif/bff/utils"
 	"time"
 )
 
 type UserPreferences struct {
-	Language string `bson:"language"`
-	Timezone string `bson:"timezone"`
+	Language string `bson:"language,omitempty"`
+	Timezone string `bson:"timezone,omitempty"`
 }
 
 type User struct {
-	ID             string          `bson:"_id"`
-	FirstName      string          `bson:"first_name"`
-	LastName       string          `bson:"last_name"`
-	Email          string          `bson:"email"`
-	Password       string          `bson:"password"`
-	Phones         []string        `bson:"phones"`
-	OrganizationID string          `bson:"organization_id"`
-	Role           string          `bson:"role"`
-	PlatformRole   string          `bson:"platform_role"`
-	Status         string          `bson:"status"`
-	Country        string          `bson:"country"`
-	Preferences    UserPreferences `bson:"preferences"`
-	CreatedAt      time.Time       `bson:"created_at"`
-	UpdatedAt      time.Time       `bson:"updated_at"`
+	ID             string          `bson:"_id,omitempty"`
+	FirstName      string          `bson:"first_name,omitempty"`
+	LastName       string          `bson:"last_name,omitempty"`
+	Email          string          `bson:"email,omitempty"`
+	Password       string          `bson:"password,omitempty"`
+	Phones         []string        `bson:"phones,omitempty"`
+	OrganizationID string          `bson:"organization_id,omitempty"`
+	Role           string          `bson:"role,omitempty"`
+	PlatformRole   string          `bson:"platform_role,omitempty"`
+	Status         string          `bson:"status,omitempty"`
+	Preferences    UserPreferences `bson:"preferences,omitempty"`
+	CreatedAt      time.Time       `bson:"created_at,omitempty"`
+	UpdatedAt      time.Time       `bson:"updated_at,omitempty"`
 }
 
 func (u *User) FullName() string {
@@ -45,12 +46,48 @@ func (u *User) ToEntity() entities.User {
 		Role:           u.Role,
 		PlatformRole:   u.PlatformRole,
 		Status:         u.Status,
-		Country:        u.Country,
 		Preferences: entities.UserPreferences{
 			Language: u.Preferences.Language,
 			Timezone: u.Preferences.Timezone,
 		},
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
+	}
+}
+
+func NewUser(entity entities.User) User {
+	return User{
+		ID:           primitive.NewObjectID().Hex(),
+		FirstName:    entity.FirstName,
+		LastName:     entity.LastName,
+		Email:        entity.Email,
+		Password:     entity.Password,
+		Phones:       entity.Phones,
+		Role:         entity.Role,
+		PlatformRole: entity.PlatformRole,
+		Status:       utils.ActiveStatus,
+		Preferences: UserPreferences{
+			Language: entity.Preferences.Language,
+			Timezone: entity.Preferences.Timezone,
+		},
+		CreatedAt: time.Now(),
+	}
+}
+
+func NewUpdatedUser(entity entities.User) User {
+	return User{
+		FirstName:    entity.FirstName,
+		LastName:     entity.LastName,
+		Email:        entity.Email,
+		Password:     entity.Password,
+		Phones:       entity.Phones,
+		Role:         entity.Role,
+		PlatformRole: entity.PlatformRole,
+		Status:       entity.Status,
+		Preferences: UserPreferences{
+			Language: entity.Preferences.Language,
+			Timezone: entity.Preferences.Timezone,
+		},
+		UpdatedAt: time.Now(),
 	}
 }

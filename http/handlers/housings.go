@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
@@ -17,13 +19,20 @@ type Housings struct {
 }
 
 func NewHousings(service services.Housings) *Housings {
-	return &Housings{service: service}
+	return &Housings{
+		service: service,
+	}
 }
 
 func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateHousing
 
 	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeCreate(user); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -61,6 +70,17 @@ func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 
 func (handler *Housings) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
 	organizationId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeFindManyByOrganizationID(user, organizationId); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -95,11 +115,19 @@ func (handler *Housings) FindManyByOrganizationId(w http.ResponseWriter, r *http
 
 func (handler *Housings) FindOneById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
 
-	housing, err := handler.service.FindOneByID(id)
+	housing, err := handler.service.FindOneByID(id, user)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -115,6 +143,19 @@ func (handler *Housings) Update(w http.ResponseWriter, r *http.Request) {
 	var req requests.UpdateHousing
 
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeExternalMutation(user, id); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -134,25 +175,31 @@ func (handler *Housings) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := handler.service.FindOneAndUpdateById(id, req.ToEntity())
-
-	if err != nil {
+	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := responses.NewHousing(updated)
-
-	if err = json.NewEncoder(w).Encode(&res); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (handler *Housings) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.DeleteOneById(id); err != nil {
+	if err := handler.service.AuthorizeExternalMutation(user, id); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := handler.service.InactivateOneByID(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

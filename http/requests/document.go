@@ -12,8 +12,8 @@ type Document struct {
 
 func (req *Document) Validate() error {
 	return validation.ValidateStruct(req,
-		validation.Field(req.Type, validation.Required),
-		validation.Field(req.Value, validation.Required),
+		validation.Field(&req.Type, validation.Required),
+		validation.Field(&req.Value, validation.Required),
 	)
 }
 

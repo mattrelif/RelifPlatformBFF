@@ -11,7 +11,7 @@ type RejectUpdateOrganizationTypeRequest struct {
 
 func (req *RejectUpdateOrganizationTypeRequest) Validate() error {
 	return validation.ValidateStruct(req,
-		validation.Field(req.RejectReason, validation.Required),
+		validation.Field(&req.RejectReason, validation.Required),
 	)
 }
 

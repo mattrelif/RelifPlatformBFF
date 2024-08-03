@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
@@ -26,6 +28,11 @@ func (handler *Organizations) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateOrganization
 
 	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeCreate(user); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -93,10 +100,46 @@ func (handler *Organizations) FindMany(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (handler *Organizations) FindOne(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	organization, err := handler.service.FindOneById(id)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	res := responses.NewOrganization(organization)
+
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (handler *Organizations) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	var req requests.UpdateOrganization
 
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeExternalMutation(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -116,17 +159,10 @@ func (handler *Organizations) UpdateOne(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updated, err := handler.service.FindOneAndUpdateById(id, req.ToEntity())
-
-	if err != nil {
+	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := responses.NewOrganization(updated)
-
-	if err = json.NewEncoder(w).Encode(&res); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	w.WriteHeader(http.StatusNoContent)
 }

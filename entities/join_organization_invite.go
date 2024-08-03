@@ -7,6 +7,9 @@ type JoinOrganizationInvite struct {
 	UserID         string
 	OrganizationID string
 	CreatorID      string
+	Status         string
+	AcceptedAt     time.Time
+	RejectedAt     time.Time
 	CreatedAt      time.Time
-	ExpiresAt      time.Time
+	ExpiresAt      *time.Time
 }

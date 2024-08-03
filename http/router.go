@@ -13,7 +13,6 @@ func NewRouter(
 	environment,
 	routerContext string,
 	authenticateByCookieMiddleware *middlewares.AuthenticateByCookie,
-	rbacMiddleware *middlewares.RoleBasedAccessControl,
 	authHandler *handlers.Auth,
 	beneficiariesHandler *handlers.Beneficiaries,
 	beneficiaryAllocationsHandler *handlers.BeneficiaryAllocations,
@@ -23,6 +22,7 @@ func NewRouter(
 	joinOrganizationInvitesHandler *handlers.JoinOrganizationInvites,
 	joinPlatformInvitesHandler *handlers.JoinPlatformInvites,
 	organizationsHandler *handlers.Organizations,
+	organizationDataAccessGrantHandler *handlers.OrganizationDataAccessGrants,
 	organizationDataAccessRequestsHandler *handlers.OrganizationDataAccessRequests,
 	passwordHandler *handlers.Password,
 	productTypesHandler *handlers.ProductTypes,
@@ -73,88 +73,99 @@ func NewRouter(
 				r.Get("/{id}", usersHandler.FindOne)
 				r.Put("/{id}", usersHandler.UpdateOne)
 				r.Delete("/{id}", usersHandler.DeleteOne)
+
+				r.Get("/{id}/join-organization-invites", joinOrganizationInvitesHandler.FindManyByUserId)
 			})
 
 			r.Route("/organizations", func(r chi.Router) {
 				r.Post("/", organizationsHandler.Create)
 				r.Get("/", organizationsHandler.FindMany)
-				r.With(rbacMiddleware.Middleware([]string{})).Put("/{id}", organizationsHandler.UpdateOne)
+				r.Get("/{id}", organizationsHandler.FindOne)
+				r.Put("/{id}", organizationsHandler.UpdateOne)
 				r.Get("/{id}/users", usersHandler.FindManyByOrganizationId)
 				r.Get("/{id}/join-invites", joinOrganizationInvitesHandler.FindManyByOrganizationId)
 				r.Get("/{id}/join-requests", joinOrganizationRequestsHandler.FindManyByOrganizationId)
-				r.Get("/{id}/data-accesses-requests", organizationDataAccessRequestsHandler.FindManyByRequesterOrganizationId)
+				r.Get("/{id}/requested-data-access-requests", organizationDataAccessRequestsHandler.FindManyByRequesterOrganizationId)
+				r.Get("/{id}/targeted-data-access-requests", organizationDataAccessRequestsHandler.FindManyByTargetOrganizationId)
+				r.Get("/{id}/data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationId)
+				r.Get("/{id}/targeted-data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationId)
 				r.Get("/{id}/update-organization-type-requests", updateOrganizationTypeRequestsHandler.FindManyByOrganizationId)
 				r.Get("/{id}/housings", housingsHandler.FindManyByOrganizationId)
 				r.Get("/{id}/join-platform-invites", joinPlatformInvitesHandler.FindManyByOrganizationId)
 				r.Get("/{id}/voluntary-people", voluntaryPeopleHandler.FindManyByOrganizationId)
 				r.Get("/{id}/product-types", productTypesHandler.FindManyByOrganizationId)
+				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByOrganizationId)
+
+				r.Post("/{id}/join-organization-requests", joinOrganizationRequestsHandler.Create)
+				r.Post("/{id}/request-organization-data-access", organizationDataAccessRequestsHandler.Create)
+				r.Post("/{id}/beneficiaries", beneficiariesHandler.Create)
+				r.Post("/{id}/voluntary-people", voluntaryPeopleHandler.Create)
+				r.Post("/{id}/product-types", productTypesHandler.Create)
 			})
 
 			r.Route("/join-organization-invites", func(r chi.Router) {
-				r.With(rbacMiddleware.Middleware([]string{})).Post("/", joinOrganizationInvitesHandler.Create)
+				r.Post("/", joinOrganizationInvitesHandler.Create)
 				r.Delete("/{id}/accept", joinOrganizationInvitesHandler.Accept)
 				r.Delete("/{id}/reject", joinOrganizationInvitesHandler.Reject)
 			})
 
 			r.Route("/join-organization-requests", func(r chi.Router) {
-				r.Post("/", joinOrganizationRequestsHandler.Create)
-				r.With(rbacMiddleware.Middleware([]string{})).Delete("/{id}/accept", joinOrganizationRequestsHandler.Accept)
-				r.With(rbacMiddleware.Middleware([]string{})).Delete("/{id}/reject", joinOrganizationRequestsHandler.Reject)
+				r.Delete("/{id}/accept", joinOrganizationRequestsHandler.Accept)
+				r.Delete("/{id}/reject", joinOrganizationRequestsHandler.Reject)
 			})
 
 			r.Route("/organization-data-access-requests", func(r chi.Router) {
-				r.With(rbacMiddleware.Middleware([]string{})).Post("/", organizationDataAccessRequestsHandler.Create)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/", organizationDataAccessRequestsHandler.FindMany)
-				r.With(rbacMiddleware.Middleware([]string{})).Put("/{id}/accept", organizationDataAccessRequestsHandler.Accept)
-				r.With(rbacMiddleware.Middleware([]string{})).Put("/{id}/reject", organizationDataAccessRequestsHandler.Reject)
+				r.Put("/{id}/accept", organizationDataAccessRequestsHandler.Accept)
+				r.Put("/{id}/reject", organizationDataAccessRequestsHandler.Reject)
+			})
+
+			r.Route("/organization-data-access-grants", func(r chi.Router) {
+				r.Delete("/{id}", organizationDataAccessGrantHandler.Delete)
 			})
 
 			r.Route("/update-organization-type-requests", func(r chi.Router) {
-				r.With(rbacMiddleware.Middleware([]string{})).Post("/", updateOrganizationTypeRequestsHandler.Create)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/", updateOrganizationTypeRequestsHandler.FindMany)
-				r.With(rbacMiddleware.Middleware([]string{})).Put("/{id}/accept", updateOrganizationTypeRequestsHandler.Accept)
-				r.With(rbacMiddleware.Middleware([]string{})).Put("/{id}/reject", updateOrganizationTypeRequestsHandler.Reject)
+				r.Post("/", updateOrganizationTypeRequestsHandler.Create)
+				r.Get("/", updateOrganizationTypeRequestsHandler.FindMany)
+				r.Put("/{id}/accept", updateOrganizationTypeRequestsHandler.Accept)
+				r.Put("/{id}/reject", updateOrganizationTypeRequestsHandler.Reject)
 			})
 
 			r.Route("/housings", func(r chi.Router) {
-				r.With(rbacMiddleware.Middleware([]string{})).Post("/", housingsHandler.Create)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}", housingsHandler.FindOneById)
-				r.With(rbacMiddleware.Middleware([]string{})).Put("/{id}", housingsHandler.Update)
-				r.With(rbacMiddleware.Middleware([]string{})).Delete("/{id}", housingsHandler.Delete)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}/rooms", housingRoomsHandler.FindManyByHousingId)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByHousingId)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByHousingId)
+				r.Post("/", housingsHandler.Create)
+				r.Get("/{id}", housingsHandler.FindOneById)
+				r.Put("/{id}", housingsHandler.Update)
+				r.Delete("/{id}", housingsHandler.Delete)
+				r.Get("/{id}/rooms", housingRoomsHandler.FindManyByHousingId)
+				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByHousingId)
+				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByHousingId)
 
+				r.Post("/{id}/rooms", housingRoomsHandler.Create)
 			})
 
 			r.Route("/housing-rooms", func(r chi.Router) {
-				r.With(rbacMiddleware.Middleware([]string{})).Post("/", housingRoomsHandler.Create)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}", housingRoomsHandler.FindOneById)
-				r.With(rbacMiddleware.Middleware([]string{})).Put("/{id}", housingRoomsHandler.Update)
-				r.With(rbacMiddleware.Middleware([]string{})).Delete("/{id}", housingRoomsHandler.Delete)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByRoomId)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByRoomId)
+				r.Get("/{id}", housingRoomsHandler.FindOneById)
+				r.Put("/{id}", housingRoomsHandler.Update)
+				r.Delete("/{id}", housingRoomsHandler.Delete)
+				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByRoomId)
+				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByRoomId)
 			})
 
 			r.Route("/beneficiaries", func(r chi.Router) {
-				r.Post("/", beneficiariesHandler.Create)
 				r.Get("/{id}", beneficiariesHandler.FindOneById)
 				r.Put("/{id}", beneficiariesHandler.Update)
 				r.Delete("/{id}", beneficiariesHandler.Delete)
-				r.With(rbacMiddleware.Middleware([]string{})).Post("/{id}/allocate", beneficiaryAllocationsHandler.Allocate)
-				r.With(rbacMiddleware.Middleware([]string{})).Post("/{id}/reallocate", beneficiaryAllocationsHandler.Reallocate)
-				r.With(rbacMiddleware.Middleware([]string{})).Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryId)
+				r.Post("/{id}/allocate", beneficiaryAllocationsHandler.Allocate)
+				r.Post("/{id}/reallocate", beneficiaryAllocationsHandler.Reallocate)
+				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryId)
 			})
 
 			r.Route("/voluntary-people", func(r chi.Router) {
-				r.Post("/", voluntaryPeopleHandler.Create)
 				r.Get("/{id}", voluntaryPeopleHandler.FindOneById)
 				r.Put("/{id}", voluntaryPeopleHandler.Update)
 				r.Delete("/{id}", voluntaryPeopleHandler.DeleteById)
 			})
 
 			r.Route("/product-types", func(r chi.Router) {
-				r.Post("/", productTypesHandler.Create)
 				r.Get("/{id}", productTypesHandler.FindOneById)
 				r.Put("/{id}", productTypesHandler.Update)
 				r.Delete("/{id}", productTypesHandler.Delete)

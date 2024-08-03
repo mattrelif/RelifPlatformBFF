@@ -15,7 +15,6 @@ type UpdateProductType struct {
 func (req *UpdateProductType) Validate() error {
 	return validation.ValidateStruct(req,
 		validation.Field(&req.Name, validation.Required),
-		validation.Field(&req.Description, validation.Required),
 		validation.Field(&req.Brand, validation.Required),
 		validation.Field(&req.Category, validation.Required),
 	)

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
@@ -48,7 +50,12 @@ func (handler *VoluntaryPeople) Create(w http.ResponseWriter, r *http.Request) {
 	voluntary, err := handler.service.Create(user, req.ToEntity())
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrVoluntaryPersonAlreadyExists):
+			http.Error(w, err.Error(), http.StatusConflict)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -101,7 +108,12 @@ func (handler *VoluntaryPeople) FindOneById(w http.ResponseWriter, r *http.Reque
 	voluntary, err := handler.service.FindOneById(id)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -139,7 +151,12 @@ func (handler *VoluntaryPeople) Update(w http.ResponseWriter, r *http.Request) {
 	updated, err := handler.service.FindOneAndUpdateById(id, req.ToEntity())
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -155,7 +172,12 @@ func (handler *VoluntaryPeople) DeleteById(w http.ResponseWriter, r *http.Reques
 	id := chi.URLParam(r, "id")
 
 	if err := handler.service.DeleteOneById(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

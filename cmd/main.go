@@ -68,7 +68,7 @@ func main() {
 	organizationDataAccessGrantsRepository := repositories.NewMongoOrganizationDataAccessGrants(database)
 	organizationDataAccessRepository := repositories.NewMongoOrganizationDataAccessRequests(database)
 	joinPlatformInvitesRepository := repositories.NewMongoJoinPlatformInvites(database)
-	beneficiariesRepository := repositories.NewMongoBeneficiares(database)
+	beneficiariesRepository := repositories.NewMongoBeneficiaries(database)
 	housingRoomsRepository := repositories.NewMongoHousingRooms(database)
 	beneficiaryAllocationsRepository := repositories.NewMongoBeneficiaryAllocations(database)
 	voluntaryPeopleRepository := repositories.NewMongoVoluntaryPeople(database)
@@ -78,24 +78,23 @@ func main() {
 
 	usersService := services.NewUsers(usersRepository)
 	sessionsService := services.NewSessions(sessionsRepository, utils.GenerateUuid)
-	organizationsService := services.NewOrganizations(organizationsRepository)
+	organizationsService := services.NewOrganizations(organizationsRepository, usersService)
 	passwordService := services.NewPassword(sesEmailService, usersService, passwordChangeRequestsRepository, utils.BcryptHash, utils.GenerateUuid)
 	authService := services.NewAuth(usersService, sessionsService, utils.BcryptHash, utils.BcryptCompare)
 	joinOrganizationRequestsService := services.NewJoinOrganizationRequests(usersService, joinOrganizationRequestsRepository)
 	joinOrganizationInvitesService := services.NewJoinOrganizationInvites(usersService, joinOrganizationInvitesRepository)
-	housingsService := services.NewHousings(housingsRepository)
 	updateOrganizationTypeRequestsService := services.NewUpdateOrganizationTypeRequests(organizationsService, updateOrganizationTypeRequestsRepository)
 	organizationsDataAccessGrantsService := services.NewOrganizationDataAccessGrants(organizationDataAccessGrantsRepository)
-	organizationDataAccessService := services.NewOrganizationDataAccessRequests(organizationDataAccessRepository, organizationsDataAccessGrantsService)
-	joinPlatformInvitesService := services.NewJoinPlatformInvites(joinPlatformInvitesRepository, sesEmailService, utils.GenerateUuid)
-	beneficiariesService := services.NewBeneficiaries(beneficiariesRepository)
-	housingRoomsService := services.NewHousingRooms(housingRoomsRepository)
+	housingsService := services.NewHousings(housingsRepository, organizationsDataAccessGrantsService)
+	organizationDataAccessService := services.NewOrganizationDataAccessRequests(organizationDataAccessRepository, organizationsService, organizationsDataAccessGrantsService)
+	joinPlatformInvitesService := services.NewJoinPlatformInvites(joinPlatformInvitesRepository, sesEmailService, usersService, utils.GenerateUuid)
+	housingRoomsService := services.NewHousingRooms(housingRoomsRepository, housingsService)
+	beneficiariesService := services.NewBeneficiaries(beneficiariesRepository, housingsService, housingRoomsService, organizationsDataAccessGrantsService)
 	beneficiaryAllocationsService := services.NewBeneficiaryAllocations(beneficiaryAllocationsRepository, beneficiariesService, housingRoomsService)
 	voluntaryPeopleService := services.NewVoluntaryPeople(voluntaryPeopleRepository)
 	productTypesService := services.NewProductTypes(productTypesRepository)
 
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByCookie(authService)
-	rbacMiddleware := middlewares.NewRoleBasedAccessControl()
 
 	authHandler := handlers.NewAuth(authService)
 	passwordHandler := handlers.NewPassword(passwordService)
@@ -112,12 +111,12 @@ func main() {
 	beneficiaryAllocationsHandler := handlers.NewBeneficiaryAllocations(beneficiaryAllocationsService)
 	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(voluntaryPeopleService)
 	productTypesHandler := handlers.NewProductTypes(productTypesService)
+	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(organizationsDataAccessGrantsService)
 
 	router := http.NewRouter(
 		environment.Environment,
 		environment.Router.Context,
 		authenticateByCookieMiddleware,
-		rbacMiddleware,
 		authHandler,
 		beneficiariesHandler,
 		beneficiaryAllocationsHandler,
@@ -127,6 +126,7 @@ func main() {
 		joinOrganizationInvitesHandler,
 		joinPlatformInvitesHandler,
 		organizationsHandler,
+		organizationsDataAccessGrantsHandler,
 		organizationsDataAccessRequestsHandler,
 		passwordHandler,
 		productTypesHandler,

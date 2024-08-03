@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
@@ -48,7 +50,12 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 	invite, err := handler.service.Create(req.ToEntity(), user)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrUserAlreadyExists):
+			http.Error(w, err.Error(), http.StatusConflict)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -62,6 +69,12 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 
 func (handler *JoinPlatformInvites) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
 	organizationId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeAccessManyByOrganizationId(user, organizationId); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)

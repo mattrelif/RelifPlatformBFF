@@ -2,21 +2,22 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
+	"relif/bff/utils"
 )
 
 type UpdateOrganizationTypeRequests interface {
 	Create(data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error)
+	FindOneById(id string) (entities.UpdateOrganizationTypeRequest, error)
 	FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
-	FindOneAndUpdateById(id string, data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error)
 	UpdateOneById(id string, data entities.UpdateOrganizationTypeRequest) error
+	CountPendingByOrganizationId(organizationId string) (int64, error)
 }
 
 type mongoUpdateOrganizationTypeRequests struct {
@@ -30,15 +31,24 @@ func NewMongoUpdateOrganizationTypeRequests(database *mongo.Database) UpdateOrga
 }
 
 func (repository *mongoUpdateOrganizationTypeRequests) Create(data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error) {
-	model := models.UpdateOrganizationTypeRequest{
-		ID:             primitive.NewObjectID().Hex(),
-		OrganizationID: data.OrganizationID,
-		CreatorID:      data.CreatorID,
-		Status:         data.Status,
-		CreatedAt:      time.Now(),
-	}
+	model := models.NewUpdateOrganizationTypeRequest(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), &model); err != nil {
+		return entities.UpdateOrganizationTypeRequest{}, err
+	}
+
+	return model.ToEntity(), nil
+}
+
+func (repository *mongoUpdateOrganizationTypeRequests) FindOneById(id string) (entities.UpdateOrganizationTypeRequest, error) {
+	var model models.UpdateOrganizationTypeRequest
+
+	filter := bson.M{"_id": id}
+
+	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.UpdateOrganizationTypeRequest{}, utils.ErrUpdateOrganizationTypeRequestNotFound
+		}
 		return entities.UpdateOrganizationTypeRequest{}, err
 	}
 
@@ -107,39 +117,26 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationId(
 	return count, entityList, nil
 }
 
-func (repository *mongoUpdateOrganizationTypeRequests) FindOneAndUpdateById(id string, data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error) {
-	model := models.UpdateOrganizationTypeRequest{
-		AuditorID:    data.AuditorID,
-		Status:       data.Status,
-		RejectReason: data.RejectReason,
-		RejectedAt:   data.RejectedAt,
-	}
-
-	filter := bson.M{"_id": id}
-	update := bson.M{"$set": &model}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
-		return entities.UpdateOrganizationTypeRequest{}, err
-	}
-
-	return model.ToEntity(), nil
-}
-
 func (repository *mongoUpdateOrganizationTypeRequests) UpdateOneById(id string, data entities.UpdateOrganizationTypeRequest) error {
-	model := models.UpdateOrganizationTypeRequest{
-		AuditorID:    data.AuditorID,
-		Status:       data.Status,
-		RejectReason: data.RejectReason,
-		RejectedAt:   data.RejectedAt,
-	}
+	model := models.NewUpdatedUpdateOrganizationTypeRequest(data)
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update).Err(); err != nil {
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (repository *mongoUpdateOrganizationTypeRequests) CountPendingByOrganizationId(organizationId string) (int64, error) {
+	filter := bson.M{"organization_id": organizationId, "status": utils.PendingStatus}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

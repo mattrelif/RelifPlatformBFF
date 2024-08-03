@@ -3,42 +3,47 @@ package services
 import (
 	"relif/bff/entities"
 	"relif/bff/repositories"
+	"relif/bff/utils"
 )
 
 type HousingRooms interface {
-	CreateMany(data []entities.HousingRoom) ([]entities.HousingRoom, error)
+	CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error)
 	FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error)
-	FindOneById(id string) (entities.HousingRoom, error)
-	FindOneAndUpdateById(id string, data entities.HousingRoom) (entities.HousingRoom, error)
+	FindOneById(id string, user entities.User) (entities.HousingRoom, error)
+	UpdateOneById(id string, data entities.HousingRoom) error
 	IncreaseAvailableVacanciesById(id string) error
 	DecreaseAvailableVacanciesById(id string) error
-	DeleteOneById(id string) error
+	InactivateOneById(id string) error
+	AuthorizeByHousingId(user entities.User, housingId string) error
+	AuthorizeExternalMutation(user entities.User, id string) error
 }
 
 type housingRoomsImpl struct {
-	repository repositories.HousingRooms
+	repository      repositories.HousingRooms
+	housingsService Housings
 }
 
-func NewHousingRooms(repository repositories.HousingRooms) HousingRooms {
+func NewHousingRooms(repository repositories.HousingRooms, housingsService Housings) HousingRooms {
 	return &housingRoomsImpl{
-		repository: repository,
+		repository:      repository,
+		housingsService: housingsService,
 	}
 }
 
-func (service *housingRoomsImpl) CreateMany(data []entities.HousingRoom) ([]entities.HousingRoom, error) {
-	return service.repository.CreateMany(data)
+func (service *housingRoomsImpl) CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error) {
+	return service.repository.CreateMany(data, housingId)
 }
 
 func (service *housingRoomsImpl) FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error) {
 	return service.repository.FindManyByHousingId(housingId, limit, offset)
 }
 
-func (service *housingRoomsImpl) FindOneById(id string) (entities.HousingRoom, error) {
-	return service.repository.FindOneById(id)
+func (service *housingRoomsImpl) FindOneById(id string, user entities.User) (entities.HousingRoom, error) {
+	return service.authorizeFindOneByID(id, user)
 }
 
-func (service *housingRoomsImpl) FindOneAndUpdateById(id string, data entities.HousingRoom) (entities.HousingRoom, error) {
-	return service.repository.FindOneAndUpdateById(id, data)
+func (service *housingRoomsImpl) UpdateOneById(id string, data entities.HousingRoom) error {
+	return service.repository.UpdateOneById(id, data)
 }
 
 func (service *housingRoomsImpl) IncreaseAvailableVacanciesById(id string) error {
@@ -49,6 +54,45 @@ func (service *housingRoomsImpl) DecreaseAvailableVacanciesById(id string) error
 	return service.repository.DecreaseAvailableVacanciesById(id)
 }
 
-func (service *housingRoomsImpl) DeleteOneById(id string) error {
-	return service.repository.DeleteOneById(id)
+func (service *housingRoomsImpl) InactivateOneById(id string) error {
+	data := entities.HousingRoom{
+		Status: utils.InactiveStatus,
+	}
+	return service.repository.UpdateOneById(id, data)
+}
+
+func (service *housingRoomsImpl) AuthorizeByHousingId(user entities.User, housingId string) error {
+	if _, err := service.housingsService.FindOneByID(housingId, user); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (service *housingRoomsImpl) AuthorizeExternalMutation(user entities.User, id string) error {
+	room, err := service.repository.FindOneById(id)
+
+	if err != nil {
+		return err
+	}
+
+	if err = service.AuthorizeByHousingId(user, room.HousingID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (service *housingRoomsImpl) authorizeFindOneByID(id string, user entities.User) (entities.HousingRoom, error) {
+	room, err := service.repository.FindOneById(id)
+
+	if err != nil {
+		return entities.HousingRoom{}, err
+	}
+
+	if err = service.AuthorizeByHousingId(user, room.HousingID); err != nil {
+		return entities.HousingRoom{}, err
+	}
+
+	return room, nil
 }

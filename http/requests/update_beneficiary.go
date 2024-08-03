@@ -15,6 +15,7 @@ type UpdateBeneficiary struct {
 	CivilStatus        string             `json:"civil_status"`
 	SpokenLanguages    []string           `json:"spoken_languages"`
 	Education          string             `json:"education"`
+	Gender             string             `json:"gender"`
 	Address            Address            `json:"address"`
 	MedicalInformation MedicalInformation `json:"medical_information"`
 	EmergencyContacts  []EmergencyContact `json:"emergency_contacts"`
@@ -36,6 +37,7 @@ func (req *UpdateBeneficiary) Validate() error {
 		validation.Field(&req.Phones, validation.Each(validation.Required)),
 		validation.Field(&req.CivilStatus, validation.Required),
 		validation.Field(&req.Education, validation.Required),
+		validation.Field(&req.Gender, validation.Required),
 		validation.Field(&req.SpokenLanguages, validation.Each(validation.Required)),
 		validation.Field(&req.Address, validation.By(func(value interface{}) error {
 			if address, ok := value.(Address); ok {
@@ -79,6 +81,7 @@ func (req *UpdateBeneficiary) ToEntity() entities.Beneficiary {
 		CivilStatus:        req.CivilStatus,
 		SpokenLanguages:    req.SpokenLanguages,
 		Education:          req.Education,
+		Gender:             req.Gender,
 		Address:            req.Address.ToEntity(),
 		MedicalInformation: req.MedicalInformation.ToEntity(),
 		EmergencyContacts:  contactsEntityList,

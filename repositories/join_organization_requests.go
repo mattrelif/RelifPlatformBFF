@@ -2,20 +2,20 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
+	"relif/bff/utils"
 )
 
 type JoinOrganizationRequests interface {
 	Create(data entities.JoinOrganizationRequest) (entities.JoinOrganizationRequest, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
-	FindOneAndDeleteById(id string) (entities.JoinOrganizationRequest, error)
-	DeleteOneById(id string) error
+	FindOneById(id string) (entities.JoinOrganizationRequest, error)
+	UpdateOneById(id string, data entities.JoinOrganizationRequest) error
 }
 
 type mongoJoinOrganizationRequests struct {
@@ -29,13 +29,7 @@ func NewMongoJoinOrganizationRequests(database *mongo.Database) JoinOrganization
 }
 
 func (repository *mongoJoinOrganizationRequests) Create(data entities.JoinOrganizationRequest) (entities.JoinOrganizationRequest, error) {
-	model := models.JoinOrganizationRequest{
-		ID:             primitive.NewObjectID().Hex(),
-		UserID:         data.UserID,
-		OrganizationID: data.OrganizationID,
-		CreatedAt:      time.Now(),
-		ExpiresAt:      time.Now().Add(4 * time.Hour),
-	}
+	model := models.NewJoinOrganizationRequest(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), model); err != nil {
 		return entities.JoinOrganizationRequest{}, err
@@ -75,22 +69,27 @@ func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationId(organi
 	return count, entityList, nil
 }
 
-func (repository *mongoJoinOrganizationRequests) FindOneAndDeleteById(id string) (entities.JoinOrganizationRequest, error) {
+func (repository *mongoJoinOrganizationRequests) FindOneById(id string) (entities.JoinOrganizationRequest, error) {
 	var model models.JoinOrganizationRequest
 
 	filter := bson.M{"_id": id}
 
-	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Decode(&model); err != nil {
+	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.JoinOrganizationRequest{}, utils.ErrJoinOrganizationRequestNotFound
+		}
 		return entities.JoinOrganizationRequest{}, err
 	}
 
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoJoinOrganizationRequests) DeleteOneById(id string) error {
-	filter := bson.M{"_id": id}
+func (repository *mongoJoinOrganizationRequests) UpdateOneById(id string, data entities.JoinOrganizationRequest) error {
+	model := models.NewUpdatedJoinOrganizationRequest(data)
 
-	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
+	update := bson.M{"$set": &model}
+
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 

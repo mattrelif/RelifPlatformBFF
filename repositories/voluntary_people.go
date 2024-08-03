@@ -2,19 +2,20 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
+	"relif/bff/utils"
 )
 
 type VoluntaryPeople interface {
 	Create(data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
 	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
 	FindOneById(id string) (entities.VoluntaryPerson, error)
+	CountByEmail(email string) (int64, error)
 	FindOneAndUpdateById(id string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
 	DeleteOneById(id string) error
 }
@@ -30,50 +31,7 @@ func NewMongoVoluntaryPeople(database *mongo.Database) VoluntaryPeople {
 }
 
 func (repository *mongoVoluntaryPeople) Create(data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
-	emergencyContacts := make([]models.EmergencyContact, 0)
-
-	for _, contact := range data.EmergencyContacts {
-		emergencyContacts = append(emergencyContacts, models.EmergencyContact{Relationship: contact.Relationship, FullName: contact.FullName, Emails: contact.Emails, Phones: contact.Phones})
-	}
-
-	model := models.VoluntaryPerson{
-		ID:       primitive.NewObjectID().Hex(),
-		FullName: data.FullName,
-		Email:    data.Email,
-		Document: models.Document{
-			Type:  data.Document.Type,
-			Value: data.Document.Value,
-		},
-		Birthdate: data.Birthdate,
-		Phones:    data.Phones,
-		Address: models.Address{
-			StreetNumber: data.Address.StreetNumber,
-			StreetName:   data.Address.StreetName,
-			ZipCode:      data.Address.ZipCode,
-			District:     data.Address.District,
-			City:         data.Address.City,
-			Country:      data.Address.Country,
-		},
-		Status:   data.Status,
-		Segments: data.Segments,
-		MedicalInformation: models.MedicalInformation{
-			Allergies:                  data.MedicalInformation.Allergies,
-			CurrentMedications:         data.MedicalInformation.CurrentMedications,
-			RecurrentMedicalConditions: data.MedicalInformation.RecurrentMedicalConditions,
-			HealthInsurancePlans:       data.MedicalInformation.HealthInsurancePlans,
-			BloodType:                  data.MedicalInformation.BloodType,
-			TakenVaccines:              data.MedicalInformation.TakenVaccines,
-			MentalHealthHistory:        data.MedicalInformation.MentalHealthHistory,
-			Height:                     data.MedicalInformation.Height,
-			Weight:                     data.MedicalInformation.Weight,
-			CigarettesUsage:            data.MedicalInformation.CigarettesUsage,
-			AlcoholConsumption:         data.MedicalInformation.AlcoholConsumption,
-			Disabilities:               data.MedicalInformation.Disabilities,
-		},
-		EmergencyContacts: emergencyContacts,
-		CreatedAt:         time.Now(),
-		Notes:             data.Notes,
-	}
+	model := models.NewVoluntaryPerson(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), model); err != nil {
 		return entities.VoluntaryPerson{}, err
@@ -120,63 +78,40 @@ func (repository *mongoVoluntaryPeople) FindOneById(id string) (entities.Volunta
 	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.VoluntaryPerson{}, utils.ErrVoluntaryPersonNotFound
+		}
+
 		return entities.VoluntaryPerson{}, err
 	}
 
 	return model.ToEntity(), nil
 }
 
+func (repository *mongoVoluntaryPeople) CountByEmail(email string) (int64, error) {
+	filter := bson.M{"email": email}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (repository *mongoVoluntaryPeople) FindOneAndUpdateById(id string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
-	emergencyContacts := make([]models.EmergencyContact, 0)
-
-	for _, contact := range data.EmergencyContacts {
-		emergencyContacts = append(emergencyContacts, models.EmergencyContact{Relationship: contact.Relationship, FullName: contact.FullName, Emails: contact.Emails, Phones: contact.Phones})
-	}
-
-	model := models.VoluntaryPerson{
-		ID:       primitive.NewObjectID().Hex(),
-		FullName: data.FullName,
-		Email:    data.Email,
-		Document: models.Document{
-			Type:  data.Document.Type,
-			Value: data.Document.Value,
-		},
-		Birthdate: data.Birthdate,
-		Phones:    data.Phones,
-		Address: models.Address{
-			StreetNumber: data.Address.StreetNumber,
-			StreetName:   data.Address.StreetName,
-			ZipCode:      data.Address.ZipCode,
-			District:     data.Address.District,
-			City:         data.Address.City,
-			Country:      data.Address.Country,
-		},
-		Status:   data.Status,
-		Segments: data.Segments,
-		MedicalInformation: models.MedicalInformation{
-			Allergies:                  data.MedicalInformation.Allergies,
-			CurrentMedications:         data.MedicalInformation.CurrentMedications,
-			RecurrentMedicalConditions: data.MedicalInformation.RecurrentMedicalConditions,
-			HealthInsurancePlans:       data.MedicalInformation.HealthInsurancePlans,
-			BloodType:                  data.MedicalInformation.BloodType,
-			TakenVaccines:              data.MedicalInformation.TakenVaccines,
-			MentalHealthHistory:        data.MedicalInformation.MentalHealthHistory,
-			Height:                     data.MedicalInformation.Height,
-			Weight:                     data.MedicalInformation.Weight,
-			CigarettesUsage:            data.MedicalInformation.CigarettesUsage,
-			AlcoholConsumption:         data.MedicalInformation.AlcoholConsumption,
-			Disabilities:               data.MedicalInformation.Disabilities,
-		},
-		EmergencyContacts: emergencyContacts,
-		UpdatedAt:         time.Now(),
-		Notes:             data.Notes,
-	}
+	model := models.NewUpdatedVoluntaryPerson(data)
 
 	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Err(); err != nil {
+	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.VoluntaryPerson{}, utils.ErrVoluntaryPersonNotFound
+		}
+
 		return entities.VoluntaryPerson{}, err
 	}
 
@@ -185,8 +120,13 @@ func (repository *mongoVoluntaryPeople) FindOneAndUpdateById(id string, data ent
 
 func (repository *mongoVoluntaryPeople) DeleteOneById(id string) error {
 	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bson.M{"status": utils.InactiveStatus}}
 
-	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
+	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update).Err(); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return utils.ErrVoluntaryPersonNotFound
+		}
+
 		return err
 	}
 

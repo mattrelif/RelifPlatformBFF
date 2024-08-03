@@ -4,7 +4,6 @@ import (
 	"relif/bff/entities"
 	"relif/bff/repositories"
 	"relif/bff/utils"
-	"time"
 )
 
 type Sessions interface {
@@ -29,10 +28,11 @@ func (service *sessionsImpl) Generate(userId string) (entities.Session, error) {
 	session := entities.Session{
 		UserID:    userId,
 		SessionID: service.uuidGenerator(),
-		ExpiresAt: time.Now().Add(time.Hour * 24),
 	}
 
-	if err := service.repository.Generate(session); err != nil {
+	session, err := service.repository.Generate(session)
+
+	if err != nil {
 		return entities.Session{}, err
 	}
 

@@ -14,6 +14,7 @@ type UpdateOrganizationTypeRequest struct {
 	AuditorID      string    `json:"auditor_id"`
 	Status         string    `json:"status"`
 	CreatedAt      time.Time `json:"created_at"`
+	AcceptedAt     time.Time `json:"accepted_at"`
 	RejectReason   string    `json:"reject_reason"`
 	RejectedAt     time.Time `json:"rejected_at"`
 }
@@ -26,6 +27,7 @@ func NewUpdateOrganizationTypeRequest(request entities.UpdateOrganizationTypeReq
 		AuditorID:      request.AuditorID,
 		Status:         request.Status,
 		CreatedAt:      request.CreatedAt,
+		AcceptedAt:     request.AcceptedAt,
 		RejectReason:   request.RejectReason,
 		RejectedAt:     request.RejectedAt,
 	}

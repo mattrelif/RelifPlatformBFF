@@ -6,9 +6,9 @@ import (
 )
 
 type Session struct {
-	UserID    string    `bson:"_id"`
-	SessionID string    `bson:"session_id"`
-	ExpiresAt time.Time `bson:"expires_at"`
+	UserID    string    `bson:"_id,omitempty"`
+	SessionID string    `bson:"session_id,omitempty"`
+	ExpiresAt time.Time `bson:"expires_at,omitempty"`
 }
 
 func (session *Session) ToEntity() entities.Session {
@@ -16,5 +16,13 @@ func (session *Session) ToEntity() entities.Session {
 		UserID:    session.UserID,
 		SessionID: session.SessionID,
 		ExpiresAt: session.ExpiresAt,
+	}
+}
+
+func NewSession(entity entities.Session) Session {
+	return Session{
+		UserID:    entity.UserID,
+		SessionID: entity.SessionID,
+		ExpiresAt: time.Now().Add(time.Hour * 24),
 	}
 }

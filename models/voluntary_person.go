@@ -1,40 +1,35 @@
 package models
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"relif/bff/entities"
+	"relif/bff/utils"
 	"time"
 )
 
 type VoluntaryPerson struct {
-	ID                 string             `bson:"_id"`
-	OrganizationID     string             `bson:"organization_id"`
-	FullName           string             `json:"full_name"`
-	Email              string             `json:"email"`
-	Document           Document           `json:"document"`
-	Birthdate          string             `json:"birthdate"`
-	Phones             []string           `json:"phones"`
-	Address            Address            `json:"address"`
-	Status             string             `json:"status"`
-	Segments           []string           `bson:"segments"`
-	MedicalInformation MedicalInformation `json:"medical_information"`
-	EmergencyContacts  []EmergencyContact `json:"emergency_contacts"`
-	CreatedAt          time.Time          `json:"created_at"`
-	UpdatedAt          time.Time          `json:"updated_at"`
-	Notes              []string           `json:"notes"`
+	ID                 string             `bson:"_id,omitempty"`
+	OrganizationID     string             `bson:"organization_id,omitempty"`
+	FullName           string             `bson:"full_name,omitempty"`
+	Email              string             `bson:"email,omitempty"`
+	Document           Document           `bson:"document,omitempty"`
+	Birthdate          string             `bson:"birthdate,omitempty"`
+	Phones             []string           `bson:"phones,omitempty"`
+	Address            Address            `bson:"address,omitempty"`
+	Status             string             `bson:"status,omitempty"`
+	Segments           []string           `bson:"segments,omitempty"`
+	MedicalInformation MedicalInformation `bson:"medical_information,omitempty"`
+	EmergencyContacts  []EmergencyContact `bson:"emergency_contacts,omitempty"`
+	CreatedAt          time.Time          `bson:"created_at,omitempty"`
+	UpdatedAt          time.Time          `bson:"updated_at,omitempty"`
+	Notes              []string           `bson:"notes,omitempty"`
 }
 
 func (voluntary *VoluntaryPerson) ToEntity() entities.VoluntaryPerson {
 	emergencyContacts := make([]entities.EmergencyContact, 0)
 
-	for _, c := range voluntary.EmergencyContacts {
-		contact := entities.EmergencyContact{
-			Relationship: c.Relationship,
-			FullName:     c.FullName,
-			Emails:       c.Emails,
-			Phones:       c.Phones,
-		}
-
-		emergencyContacts = append(emergencyContacts, contact)
+	for _, contact := range voluntary.EmergencyContacts {
+		emergencyContacts = append(emergencyContacts, contact.ToEntity())
 	}
 
 	return entities.VoluntaryPerson{
@@ -53,5 +48,54 @@ func (voluntary *VoluntaryPerson) ToEntity() entities.VoluntaryPerson {
 		CreatedAt:          voluntary.CreatedAt,
 		UpdatedAt:          voluntary.UpdatedAt,
 		Notes:              voluntary.Notes,
+	}
+}
+
+func NewVoluntaryPerson(entity entities.VoluntaryPerson) VoluntaryPerson {
+	emergencyContacts := make([]EmergencyContact, 0)
+
+	for _, contact := range entity.EmergencyContacts {
+		emergencyContacts = append(emergencyContacts, NewEmergencyContact(contact))
+	}
+
+	return VoluntaryPerson{
+		ID:                 primitive.NewObjectID().Hex(),
+		OrganizationID:     entity.OrganizationID,
+		FullName:           entity.FullName,
+		Email:              entity.Email,
+		Document:           NewDocument(entity.Document),
+		Birthdate:          entity.Birthdate,
+		Phones:             entity.Phones,
+		Address:            NewAddress(entity.Address),
+		Status:             utils.ActiveStatus,
+		Segments:           entity.Segments,
+		MedicalInformation: NewMedicalInformation(entity.MedicalInformation),
+		EmergencyContacts:  emergencyContacts,
+		CreatedAt:          time.Now(),
+		Notes:              entity.Notes,
+	}
+}
+
+func NewUpdatedVoluntaryPerson(entity entities.VoluntaryPerson) VoluntaryPerson {
+	emergencyContacts := make([]EmergencyContact, 0)
+
+	for _, contact := range entity.EmergencyContacts {
+		emergencyContacts = append(emergencyContacts, NewEmergencyContact(contact))
+	}
+
+	return VoluntaryPerson{
+		OrganizationID:     entity.OrganizationID,
+		FullName:           entity.FullName,
+		Email:              entity.Email,
+		Document:           NewDocument(entity.Document),
+		Birthdate:          entity.Birthdate,
+		Phones:             entity.Phones,
+		Address:            NewAddress(entity.Address),
+		Status:             utils.ActiveStatus,
+		Segments:           entity.Segments,
+		MedicalInformation: NewMedicalInformation(entity.MedicalInformation),
+		EmergencyContacts:  emergencyContacts,
+		UpdatedAt:          time.Now(),
+		Notes:              entity.Notes,
 	}
 }

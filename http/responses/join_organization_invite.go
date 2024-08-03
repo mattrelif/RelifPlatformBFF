@@ -8,12 +8,15 @@ import (
 type JoinOrganizationInvites []JoinOrganizationInvite
 
 type JoinOrganizationInvite struct {
-	ID             string    `json:"id"`
-	UserID         string    `json:"user_id"`
-	OrganizationID string    `json:"organization_id"`
-	CreatorID      string    `json:"creator_id"`
-	CreatedAt      time.Time `json:"created_at"`
-	ExpiresAt      time.Time `json:"expires_at"`
+	ID             string     `json:"id"`
+	UserID         string     `json:"user_id"`
+	OrganizationID string     `json:"organization_id"`
+	CreatorID      string     `json:"creator_id"`
+	Status         string     `json:"status"`
+	AcceptedAt     time.Time  `json:"accepted_at"`
+	RejectedAt     time.Time  `json:"rejected_at"`
+	CreatedAt      time.Time  `json:"created_at"`
+	ExpiresAt      *time.Time `json:"expires_at"`
 }
 
 func NewJoinOrganizationInvite(entity entities.JoinOrganizationInvite) JoinOrganizationInvite {
@@ -22,6 +25,9 @@ func NewJoinOrganizationInvite(entity entities.JoinOrganizationInvite) JoinOrgan
 		UserID:         entity.UserID,
 		OrganizationID: entity.OrganizationID,
 		CreatorID:      entity.CreatorID,
+		Status:         entity.Status,
+		AcceptedAt:     entity.AcceptedAt,
+		RejectedAt:     entity.RejectedAt,
 		CreatedAt:      entity.CreatedAt,
 		ExpiresAt:      entity.ExpiresAt,
 	}

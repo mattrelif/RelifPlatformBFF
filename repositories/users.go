@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
+	"relif/bff/utils"
 )
 
 type Users interface {
@@ -16,9 +16,9 @@ type Users interface {
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error)
 	FindOneById(id string) (entities.User, error)
 	FindOneByEmail(email string) (entities.User, error)
-	FindOneAndUpdateById(id string, data entities.User) (entities.User, error)
+	CountByEmail(email string) (int64, error)
+	CountById(email string) (int64, error)
 	UpdateOneById(id string, data entities.User) error
-	DeleteOneById(id string) error
 }
 
 type usersMongo struct {
@@ -32,23 +32,7 @@ func NewUsersMongo(database *mongo.Database) Users {
 }
 
 func (repository *usersMongo) CreateUser(data entities.User) (entities.User, error) {
-	model := models.User{
-		ID:           primitive.NewObjectID().Hex(),
-		FirstName:    data.FirstName,
-		LastName:     data.LastName,
-		Email:        data.Email,
-		Password:     data.Password,
-		Phones:       data.Phones,
-		Role:         data.Role,
-		PlatformRole: data.PlatformRole,
-		Status:       data.Status,
-		Country:      data.Country,
-		Preferences: models.UserPreferences{
-			Language: data.Preferences.Language,
-			Timezone: data.Preferences.Timezone,
-		},
-		CreatedAt: time.Now(),
-	}
+	model := models.NewUser(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), &model); err != nil {
 		return entities.User{}, err
@@ -90,6 +74,10 @@ func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
 
 	filter := bson.M{"_id": id}
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.User{}, utils.ErrUserNotFound
+		}
+
 		return entities.User{}, err
 	}
 
@@ -101,73 +89,46 @@ func (repository *usersMongo) FindOneByEmail(email string) (entities.User, error
 
 	filter := bson.M{"email": email}
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.User{}, utils.ErrUserNotFound
+		}
+
 		return entities.User{}, err
 	}
 
 	return model.ToEntity(), nil
 }
 
-func (repository *usersMongo) FindOneAndUpdateById(id string, data entities.User) (entities.User, error) {
-	model := models.User{
-		FirstName:    data.FirstName,
-		LastName:     data.LastName,
-		Email:        data.Email,
-		Password:     data.Password,
-		Phones:       data.Phones,
-		Role:         data.Role,
-		PlatformRole: data.PlatformRole,
-		Status:       data.Status,
-		Country:      data.Country,
-		Preferences: models.UserPreferences{
-			Language: data.Preferences.Language,
-			Timezone: data.Preferences.Timezone,
-		},
-		UpdatedAt: time.Now(),
+func (repository *usersMongo) CountByEmail(email string) (int64, error) {
+	filter := bson.M{"email": email}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, err
 	}
 
+	return count, nil
+}
+
+func (repository *usersMongo) CountById(id string) (int64, error) {
 	filter := bson.M{"_id": id}
-	update := bson.M{"$set": &model}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
-		return entities.User{}, err
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, err
 	}
 
-	return model.ToEntity(), nil
+	return count, nil
 }
 
 func (repository *usersMongo) UpdateOneById(id string, data entities.User) error {
-	model := models.User{
-		FirstName:    data.FirstName,
-		LastName:     data.LastName,
-		Email:        data.Email,
-		Password:     data.Password,
-		Phones:       data.Phones,
-		Role:         data.Role,
-		PlatformRole: data.PlatformRole,
-		Status:       data.Status,
-		Country:      data.Country,
-		Preferences: models.UserPreferences{
-			Language: data.Preferences.Language,
-			Timezone: data.Preferences.Timezone,
-		},
-		UpdatedAt: time.Now(),
-	}
+	model := models.NewUpdatedUser(data)
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (repository *usersMongo) DeleteOneById(id string) error {
-	filter := bson.M{"_id": id}
-	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 

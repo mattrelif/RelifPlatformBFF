@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
 )
 
 type JoinPlatformInvites interface {
@@ -26,15 +25,8 @@ func NewMongoJoinPlatformInvites(database *mongo.Database) JoinPlatformInvites {
 	}
 }
 
-func (repository *mongoJoinPlatformInvites) Create(invite entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error) {
-	model := models.JoinPlatformInvite{
-		InvitedEmail:   invite.InvitedEmail,
-		Code:           invite.Code,
-		OrganizationID: invite.OrganizationID,
-		InviterID:      invite.InviterID,
-		CreatedAt:      time.Now(),
-		ExpiresAt:      time.Now().Add(4 * time.Hour),
-	}
+func (repository *mongoJoinPlatformInvites) Create(data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error) {
+	model := models.NewJoinPlatformInvite(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), &model); err != nil {
 		return entities.JoinPlatformInvite{}, err

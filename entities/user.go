@@ -21,7 +21,6 @@ type User struct {
 	Role           string
 	PlatformRole   string
 	Status         string
-	Country        string
 	Preferences    UserPreferences
 	CreatedAt      time.Time
 	UpdatedAt      time.Time

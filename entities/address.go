@@ -1,8 +1,8 @@
 package entities
 
 type Address struct {
-	StreetName   string
-	StreetNumber string
+	AddressLine1 string
+	AddressLine2 string
 	ZipCode      string
 	District     string
 	City         string

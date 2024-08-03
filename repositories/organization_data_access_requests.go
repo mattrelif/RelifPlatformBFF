@@ -2,20 +2,20 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
+	"relif/bff/utils"
 )
 
 type OrganizationDataAccessRequests interface {
 	Create(data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error)
-	FindMany(limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
 	FindManyByRequesterOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
-	FindOneAndUpdateById(id string, data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error)
+	FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
+	FindOneById(id string) (entities.OrganizationDataAccessRequest, error)
 	UpdateOneById(id string, data entities.OrganizationDataAccessRequest) error
 }
 
@@ -30,14 +30,7 @@ func NewMongoOrganizationDataAccessRequests(database *mongo.Database) Organizati
 }
 
 func (repository *mongoOrganizationDataAccessRequests) Create(data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error) {
-	model := models.OrganizationDataAccessRequest{
-		ID:                      primitive.NewObjectID().Hex(),
-		RequesterID:             data.RequesterID,
-		RequesterOrganizationID: data.RequesterOrganizationID,
-		TargetOrganizationID:    data.TargetOrganizationID,
-		Status:                  data.Status,
-		CreatedAt:               time.Now(),
-	}
+	model := models.NewOrganizationDataAccessRequest(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), &model); err != nil {
 		return entities.OrganizationDataAccessRequest{}, err
@@ -51,6 +44,37 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
 	filter := bson.M{"requester_organization_id": organizationId}
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, nil, err
+	}
+
+	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
+	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+
+	defer cursor.Close(context.Background())
+
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if err = cursor.All(context.Background(), &modelList); err != nil {
+		return 0, nil, err
+	}
+
+	for _, model := range modelList {
+		entityList = append(entityList, model.ToEntity())
+	}
+
+	return count, entityList, nil
+}
+
+func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
+	modelList := make([]models.OrganizationDataAccessRequest, 0)
+	entityList := make([]entities.OrganizationDataAccessRequest, 0)
+
+	filter := bson.M{"target_organization_id": organizationId}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -108,38 +132,26 @@ func (repository *mongoOrganizationDataAccessRequests) FindMany(limit, offset in
 }
 
 func (repository *mongoOrganizationDataAccessRequests) UpdateOneById(id string, data entities.OrganizationDataAccessRequest) error {
-	model := models.OrganizationDataAccessRequest{
-		AuditorID:    data.AuditorID,
-		Status:       data.Status,
-		AcceptedAt:   data.AcceptedAt,
-		RejectedAt:   data.RejectedAt,
-		RejectReason: data.RejectReason,
-	}
+	model := models.NewUpdatedOrganizationDataAccessRequest(data)
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update).Err(); err != nil {
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (repository *mongoOrganizationDataAccessRequests) FindOneAndUpdateById(id string, data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error) {
-	model := models.OrganizationDataAccessRequest{
-		AuditorID:    data.AuditorID,
-		Status:       data.Status,
-		AcceptedAt:   data.AcceptedAt,
-		RejectedAt:   data.RejectedAt,
-		RejectReason: data.RejectReason,
-	}
+func (repository *mongoOrganizationDataAccessRequests) FindOneById(id string) (entities.OrganizationDataAccessRequest, error) {
+	var model models.OrganizationDataAccessRequest
 
 	filter := bson.M{"_id": id}
-	update := bson.M{"$set": &model}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
+	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.OrganizationDataAccessRequest{}, utils.ErrOrganizationDataAccessRequestNotFound
+		}
 		return entities.OrganizationDataAccessRequest{}, err
 	}
 

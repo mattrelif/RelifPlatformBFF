@@ -6,17 +6,17 @@ import (
 )
 
 type BeneficiaryAllocation struct {
-	ID            string    `bson:"_id"`
-	BeneficiaryID string    `bson:"beneficiary_id"`
-	OldHousingID  string    `bson:"old_housing_id"`
-	OldRoomID     string    `bson:"old_room_id"`
-	HousingID     string    `bson:"housing_id"`
-	RoomID        string    `bson:"room_id"`
-	Type          string    `bson:"type"`
-	AuditorID     string    `bson:"auditor_id"`
-	CreatedAt     time.Time `bson:"created_at"`
-	ExitDate      time.Time `bson:"exit_date"`
-	ExitReason    string    `bson:"exit_reason"`
+	ID            string    `bson:"_id,omitempty"`
+	BeneficiaryID string    `bson:"beneficiary_id,omitempty"`
+	OldHousingID  string    `bson:"old_housing_id,omitempty"`
+	OldRoomID     string    `bson:"old_room_id,omitempty"`
+	HousingID     string    `bson:"housing_id,omitempty"`
+	RoomID        string    `bson:"room_id,omitempty"`
+	Type          string    `bson:"type,omitempty"`
+	AuditorID     string    `bson:"auditor_id,omitempty"`
+	CreatedAt     time.Time `bson:"created_at,omitempty"`
+	ExitDate      time.Time `bson:"exit_date,omitempty"`
+	ExitReason    string    `bson:"exit_reason,omitempty"`
 }
 
 func (allocation *BeneficiaryAllocation) ToEntity() entities.BeneficiaryAllocation {
@@ -32,5 +32,21 @@ func (allocation *BeneficiaryAllocation) ToEntity() entities.BeneficiaryAllocati
 		CreatedAt:     allocation.CreatedAt,
 		ExitDate:      allocation.ExitDate,
 		ExitReason:    allocation.ExitReason,
+	}
+}
+
+func NewBeneficiaryAllocation(entity entities.BeneficiaryAllocation) BeneficiaryAllocation {
+	return BeneficiaryAllocation{
+		ID:            entity.ID,
+		BeneficiaryID: entity.BeneficiaryID,
+		OldHousingID:  entity.OldHousingID,
+		OldRoomID:     entity.OldRoomID,
+		HousingID:     entity.HousingID,
+		RoomID:        entity.RoomID,
+		Type:          entity.Type,
+		AuditorID:     entity.AuditorID,
+		CreatedAt:     entity.CreatedAt,
+		ExitDate:      entity.ExitDate,
+		ExitReason:    entity.ExitReason,
 	}
 }

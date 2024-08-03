@@ -3,38 +3,74 @@ package services
 import (
 	"relif/bff/entities"
 	"relif/bff/repositories"
+	"relif/bff/utils"
 )
 
 type Organizations interface {
-	Create(data entities.Organization, creatorId string) (entities.Organization, error)
+	Create(data entities.Organization, ownerId string) (entities.Organization, error)
 	FindMany(offset, limit int64) (int64, []entities.Organization, error)
-	FindOneAndUpdateById(id string, data entities.Organization) (entities.Organization, error)
+	FindOneById(id string) (entities.Organization, error)
 	UpdateOneById(id string, data entities.Organization) error
+	AuthorizeCreate(user entities.User) error
+	AuthorizeExternalMutation(id string, user entities.User) error
 }
 
 type organizationsImpl struct {
-	repository repositories.Organizations
+	repository   repositories.Organizations
+	usersService Users
 }
 
-func NewOrganizations(repository repositories.Organizations) Organizations {
+func NewOrganizations(repository repositories.Organizations, usersService Users) Organizations {
 	return &organizationsImpl{
-		repository: repository,
+		repository:   repository,
+		usersService: usersService,
 	}
 }
 
-func (service *organizationsImpl) Create(organization entities.Organization, creatorId string) (entities.Organization, error) {
-	organization.CreatorID = creatorId
-	return service.repository.Create(organization)
+func (service *organizationsImpl) Create(data entities.Organization, ownerId string) (entities.Organization, error) {
+	data.OwnerID = ownerId
+	organization, err := service.repository.Create(data)
+
+	if err != nil {
+		return entities.Organization{}, err
+	}
+
+	userData := entities.User{
+		OrganizationID: organization.ID,
+		PlatformRole:   utils.OrgAdminPlatformRole,
+	}
+
+	if err = service.usersService.UpdateOneById(ownerId, userData); err != nil {
+		return entities.Organization{}, err
+	}
+
+	return organization, nil
 }
 
 func (service *organizationsImpl) FindMany(offset, limit int64) (int64, []entities.Organization, error) {
 	return service.repository.FindMany(offset, limit)
 }
 
-func (service *organizationsImpl) FindOneAndUpdateById(id string, data entities.Organization) (entities.Organization, error) {
-	return service.repository.FindOneAndUpdateById(id, data)
+func (service *organizationsImpl) FindOneById(organizationId string) (entities.Organization, error) {
+	return service.repository.FindOneById(organizationId)
 }
 
 func (service *organizationsImpl) UpdateOneById(id string, data entities.Organization) error {
 	return service.repository.UpdateOneById(id, data)
+}
+
+func (service *organizationsImpl) AuthorizeCreate(user entities.User) error {
+	if user.OrganizationID != "" && user.PlatformRole != utils.RelifMemberPlatformRole {
+		return utils.ErrUnauthorizedAction
+	}
+
+	return nil
+}
+
+func (service *organizationsImpl) AuthorizeExternalMutation(id string, user entities.User) error {
+	if (user.OrganizationID != id && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
+		return utils.ErrUnauthorizedAction
+	}
+
+	return nil
 }

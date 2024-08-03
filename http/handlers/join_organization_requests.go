@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
-	"io"
 	"net/http"
 	"relif/bff/entities"
-	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
@@ -23,29 +23,15 @@ func NewJoinOrganizationRequests(service services.JoinOrganizationRequests) *Joi
 }
 
 func (handler *JoinOrganizationRequests) Create(w http.ResponseWriter, r *http.Request) {
-	var req requests.CreateJoinOrganizationRequest
-
+	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := handler.service.AuthorizeCreate(user); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 
-	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err = req.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	request, err := handler.service.Create(user.ID, req.ToEntity())
+	request, err := handler.service.Create(user.ID, organizationId)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -63,6 +49,12 @@ func (handler *JoinOrganizationRequests) Create(w http.ResponseWriter, r *http.R
 
 func (handler *JoinOrganizationRequests) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
 	organizationId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -97,9 +89,17 @@ func (handler *JoinOrganizationRequests) FindManyByOrganizationId(w http.Respons
 
 func (handler *JoinOrganizationRequests) Accept(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.Accept(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := handler.service.Accept(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -108,9 +108,17 @@ func (handler *JoinOrganizationRequests) Accept(w http.ResponseWriter, r *http.R
 
 func (handler *JoinOrganizationRequests) Reject(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.Reject(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := handler.service.Reject(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

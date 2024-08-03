@@ -1,13 +1,14 @@
 package services
 
 import (
+	"errors"
 	"relif/bff/entities"
 	"relif/bff/utils"
 )
 
 type Auth interface {
-	SignUp(user entities.User) (entities.Session, error)
-	OrganizationSignUp(user entities.User) (entities.Session, error)
+	SignUp(data entities.User) (entities.Session, error)
+	OrganizationSignUp(data entities.User) (entities.Session, error)
 	SignIn(email, password string) (entities.Session, error)
 	SignOut(sessionId string) error
 	AuthenticateSession(sessionId string) (entities.User, error)
@@ -34,17 +35,17 @@ func NewAuth(
 	}
 }
 
-func (service *authImpl) SignUp(user entities.User) (entities.Session, error) {
-	hashed, err := service.passwordHashFn(user.Password)
+func (service *authImpl) SignUp(data entities.User) (entities.Session, error) {
+	hashed, err := service.passwordHashFn(data.Password)
 
 	if err != nil {
 		return entities.Session{}, err
 	}
 
-	user.Password = hashed
-	user.Status = "NO_ORG"
+	data.Password = hashed
+	data.PlatformRole = utils.NoOrgPlatformRole
 
-	user, err = service.usersService.Create(user)
+	user, err := service.usersService.Create(data)
 
 	if err != nil {
 		return entities.Session{}, err
@@ -59,17 +60,17 @@ func (service *authImpl) SignUp(user entities.User) (entities.Session, error) {
 	return session, nil
 }
 
-func (service *authImpl) OrganizationSignUp(user entities.User) (entities.Session, error) {
-	hashed, err := service.passwordHashFn(user.Password)
+func (service *authImpl) OrganizationSignUp(data entities.User) (entities.Session, error) {
+	hashed, err := service.passwordHashFn(data.Password)
 
 	if err != nil {
 		return entities.Session{}, err
 	}
 
-	user.Password = hashed
-	user.Status = "ORG_MEMBER"
+	data.Password = hashed
+	data.PlatformRole = utils.OrgMemberPlatformRole
 
-	user, err = service.usersService.Create(user)
+	user, err := service.usersService.Create(data)
 
 	if err != nil {
 		return entities.Session{}, err
@@ -88,11 +89,15 @@ func (service *authImpl) SignIn(email, password string) (entities.Session, error
 	user, err := service.usersService.FindOneByEmail(email)
 
 	if err != nil {
+		if errors.Is(err, utils.ErrUserNotFound) {
+			return entities.Session{}, utils.ErrInvalidCredentials
+		}
+
 		return entities.Session{}, err
 	}
 
 	if err = service.passwordCompareFn(password, user.Password); err != nil {
-		return entities.Session{}, err
+		return entities.Session{}, utils.ErrInvalidCredentials
 	}
 
 	session, err := service.sessionsService.Generate(user.ID)

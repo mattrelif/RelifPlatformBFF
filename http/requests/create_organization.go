@@ -29,13 +29,6 @@ func (req *CreateOrganization) ToEntity() entities.Organization {
 	return entities.Organization{
 		Name:        req.Name,
 		Description: req.Description,
-		Address: entities.Address{
-			StreetName:   req.Address.StreetName,
-			StreetNumber: req.Address.StreetNumber,
-			ZipCode:      req.Address.ZipCode,
-			District:     req.Address.District,
-			City:         req.Address.City,
-			Country:      req.Address.Country,
-		},
+		Address:     req.Address.ToEntity(),
 	}
 }

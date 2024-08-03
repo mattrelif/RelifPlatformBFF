@@ -11,6 +11,6 @@ type RequestPasswordChange struct {
 
 func (req *RequestPasswordChange) Validate() error {
 	return validation.ValidateStruct(req,
-		validation.Field(req.Email, validation.Required, is.Email),
+		validation.Field(&req.Email, validation.Required, is.Email),
 	)
 }

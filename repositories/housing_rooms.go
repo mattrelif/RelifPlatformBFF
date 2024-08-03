@@ -2,23 +2,23 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
+	"relif/bff/utils"
 	"time"
 )
 
 type HousingRooms interface {
-	CreateMany(data []entities.HousingRoom) ([]entities.HousingRoom, error)
+	CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error)
 	FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error)
 	FindOneById(id string) (entities.HousingRoom, error)
-	FindOneAndUpdateById(id string, data entities.HousingRoom) (entities.HousingRoom, error)
+	UpdateOneById(id string, data entities.HousingRoom) error
 	IncreaseAvailableVacanciesById(id string) error
 	DecreaseAvailableVacanciesById(id string) error
-	DeleteOneById(id string) error
 }
 
 type mongoHousingRooms struct {
@@ -31,20 +31,13 @@ func NewMongoHousingRooms(database *mongo.Database) HousingRooms {
 	}
 }
 
-func (repository *mongoHousingRooms) CreateMany(data []entities.HousingRoom) ([]entities.HousingRoom, error) {
+func (repository *mongoHousingRooms) CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error) {
 	modelList := make([]interface{}, 0)
 	entityList := make([]entities.HousingRoom, 0)
 
 	for _, room := range data {
-		model := models.HousingRoom{
-			ID:                 primitive.NewObjectID().Hex(),
-			Name:               room.Name,
-			HousingID:          room.HousingID,
-			Status:             room.Status,
-			TotalVacancies:     room.TotalVacancies,
-			AvailableVacancies: room.TotalVacancies,
-			CreatedAt:          time.Now(),
-		}
+		room.HousingID = housingId
+		model := models.NewHousingRoom(room)
 
 		modelList = append(modelList, model)
 		entityList = append(entityList, model.ToEntity())
@@ -94,28 +87,25 @@ func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoo
 	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.HousingRoom{}, utils.ErrHousingRoomNotFound
+		}
 		return entities.HousingRoom{}, err
 	}
 
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoHousingRooms) FindOneAndUpdateById(id string, data entities.HousingRoom) (entities.HousingRoom, error) {
-	model := models.HousingRoom{
-		Name:           data.Name,
-		TotalVacancies: data.TotalVacancies,
-		UpdatedAt:      time.Now(),
-	}
+func (repository *mongoHousingRooms) UpdateOneById(id string, data entities.HousingRoom) error {
+	model := models.NewUpdatedHousingRoom(data)
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
-		return entities.HousingRoom{}, err
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
+		return err
 	}
 
-	return model.ToEntity(), nil
+	return nil
 }
 
 func (repository *mongoHousingRooms) IncreaseAvailableVacanciesById(id string) error {
@@ -123,10 +113,9 @@ func (repository *mongoHousingRooms) IncreaseAvailableVacanciesById(id string) e
 		UpdatedAt: time.Now(),
 	}
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model, "$inc": bson.M{"available_vacancies": 1}}
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update).Err(); err != nil {
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 
@@ -138,20 +127,9 @@ func (repository *mongoHousingRooms) DecreaseAvailableVacanciesById(id string) e
 		UpdatedAt: time.Now(),
 	}
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model, "$inc": bson.M{"available_vacancies": -1}}
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update).Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (repository *mongoHousingRooms) DeleteOneById(id string) error {
-	filter := bson.M{"_id": id}
-
-	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 

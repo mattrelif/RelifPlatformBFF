@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
+	"relif/bff/entities"
 	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
@@ -27,6 +30,10 @@ func (handler *Users) FindOne(w http.ResponseWriter, r *http.Request) {
 	user, err := handler.service.FindOneById(id)
 
 	if err != nil {
+		if errors.Is(err, utils.ErrUserNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -77,6 +84,19 @@ func (handler *Users) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	var req requests.UpdateUser
 
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeExternalMutation(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUserNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -91,25 +111,32 @@ func (handler *Users) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := handler.service.FindOneAndUpdateById(id, req.ToEntity())
-
-	if err != nil {
+	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := responses.NewUser(updated)
-
-	if err = json.NewEncoder(w).Encode(res); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (handler *Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	if err := handler.service.DeleteOneById(id); err != nil {
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.service.AuthorizeExternalMutation(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUserNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := handler.service.InactivateOneById(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

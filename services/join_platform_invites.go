@@ -8,6 +8,7 @@ import (
 
 type JoinPlatformInvites interface {
 	Create(data entities.JoinPlatformInvite, inviter entities.User) (entities.JoinPlatformInvite, error)
+	AuthorizeAccessManyByOrganizationId(user entities.User, organizationId string) error
 	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error)
 	ConsumeByCode(code string) (entities.JoinPlatformInvite, error)
 }
@@ -15,18 +16,30 @@ type JoinPlatformInvites interface {
 type joinPlatformInvitesImpl struct {
 	repository    repositories.JoinPlatformInvites
 	emailService  Email
+	usersService  Users
 	uuidGenerator utils.UuidGenerator
 }
 
-func NewJoinPlatformInvites(repository repositories.JoinPlatformInvites, emailService Email, uuidGenerator utils.UuidGenerator) JoinPlatformInvites {
+func NewJoinPlatformInvites(repository repositories.JoinPlatformInvites, emailService Email, usersService Users, uuidGenerator utils.UuidGenerator) JoinPlatformInvites {
 	return &joinPlatformInvitesImpl{
 		repository:    repository,
 		emailService:  emailService,
+		usersService:  usersService,
 		uuidGenerator: uuidGenerator,
 	}
 }
 
 func (service *joinPlatformInvitesImpl) Create(data entities.JoinPlatformInvite, inviter entities.User) (entities.JoinPlatformInvite, error) {
+	userExists, err := service.usersService.ExistsByEmail(data.InvitedEmail)
+
+	if err != nil {
+		return entities.JoinPlatformInvite{}, err
+	}
+
+	if userExists {
+		return entities.JoinPlatformInvite{}, utils.ErrUserAlreadyExists
+	}
+
 	data.Code = service.uuidGenerator()
 	data.InviterID = inviter.ID
 	data.OrganizationID = inviter.OrganizationID
@@ -56,4 +69,12 @@ func (service *joinPlatformInvitesImpl) ConsumeByCode(code string) (entities.Joi
 	}
 
 	return invite, nil
+}
+
+func (service *joinPlatformInvitesImpl) AuthorizeAccessManyByOrganizationId(user entities.User, organizationId string) error {
+	if (user.OrganizationID != organizationId && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
+		return utils.ErrUnauthorizedAction
+	}
+
+	return nil
 }

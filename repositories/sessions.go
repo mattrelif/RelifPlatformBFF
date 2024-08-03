@@ -10,7 +10,7 @@ import (
 )
 
 type Sessions interface {
-	Generate(data entities.Session) error
+	Generate(data entities.Session) (entities.Session, error)
 	FindOneBySessionId(sessionId string) (entities.Session, error)
 	DeleteOneBySessionId(sessionId string) error
 }
@@ -25,22 +25,18 @@ func NewSessionsMongo(database *mongo.Database) Sessions {
 	}
 }
 
-func (repositories *sessionsMongo) Generate(data entities.Session) error {
-	model := models.Session{
-		UserID:    data.UserID,
-		SessionID: data.SessionID,
-		ExpiresAt: data.ExpiresAt,
-	}
+func (repositories *sessionsMongo) Generate(data entities.Session) (entities.Session, error) {
+	model := models.NewSession(data)
 
 	filter := bson.M{"_id": model.UserID}
 	update := bson.M{"$set": &model}
 	opts := options.Update().SetUpsert(true)
 
 	if _, err := repositories.collection.UpdateOne(context.Background(), filter, update, opts); err != nil {
-		return err
+		return entities.Session{}, err
 	}
 
-	return nil
+	return model.ToEntity(), nil
 }
 
 func (repositories *sessionsMongo) FindOneBySessionId(sessionId string) (entities.Session, error) {

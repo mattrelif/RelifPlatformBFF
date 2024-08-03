@@ -33,3 +33,20 @@ func (medical *MedicalInformation) ToEntity() entities.MedicalInformation {
 		Disabilities:               medical.Disabilities,
 	}
 }
+
+func NewMedicalInformation(entity entities.MedicalInformation) MedicalInformation {
+	return MedicalInformation{
+		Allergies:                  entity.Allergies,
+		CurrentMedications:         entity.CurrentMedications,
+		RecurrentMedicalConditions: entity.RecurrentMedicalConditions,
+		HealthInsurancePlans:       entity.HealthInsurancePlans,
+		BloodType:                  entity.BloodType,
+		TakenVaccines:              entity.TakenVaccines,
+		MentalHealthHistory:        entity.MentalHealthHistory,
+		Height:                     entity.Height,
+		Weight:                     entity.Weight,
+		CigarettesUsage:            entity.CigarettesUsage,
+		AlcoholConsumption:         entity.AlcoholConsumption,
+		Disabilities:               entity.Disabilities,
+	}
+}
