@@ -13,12 +13,14 @@ import (
 )
 
 type OrganizationDataAccessGrants struct {
-	service services.OrganizationDataAccessGrants
+	service              services.OrganizationDataAccessGrants
+	authorizationService services.Authorization
 }
 
-func NewOrganizationDataAccessGrants(service services.OrganizationDataAccessGrants) *OrganizationDataAccessGrants {
+func NewOrganizationDataAccessGrants(service services.OrganizationDataAccessGrants, authorizationService services.Authorization) *OrganizationDataAccessGrants {
 	return &OrganizationDataAccessGrants{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -26,7 +28,7 @@ func (handler *OrganizationDataAccessGrants) FindManyByOrganizationId(w http.Res
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -66,7 +68,7 @@ func (handler *OrganizationDataAccessGrants) FindManyByTargetOrganizationId(w ht
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -106,7 +108,7 @@ func (handler *OrganizationDataAccessGrants) Delete(w http.ResponseWriter, r *ht
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(user, id); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateOrganizationDataAccessGrantsData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)

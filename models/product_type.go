@@ -1,20 +1,21 @@
 package models
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"relif/bff/entities"
 	"time"
 )
 
 type ProductType struct {
-	ID             string    `bson:"_id"`
-	Name           string    `bson:"name"`
-	Description    string    `bson:"description"`
-	Brand          string    `bson:"brand"`
-	Category       string    `bson:"category"`
-	OrganizationID string    `bson:"organization_id"`
-	TotalInStock   int       `bson:"total_in_stock"`
-	CreatedAt      time.Time `bson:"created_at"`
-	UpdatedAt      time.Time `bson:"updated_at"`
+	ID             string    `bson:"_id,omitempty"`
+	Name           string    `bson:"name,omitempty"`
+	Description    string    `bson:"description,omitempty"`
+	Brand          string    `bson:"brand,omitempty"`
+	Category       string    `bson:"category,omitempty"`
+	OrganizationID string    `bson:"organization_id,omitempty"`
+	TotalInStock   int       `bson:"total_in_stock,omitempty"`
+	CreatedAt      time.Time `bson:"created_at,omitempty"`
+	UpdatedAt      time.Time `bson:"updated_at,omitempty"`
 }
 
 func (productType *ProductType) ToEntity() entities.ProductType {
@@ -28,5 +29,29 @@ func (productType *ProductType) ToEntity() entities.ProductType {
 		TotalInStock:   productType.TotalInStock,
 		CreatedAt:      productType.CreatedAt,
 		UpdatedAt:      productType.UpdatedAt,
+	}
+}
+
+func NewProductType(entity entities.ProductType) ProductType {
+	return ProductType{
+		ID:             primitive.NewObjectID().Hex(),
+		Name:           entity.Name,
+		Description:    entity.Description,
+		Brand:          entity.Brand,
+		Category:       entity.Category,
+		OrganizationID: entity.OrganizationID,
+		TotalInStock:   0,
+		CreatedAt:      time.Now(),
+	}
+}
+
+func NewUpdatedProductType(entity entities.ProductType) ProductType {
+	return ProductType{
+		Name:           entity.Name,
+		Description:    entity.Description,
+		Brand:          entity.Brand,
+		Category:       entity.Category,
+		OrganizationID: entity.OrganizationID,
+		UpdatedAt:      time.Now(),
 	}
 }

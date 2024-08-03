@@ -15,12 +15,14 @@ import (
 )
 
 type OrganizationDataAccessRequests struct {
-	service services.OrganizationDataAccessRequests
+	service              services.OrganizationDataAccessRequests
+	authorizationService services.Authorization
 }
 
-func NewOrganizationDataAccessRequests(service services.OrganizationDataAccessRequests) *OrganizationDataAccessRequests {
+func NewOrganizationDataAccessRequests(service services.OrganizationDataAccessRequests, authorizationService services.Authorization) *OrganizationDataAccessRequests {
 	return &OrganizationDataAccessRequests{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -28,7 +30,7 @@ func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *
 	targetOrganizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeCreate(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateAccessOrganizationDataRequest(user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -60,7 +62,7 @@ func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationId
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -100,7 +102,7 @@ func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationId(w 
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -137,14 +139,23 @@ func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationId(w 
 }
 
 func (handler *OrganizationDataAccessRequests) Accept(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	id := chi.URLParam(r, "id")
-
-	if err := handler.service.Accept(id, user); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateAccessOrganizationDataRequestData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := handler.service.Accept(id, user); err != nil {
+		switch {
 		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -159,9 +170,20 @@ func (handler *OrganizationDataAccessRequests) Accept(w http.ResponseWriter, r *
 func (handler *OrganizationDataAccessRequests) Reject(w http.ResponseWriter, r *http.Request) {
 	var req requests.RejectOrganizationDataAccessRequest
 
+	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	id := chi.URLParam(r, "id")
+	if err := handler.authorizationService.AuthorizeMutateAccessOrganizationDataRequestData(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -183,8 +205,6 @@ func (handler *OrganizationDataAccessRequests) Reject(w http.ResponseWriter, r *
 
 	if err = handler.service.Reject(id, user, req.ToEntity()); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:

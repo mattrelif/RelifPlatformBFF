@@ -9,7 +9,7 @@ type ProductTypes interface {
 	Create(user entities.User, data entities.ProductType) (entities.ProductType, error)
 	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.ProductType, error)
 	FindOneById(id string) (entities.ProductType, error)
-	FindAndUpdateOneById(id string, data entities.ProductType) (entities.ProductType, error)
+	UpdateOneById(id string, data entities.ProductType) error
 	IncreaseTotalInStock(id string, amount int) error
 	DeleteOneById(id string) error
 }
@@ -37,8 +37,8 @@ func (service *productTypesImpl) FindOneById(id string) (entities.ProductType, e
 	return service.repository.FindOneById(id)
 }
 
-func (service *productTypesImpl) FindAndUpdateOneById(id string, data entities.ProductType) (entities.ProductType, error) {
-	return service.repository.FindAndUpdateOneById(id, data)
+func (service *productTypesImpl) UpdateOneById(id string, data entities.ProductType) error {
+	return service.repository.UpdateOneById(id, data)
 }
 
 func (service *productTypesImpl) IncreaseTotalInStock(id string, amount int) error {

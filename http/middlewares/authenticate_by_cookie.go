@@ -8,10 +8,10 @@ import (
 )
 
 type AuthenticateByCookie struct {
-	authService services.Auth
+	authService services.Authentication
 }
 
-func NewAuthenticateByCookie(authService services.Auth) *AuthenticateByCookie {
+func NewAuthenticateByCookie(authService services.Authentication) *AuthenticateByCookie {
 	return &AuthenticateByCookie{
 		authService: authService,
 	}

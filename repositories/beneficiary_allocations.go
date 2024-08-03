@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
-	"time"
 )
 
 type BeneficiaryAllocations interface {
@@ -29,19 +28,7 @@ func NewMongoBeneficiaryAllocations(database *mongo.Database) BeneficiaryAllocat
 }
 
 func (repository *mongoBeneficiaryAllocations) Create(data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
-	model := models.BeneficiaryAllocation{
-		ID:            primitive.NewObjectID().Hex(),
-		BeneficiaryID: data.BeneficiaryID,
-		OldHousingID:  data.OldHousingID,
-		OldRoomID:     data.OldRoomID,
-		RoomID:        data.RoomID,
-		HousingID:     data.HousingID,
-		Type:          data.Type,
-		AuditorID:     data.AuditorID,
-		CreatedAt:     time.Now(),
-		ExitReason:    data.ExitReason,
-		ExitDate:      data.ExitDate,
-	}
+	model := models.NewBeneficiaryAllocation(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), model); err != nil {
 		return entities.BeneficiaryAllocation{}, err

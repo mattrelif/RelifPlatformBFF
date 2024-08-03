@@ -10,10 +10,9 @@ import (
 type JoinOrganizationRequests interface {
 	Create(userId, organizationId string) (entities.JoinOrganizationRequest, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindOneById(id string) (entities.JoinOrganizationRequest, error)
 	Accept(id string, auditor entities.User) error
 	Reject(id string, auditor entities.User) error
-	AuthorizeCreate(user entities.User) error
-	AuthorizeFindManyByOrganizationId(user entities.User, organizationId string) error
 }
 
 type joinOrganizationRequestsImpl struct {
@@ -40,8 +39,12 @@ func (service *joinOrganizationRequestsImpl) FindManyByOrganizationId(organizati
 	return service.repository.FindManyByOrganizationId(organizationId, offset, limit)
 }
 
+func (service *joinOrganizationRequestsImpl) FindOneById(id string) (entities.JoinOrganizationRequest, error) {
+	return service.repository.FindOneById(id)
+}
+
 func (service *joinOrganizationRequestsImpl) Accept(id string, auditor entities.User) error {
-	request, err := service.authorizeExternalMutation(auditor, id)
+	request, err := service.repository.FindOneById(id)
 
 	if err != nil {
 		return err
@@ -64,7 +67,7 @@ func (service *joinOrganizationRequestsImpl) Accept(id string, auditor entities.
 }
 
 func (service *joinOrganizationRequestsImpl) Reject(id string, auditor entities.User) error {
-	request, err := service.authorizeExternalMutation(auditor, id)
+	request, err := service.repository.FindOneById(id)
 
 	if err != nil {
 		return err
@@ -75,34 +78,4 @@ func (service *joinOrganizationRequestsImpl) Reject(id string, auditor entities.
 	}
 
 	return err
-}
-
-func (service *joinOrganizationRequestsImpl) AuthorizeCreate(user entities.User) error {
-	if user.OrganizationID != "" {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
-}
-
-func (service *joinOrganizationRequestsImpl) AuthorizeFindManyByOrganizationId(user entities.User, organizationId string) error {
-	if (user.OrganizationID != organizationId && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
-}
-
-func (service *joinOrganizationRequestsImpl) authorizeExternalMutation(user entities.User, id string) (entities.JoinOrganizationRequest, error) {
-	request, err := service.repository.FindOneById(id)
-
-	if err != nil {
-		return entities.JoinOrganizationRequest{}, err
-	}
-
-	if (user.OrganizationID != request.OrganizationID && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
-		return entities.JoinOrganizationRequest{}, utils.ErrUnauthorizedAction
-	}
-
-	return request, nil
 }

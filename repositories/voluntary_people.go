@@ -16,8 +16,7 @@ type VoluntaryPeople interface {
 	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
 	FindOneById(id string) (entities.VoluntaryPerson, error)
 	CountByEmail(email string) (int64, error)
-	FindOneAndUpdateById(id string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
-	DeleteOneById(id string) error
+	UpdateOneById(id string, data entities.VoluntaryPerson) error
 }
 
 type mongoVoluntaryPeople struct {
@@ -100,33 +99,12 @@ func (repository *mongoVoluntaryPeople) CountByEmail(email string) (int64, error
 	return count, nil
 }
 
-func (repository *mongoVoluntaryPeople) FindOneAndUpdateById(id string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
+func (repository *mongoVoluntaryPeople) UpdateOneById(id string, data entities.VoluntaryPerson) error {
 	model := models.NewUpdatedVoluntaryPerson(data)
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&model); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return entities.VoluntaryPerson{}, utils.ErrVoluntaryPersonNotFound
-		}
-
-		return entities.VoluntaryPerson{}, err
-	}
-
-	return model.ToEntity(), nil
-}
-
-func (repository *mongoVoluntaryPeople) DeleteOneById(id string) error {
-	filter := bson.M{"_id": id}
-	update := bson.M{"$set": bson.M{"status": utils.InactiveStatus}}
-
-	if err := repository.collection.FindOneAndUpdate(context.Background(), filter, update).Err(); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return utils.ErrVoluntaryPersonNotFound
-		}
-
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
 		return err
 	}
 

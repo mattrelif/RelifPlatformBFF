@@ -13,7 +13,6 @@ type Users interface {
 	FindOneByEmail(email string) (entities.User, error)
 	UpdateOneById(id string, data entities.User) error
 	InactivateOneById(id string) error
-	AuthorizeExternalMutation(id string, user entities.User) error
 	ExistsByEmail(email string) (bool, error)
 	ExistsById(id string) (bool, error)
 }
@@ -60,20 +59,6 @@ func (service *usersImpl) UpdateOneById(id string, data entities.User) error {
 
 func (service *usersImpl) InactivateOneById(id string) error {
 	return service.repository.UpdateOneById(id, entities.User{Status: utils.InactiveStatus})
-}
-
-func (service *usersImpl) AuthorizeExternalMutation(id string, user entities.User) error {
-	target, err := service.FindOneById(id)
-
-	if err != nil {
-		return err
-	}
-
-	if target.ID != user.ID && (target.OrganizationID != user.OrganizationID && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
 }
 
 func (service *usersImpl) ExistsByEmail(email string) (bool, error) {

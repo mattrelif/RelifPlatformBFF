@@ -15,12 +15,14 @@ import (
 )
 
 type Organizations struct {
-	service services.Organizations
+	service              services.Organizations
+	authorizationService services.Authorization
 }
 
-func NewOrganizations(service services.Organizations) *Organizations {
+func NewOrganizations(service services.Organizations, authorizationService services.Authorization) *Organizations {
 	return &Organizations{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -29,7 +31,7 @@ func (handler *Organizations) Create(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeCreate(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateOrganization(user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -129,7 +131,7 @@ func (handler *Organizations) UpdateOne(w http.ResponseWriter, r *http.Request) 
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(id, user); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateOrganizationData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrOrganizationNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)

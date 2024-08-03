@@ -162,7 +162,7 @@ func NewRouter(
 			r.Route("/voluntary-people", func(r chi.Router) {
 				r.Get("/{id}", voluntaryPeopleHandler.FindOneById)
 				r.Put("/{id}", voluntaryPeopleHandler.Update)
-				r.Delete("/{id}", voluntaryPeopleHandler.DeleteById)
+				r.Delete("/{id}", voluntaryPeopleHandler.Delete)
 			})
 
 			r.Route("/product-types", func(r chi.Router) {

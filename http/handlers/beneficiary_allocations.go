@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -9,16 +10,19 @@ import (
 	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
+	"relif/bff/utils"
 	"strconv"
 )
 
 type BeneficiaryAllocations struct {
-	service services.BeneficiaryAllocations
+	service              services.BeneficiaryAllocations
+	authorizationService services.Authorization
 }
 
-func NewBeneficiaryAllocations(service services.BeneficiaryAllocations) *BeneficiaryAllocations {
+func NewBeneficiaryAllocations(service services.BeneficiaryAllocations, authorizationService services.Authorization) *BeneficiaryAllocations {
 	return &BeneficiaryAllocations{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -27,6 +31,18 @@ func (handler *BeneficiaryAllocations) Allocate(w http.ResponseWriter, r *http.R
 
 	user := r.Context().Value("user").(entities.User)
 	beneficiaryId := chi.URLParam(r, "id")
+
+	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryId, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -68,6 +84,18 @@ func (handler *BeneficiaryAllocations) Reallocate(w http.ResponseWriter, r *http
 	user := r.Context().Value("user").(entities.User)
 	beneficiaryId := chi.URLParam(r, "id")
 
+	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryId, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
@@ -104,6 +132,19 @@ func (handler *BeneficiaryAllocations) Reallocate(w http.ResponseWriter, r *http
 
 func (handler *BeneficiaryAllocations) FindManyByBeneficiaryId(w http.ResponseWriter, r *http.Request) {
 	beneficiaryId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeAccessBeneficiaryData(beneficiaryId, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -138,6 +179,19 @@ func (handler *BeneficiaryAllocations) FindManyByBeneficiaryId(w http.ResponseWr
 
 func (handler *BeneficiaryAllocations) FindManyByHousingId(w http.ResponseWriter, r *http.Request) {
 	housingId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeAccessHousingData(housingId, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -172,6 +226,19 @@ func (handler *BeneficiaryAllocations) FindManyByHousingId(w http.ResponseWriter
 
 func (handler *BeneficiaryAllocations) FindManyByRoomId(w http.ResponseWriter, r *http.Request) {
 	roomId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomId, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingRoomNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)

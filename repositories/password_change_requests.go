@@ -25,17 +25,12 @@ func NewMongoPasswordChangeRequests(database *mongo.Database) PasswordChangeRequ
 }
 
 func (rep *mongoPasswordChangeRequests) Create(data entities.PasswordChangeRequest) error {
-	model := models.PasswordChangeRequest{
-		UserID:    data.UserID,
-		Code:      data.Code,
-		ExpiresAt: data.ExpiresAt,
-	}
+	model := models.NewPasswordChangeRequest(data)
 
-	filter := bson.M{"_id": model.UserID}
 	update := bson.M{"$set": &model}
 	opts := options.Update().SetUpsert(true)
 
-	if _, err := rep.collection.UpdateOne(context.Background(), filter, update, opts); err != nil {
+	if _, err := rep.collection.UpdateByID(context.Background(), model.UserID, update, opts); err != nil {
 		return err
 	}
 

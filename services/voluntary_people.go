@@ -10,8 +10,8 @@ type VoluntaryPeople interface {
 	Create(user entities.User, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
 	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
 	FindOneById(id string) (entities.VoluntaryPerson, error)
-	FindOneAndUpdateById(id string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
-	DeleteOneById(id string) error
+	UpdateOneById(id string, data entities.VoluntaryPerson) error
+	InactivateOneById(id string) error
 }
 
 type voluntaryPeopleImpl struct {
@@ -25,18 +25,18 @@ func NewVoluntaryPeople(repository repositories.VoluntaryPeople) VoluntaryPeople
 }
 
 func (service *voluntaryPeopleImpl) Create(user entities.User, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
-	count, err := service.repository.CountByEmail(data.Email)
+	exists, err := service.ExistsOneByEmail(data.Email)
 
 	if err != nil {
 		return entities.VoluntaryPerson{}, err
 	}
 
-	if count > 0 {
+	if exists {
 		return entities.VoluntaryPerson{}, utils.ErrVoluntaryPersonAlreadyExists
 	}
 
 	data.OrganizationID = user.OrganizationID
-	
+
 	return service.repository.Create(data)
 }
 
@@ -48,10 +48,23 @@ func (service *voluntaryPeopleImpl) FindOneById(id string) (entities.VoluntaryPe
 	return service.repository.FindOneById(id)
 }
 
-func (service *voluntaryPeopleImpl) FindOneAndUpdateById(id string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
-	return service.repository.FindOneAndUpdateById(id, data)
+func (service *voluntaryPeopleImpl) UpdateOneById(id string, data entities.VoluntaryPerson) error {
+	return service.repository.UpdateOneById(id, data)
 }
 
-func (service *voluntaryPeopleImpl) DeleteOneById(id string) error {
-	return service.repository.DeleteOneById(id)
+func (service *voluntaryPeopleImpl) InactivateOneById(id string) error {
+	data := entities.VoluntaryPerson{
+		Status: utils.InactiveStatus,
+	}
+	return service.repository.UpdateOneById(id, data)
+}
+
+func (service *voluntaryPeopleImpl) ExistsOneByEmail(email string) (bool, error) {
+	count, err := service.repository.CountByEmail(email)
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }

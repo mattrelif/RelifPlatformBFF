@@ -6,7 +6,7 @@ import (
 	"relif/bff/utils"
 )
 
-type Auth interface {
+type Authentication interface {
 	SignUp(data entities.User) (entities.Session, error)
 	OrganizationSignUp(data entities.User) (entities.Session, error)
 	SignIn(email, password string) (entities.Session, error)
@@ -14,7 +14,7 @@ type Auth interface {
 	AuthenticateSession(sessionId string) (entities.User, error)
 }
 
-type authImpl struct {
+type authenticationImpl struct {
 	usersService      Users
 	sessionsService   Sessions
 	passwordHashFn    utils.PasswordHashFn
@@ -26,8 +26,8 @@ func NewAuth(
 	sessionsService Sessions,
 	passwordHashFn utils.PasswordHashFn,
 	passwordCompareFn utils.PasswordCompareFn,
-) Auth {
-	return &authImpl{
+) Authentication {
+	return &authenticationImpl{
 		usersService:      usersService,
 		sessionsService:   sessionsService,
 		passwordHashFn:    passwordHashFn,
@@ -35,7 +35,7 @@ func NewAuth(
 	}
 }
 
-func (service *authImpl) SignUp(data entities.User) (entities.Session, error) {
+func (service *authenticationImpl) SignUp(data entities.User) (entities.Session, error) {
 	hashed, err := service.passwordHashFn(data.Password)
 
 	if err != nil {
@@ -60,7 +60,7 @@ func (service *authImpl) SignUp(data entities.User) (entities.Session, error) {
 	return session, nil
 }
 
-func (service *authImpl) OrganizationSignUp(data entities.User) (entities.Session, error) {
+func (service *authenticationImpl) OrganizationSignUp(data entities.User) (entities.Session, error) {
 	hashed, err := service.passwordHashFn(data.Password)
 
 	if err != nil {
@@ -85,7 +85,7 @@ func (service *authImpl) OrganizationSignUp(data entities.User) (entities.Sessio
 	return session, nil
 }
 
-func (service *authImpl) SignIn(email, password string) (entities.Session, error) {
+func (service *authenticationImpl) SignIn(email, password string) (entities.Session, error) {
 	user, err := service.usersService.FindOneByEmail(email)
 
 	if err != nil {
@@ -109,11 +109,11 @@ func (service *authImpl) SignIn(email, password string) (entities.Session, error
 	return session, nil
 }
 
-func (service *authImpl) SignOut(sessionId string) error {
+func (service *authenticationImpl) SignOut(sessionId string) error {
 	return service.sessionsService.DeleteOneBySessionId(sessionId)
 }
 
-func (service *authImpl) AuthenticateSession(sessionId string) (entities.User, error) {
+func (service *authenticationImpl) AuthenticateSession(sessionId string) (entities.User, error) {
 	session, err := service.sessionsService.FindOneBySessionId(sessionId)
 
 	if err != nil {

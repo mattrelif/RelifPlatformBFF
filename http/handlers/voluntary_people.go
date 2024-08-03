@@ -15,12 +15,14 @@ import (
 )
 
 type VoluntaryPeople struct {
-	service services.VoluntaryPeople
+	service              services.VoluntaryPeople
+	authorizationService services.Authorization
 }
 
-func NewVoluntaryPeople(service services.VoluntaryPeople) *VoluntaryPeople {
+func NewVoluntaryPeople(service services.VoluntaryPeople, authorizationService services.Authorization) *VoluntaryPeople {
 	return &VoluntaryPeople{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -28,6 +30,11 @@ func (handler *VoluntaryPeople) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateVoluntaryPerson
 
 	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -70,6 +77,19 @@ func (handler *VoluntaryPeople) Create(w http.ResponseWriter, r *http.Request) {
 
 func (handler *VoluntaryPeople) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
 	organizationId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -104,6 +124,18 @@ func (handler *VoluntaryPeople) FindManyByOrganizationId(w http.ResponseWriter, 
 
 func (handler *VoluntaryPeople) FindOneById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeAccessVoluntaryPersonData(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
 
 	voluntary, err := handler.service.FindOneById(id)
 
@@ -129,6 +161,18 @@ func (handler *VoluntaryPeople) Update(w http.ResponseWriter, r *http.Request) {
 	var req requests.UpdateVoluntaryPerson
 
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeMutateVoluntaryPersonData(id, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -148,36 +192,32 @@ func (handler *VoluntaryPeople) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := handler.service.FindOneAndUpdateById(id, req.ToEntity())
-
-	if err != nil {
-		switch {
-		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
-	res := responses.NewVoluntaryPerson(updated)
-
-	if err = json.NewEncoder(w).Encode(&res); err != nil {
+	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func (handler *VoluntaryPeople) DeleteById(w http.ResponseWriter, r *http.Request) {
+func (handler *VoluntaryPeople) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.DeleteOneById(id); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateVoluntaryPersonData(id, user); err != nil {
 		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+		return
+	}
+
+	if err := handler.service.InactivateOneById(id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

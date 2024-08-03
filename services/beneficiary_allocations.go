@@ -3,6 +3,7 @@ package services
 import (
 	"relif/bff/entities"
 	"relif/bff/repositories"
+	"relif/bff/utils"
 )
 
 type BeneficiaryAllocations interface {
@@ -17,23 +18,26 @@ type beneficiaryAllocationsImpl struct {
 	repository           repositories.BeneficiaryAllocations
 	beneficiariesService Beneficiaries
 	housingRoomsService  HousingRooms
+	housingsService      Housings
 }
 
 func NewBeneficiaryAllocations(
 	repository repositories.BeneficiaryAllocations,
 	beneficiariesService Beneficiaries,
 	housingRoomsService HousingRooms,
+	housingsService Housings,
 ) BeneficiaryAllocations {
 	return &beneficiaryAllocationsImpl{
 		repository:           repository,
 		beneficiariesService: beneficiariesService,
 		housingRoomsService:  housingRoomsService,
+		housingsService:      housingsService,
 	}
 }
 
 func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, beneficiaryId string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
 	data.AuditorID = user.ID
-	data.Type = "ENTRANCE"
+	data.Type = utils.EntranceType
 	data.BeneficiaryID = beneficiaryId
 
 	allocation, err := service.repository.Create(data)
@@ -42,7 +46,13 @@ func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, benefici
 		return entities.BeneficiaryAllocation{}, err
 	}
 
-	if err = service.beneficiariesService.UpdateOneById(allocation.BeneficiaryID, entities.Beneficiary{CurrentRoomID: allocation.RoomID, CurrentHousingID: allocation.HousingID}); err != nil {
+	housing, err := service.housingsService.FindOneByID(allocation.HousingID)
+
+	if err != nil {
+		return entities.BeneficiaryAllocation{}, err
+	}
+
+	if err = service.beneficiariesService.UpdateOneById(allocation.BeneficiaryID, entities.Beneficiary{CurrentOrganizationID: housing.OrganizationID, CurrentRoomID: allocation.RoomID, CurrentHousingID: allocation.HousingID}); err != nil {
 		return entities.BeneficiaryAllocation{}, err
 	}
 
@@ -61,7 +71,7 @@ func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, benefi
 	}
 
 	data.AuditorID = user.ID
-	data.Type = "REALLOCATION"
+	data.Type = utils.ReallocationType
 	data.OldRoomID = beneficiary.CurrentRoomID
 	data.OldHousingID = beneficiary.CurrentHousingID
 	data.BeneficiaryID = beneficiaryId
@@ -72,7 +82,13 @@ func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, benefi
 		return entities.BeneficiaryAllocation{}, err
 	}
 
-	if err = service.beneficiariesService.UpdateOneById(allocation.BeneficiaryID, entities.Beneficiary{CurrentRoomID: allocation.RoomID, CurrentHousingID: allocation.HousingID}); err != nil {
+	housing, err := service.housingsService.FindOneByID(allocation.HousingID)
+
+	if err != nil {
+		return entities.BeneficiaryAllocation{}, err
+	}
+
+	if err = service.beneficiariesService.UpdateOneById(allocation.BeneficiaryID, entities.Beneficiary{CurrentOrganizationID: housing.OrganizationID, CurrentRoomID: allocation.RoomID, CurrentHousingID: allocation.HousingID}); err != nil {
 		return entities.BeneficiaryAllocation{}, err
 	}
 

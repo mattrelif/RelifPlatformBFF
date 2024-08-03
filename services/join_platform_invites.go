@@ -8,7 +8,6 @@ import (
 
 type JoinPlatformInvites interface {
 	Create(data entities.JoinPlatformInvite, inviter entities.User) (entities.JoinPlatformInvite, error)
-	AuthorizeAccessManyByOrganizationId(user entities.User, organizationId string) error
 	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error)
 	ConsumeByCode(code string) (entities.JoinPlatformInvite, error)
 }
@@ -69,12 +68,4 @@ func (service *joinPlatformInvitesImpl) ConsumeByCode(code string) (entities.Joi
 	}
 
 	return invite, nil
-}
-
-func (service *joinPlatformInvitesImpl) AuthorizeAccessManyByOrganizationId(user entities.User, organizationId string) error {
-	if (user.OrganizationID != organizationId && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
 }

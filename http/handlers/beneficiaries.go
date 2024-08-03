@@ -14,12 +14,14 @@ import (
 )
 
 type Beneficiaries struct {
-	service services.Beneficiaries
+	service              services.Beneficiaries
+	authorizationService services.Authorization
 }
 
-func NewBeneficiaries(service services.Beneficiaries) *Beneficiaries {
+func NewBeneficiaries(service services.Beneficiaries, authorizationService services.Authorization) *Beneficiaries {
 	return &Beneficiaries{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -28,7 +30,7 @@ func (handler *Beneficiaries) Create(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeCreate(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -76,7 +78,7 @@ func (handler *Beneficiaries) FindManyByHousingId(w http.ResponseWriter, r *http
 	housingId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeByHousingId(user, housingId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingData(housingId, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -107,7 +109,7 @@ func (handler *Beneficiaries) FindManyByRoomId(w http.ResponseWriter, r *http.Re
 	roomId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeByRoomId(user, roomId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomId, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -138,7 +140,7 @@ func (handler *Beneficiaries) FindManyByOrganizationId(w http.ResponseWriter, r 
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -169,12 +171,22 @@ func (handler *Beneficiaries) FindOneById(w http.ResponseWriter, r *http.Request
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	beneficiary, err := handler.service.FindOneById(id, user)
-
-	if err != nil {
+	if err := handler.authorizationService.AuthorizeAccessBeneficiaryData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	beneficiary, err := handler.service.FindOneById(id)
+
+	if err != nil {
+		switch {
 		case errors.Is(err, utils.ErrBeneficiaryNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -197,7 +209,7 @@ func (handler *Beneficiaries) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(user, id); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateBeneficiaryData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -239,7 +251,7 @@ func (handler *Beneficiaries) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(user, id); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateBeneficiaryData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)

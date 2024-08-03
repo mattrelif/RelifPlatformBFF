@@ -13,8 +13,6 @@ type OrganizationDataAccessGrants interface {
 	FindOneById(id string) (entities.OrganizationDataAccessGrant, error)
 	DeleteOneById(id string) error
 	ExistsByOrganizationIdAndTargetOrganizationId(organizationId, targetOrganizationId string) (bool, error)
-	AuthorizeFindManyByOrganizationId(user entities.User, organizationId string) error
-	AuthorizeExternalMutation(user entities.User, id string) error
 }
 
 type organizationDataAccessGrantsImpl struct {
@@ -65,14 +63,6 @@ func (service *organizationDataAccessGrantsImpl) AuthorizeExternalMutation(user 
 	}
 
 	if user.OrganizationID != grant.TargetOrganizationID && user.PlatformRole != utils.OrgAdminPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
-}
-
-func (service *organizationDataAccessGrantsImpl) AuthorizeFindManyByOrganizationId(user entities.User, organizationId string) error {
-	if user.OrganizationID != organizationId && user.PlatformRole != utils.OrgAdminPlatformRole {
 		return utils.ErrUnauthorizedAction
 	}
 

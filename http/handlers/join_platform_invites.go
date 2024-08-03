@@ -15,12 +15,14 @@ import (
 )
 
 type JoinPlatformInvites struct {
-	service services.JoinPlatformInvites
+	service              services.JoinPlatformInvites
+	authorizationService services.Authorization
 }
 
-func NewJoinPlatformInvites(service services.JoinPlatformInvites) *JoinPlatformInvites {
+func NewJoinPlatformInvites(service services.JoinPlatformInvites, authorizationService services.Authorization) *JoinPlatformInvites {
 	return &JoinPlatformInvites{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -28,6 +30,11 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 	var req requests.CreateJoinPlatformInvite
 
 	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -71,7 +78,7 @@ func (handler *JoinPlatformInvites) FindManyByOrganizationId(w http.ResponseWrit
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeAccessManyByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}

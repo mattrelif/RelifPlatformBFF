@@ -13,12 +13,14 @@ import (
 )
 
 type JoinOrganizationRequests struct {
-	service services.JoinOrganizationRequests
+	service              services.JoinOrganizationRequests
+	authorizationService services.Authorization
 }
 
-func NewJoinOrganizationRequests(service services.JoinOrganizationRequests) *JoinOrganizationRequests {
+func NewJoinOrganizationRequests(service services.JoinOrganizationRequests, authorizationService services.Authorization) *JoinOrganizationRequests {
 	return &JoinOrganizationRequests{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -26,7 +28,7 @@ func (handler *JoinOrganizationRequests) Create(w http.ResponseWriter, r *http.R
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeCreate(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateJoinOrganizationRequest(user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -51,7 +53,7 @@ func (handler *JoinOrganizationRequests) FindManyByOrganizationId(w http.Respons
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -91,10 +93,20 @@ func (handler *JoinOrganizationRequests) Accept(w http.ResponseWriter, r *http.R
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.Accept(id, user); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateJoinOrganizationRequest(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := handler.service.Accept(id, user); err != nil {
+		switch {
 		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -110,10 +122,20 @@ func (handler *JoinOrganizationRequests) Reject(w http.ResponseWriter, r *http.R
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.Reject(id, user); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateJoinOrganizationRequest(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := handler.service.Reject(id, user); err != nil {
+		switch {
 		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:

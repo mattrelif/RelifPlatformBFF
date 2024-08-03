@@ -11,8 +11,6 @@ type Organizations interface {
 	FindMany(offset, limit int64) (int64, []entities.Organization, error)
 	FindOneById(id string) (entities.Organization, error)
 	UpdateOneById(id string, data entities.Organization) error
-	AuthorizeCreate(user entities.User) error
-	AuthorizeExternalMutation(id string, user entities.User) error
 }
 
 type organizationsImpl struct {
@@ -57,20 +55,4 @@ func (service *organizationsImpl) FindOneById(organizationId string) (entities.O
 
 func (service *organizationsImpl) UpdateOneById(id string, data entities.Organization) error {
 	return service.repository.UpdateOneById(id, data)
-}
-
-func (service *organizationsImpl) AuthorizeCreate(user entities.User) error {
-	if user.OrganizationID != "" && user.PlatformRole != utils.RelifMemberPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
-}
-
-func (service *organizationsImpl) AuthorizeExternalMutation(id string, user entities.User) error {
-	if (user.OrganizationID != id && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
 }

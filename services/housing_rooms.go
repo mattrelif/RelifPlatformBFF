@@ -9,24 +9,20 @@ import (
 type HousingRooms interface {
 	CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error)
 	FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error)
-	FindOneById(id string, user entities.User) (entities.HousingRoom, error)
+	FindOneById(id string) (entities.HousingRoom, error)
 	UpdateOneById(id string, data entities.HousingRoom) error
 	IncreaseAvailableVacanciesById(id string) error
 	DecreaseAvailableVacanciesById(id string) error
 	InactivateOneById(id string) error
-	AuthorizeByHousingId(user entities.User, housingId string) error
-	AuthorizeExternalMutation(user entities.User, id string) error
 }
 
 type housingRoomsImpl struct {
-	repository      repositories.HousingRooms
-	housingsService Housings
+	repository repositories.HousingRooms
 }
 
-func NewHousingRooms(repository repositories.HousingRooms, housingsService Housings) HousingRooms {
+func NewHousingRooms(repository repositories.HousingRooms) HousingRooms {
 	return &housingRoomsImpl{
-		repository:      repository,
-		housingsService: housingsService,
+		repository: repository,
 	}
 }
 
@@ -38,8 +34,8 @@ func (service *housingRoomsImpl) FindManyByHousingId(housingId string, limit, of
 	return service.repository.FindManyByHousingId(housingId, limit, offset)
 }
 
-func (service *housingRoomsImpl) FindOneById(id string, user entities.User) (entities.HousingRoom, error) {
-	return service.authorizeFindOneByID(id, user)
+func (service *housingRoomsImpl) FindOneById(id string) (entities.HousingRoom, error) {
+	return service.repository.FindOneById(id)
 }
 
 func (service *housingRoomsImpl) UpdateOneById(id string, data entities.HousingRoom) error {
@@ -59,40 +55,4 @@ func (service *housingRoomsImpl) InactivateOneById(id string) error {
 		Status: utils.InactiveStatus,
 	}
 	return service.repository.UpdateOneById(id, data)
-}
-
-func (service *housingRoomsImpl) AuthorizeByHousingId(user entities.User, housingId string) error {
-	if _, err := service.housingsService.FindOneByID(housingId, user); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (service *housingRoomsImpl) AuthorizeExternalMutation(user entities.User, id string) error {
-	room, err := service.repository.FindOneById(id)
-
-	if err != nil {
-		return err
-	}
-
-	if err = service.AuthorizeByHousingId(user, room.HousingID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (service *housingRoomsImpl) authorizeFindOneByID(id string, user entities.User) (entities.HousingRoom, error) {
-	room, err := service.repository.FindOneById(id)
-
-	if err != nil {
-		return entities.HousingRoom{}, err
-	}
-
-	if err = service.AuthorizeByHousingId(user, room.HousingID); err != nil {
-		return entities.HousingRoom{}, err
-	}
-
-	return room, nil
 }

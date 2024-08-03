@@ -85,33 +85,48 @@ func main() {
 	joinOrganizationInvitesService := services.NewJoinOrganizationInvites(usersService, joinOrganizationInvitesRepository)
 	updateOrganizationTypeRequestsService := services.NewUpdateOrganizationTypeRequests(organizationsService, updateOrganizationTypeRequestsRepository)
 	organizationsDataAccessGrantsService := services.NewOrganizationDataAccessGrants(organizationDataAccessGrantsRepository)
-	housingsService := services.NewHousings(housingsRepository, organizationsDataAccessGrantsService)
+	housingsService := services.NewHousings(housingsRepository)
 	organizationDataAccessService := services.NewOrganizationDataAccessRequests(organizationDataAccessRepository, organizationsService, organizationsDataAccessGrantsService)
 	joinPlatformInvitesService := services.NewJoinPlatformInvites(joinPlatformInvitesRepository, sesEmailService, usersService, utils.GenerateUuid)
-	housingRoomsService := services.NewHousingRooms(housingRoomsRepository, housingsService)
-	beneficiariesService := services.NewBeneficiaries(beneficiariesRepository, housingsService, housingRoomsService, organizationsDataAccessGrantsService)
-	beneficiaryAllocationsService := services.NewBeneficiaryAllocations(beneficiaryAllocationsRepository, beneficiariesService, housingRoomsService)
+	housingRoomsService := services.NewHousingRooms(housingRoomsRepository)
+	beneficiariesService := services.NewBeneficiaries(beneficiariesRepository)
+	beneficiaryAllocationsService := services.NewBeneficiaryAllocations(beneficiaryAllocationsRepository, beneficiariesService, housingRoomsService, housingsService)
 	voluntaryPeopleService := services.NewVoluntaryPeople(voluntaryPeopleRepository)
 	productTypesService := services.NewProductTypes(productTypesRepository)
+
+	authorizationService := services.NewAuthorization(
+		usersService,
+		organizationsService,
+		housingsService,
+		housingRoomsService,
+		beneficiariesService,
+		organizationDataAccessService,
+		organizationsDataAccessGrantsService,
+		joinOrganizationInvitesService,
+		updateOrganizationTypeRequestsService,
+		joinOrganizationRequestsService,
+		voluntaryPeopleService,
+		productTypesService,
+	)
 
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByCookie(authService)
 
 	authHandler := handlers.NewAuth(authService)
 	passwordHandler := handlers.NewPassword(passwordService)
-	usersHandler := handlers.NewUsers(usersService)
-	organizationsHandler := handlers.NewOrganizations(organizationsService)
-	joinOrganizationRequestsHandler := handlers.NewJoinOrganizationRequests(joinOrganizationRequestsService)
-	joinOrganizationInvitesHandler := handlers.NewJoinOrganizationInvites(joinOrganizationInvitesService)
-	housingsHandler := handlers.NewHousings(housingsService)
-	updateOrganizationTypeRequestsHandler := handlers.NewUpdateOrganizationTypeRequests(updateOrganizationTypeRequestsService)
-	organizationsDataAccessRequestsHandler := handlers.NewOrganizationDataAccessRequests(organizationDataAccessService)
-	joinPlatformInvitesHandler := handlers.NewJoinPlatformInvites(joinPlatformInvitesService)
-	beneficiariesHandler := handlers.NewBeneficiaries(beneficiariesService)
-	housingRoomsHandler := handlers.NewHousingRooms(housingRoomsService)
-	beneficiaryAllocationsHandler := handlers.NewBeneficiaryAllocations(beneficiaryAllocationsService)
-	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(voluntaryPeopleService)
-	productTypesHandler := handlers.NewProductTypes(productTypesService)
-	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(organizationsDataAccessGrantsService)
+	usersHandler := handlers.NewUsers(usersService, authorizationService)
+	organizationsHandler := handlers.NewOrganizations(organizationsService, authorizationService)
+	joinOrganizationRequestsHandler := handlers.NewJoinOrganizationRequests(joinOrganizationRequestsService, authorizationService)
+	joinOrganizationInvitesHandler := handlers.NewJoinOrganizationInvites(joinOrganizationInvitesService, authorizationService)
+	housingsHandler := handlers.NewHousings(housingsService, authorizationService)
+	updateOrganizationTypeRequestsHandler := handlers.NewUpdateOrganizationTypeRequests(updateOrganizationTypeRequestsService, authorizationService)
+	organizationsDataAccessRequestsHandler := handlers.NewOrganizationDataAccessRequests(organizationDataAccessService, authorizationService)
+	joinPlatformInvitesHandler := handlers.NewJoinPlatformInvites(joinPlatformInvitesService, authorizationService)
+	beneficiariesHandler := handlers.NewBeneficiaries(beneficiariesService, authorizationService)
+	housingRoomsHandler := handlers.NewHousingRooms(housingRoomsService, authorizationService)
+	beneficiaryAllocationsHandler := handlers.NewBeneficiaryAllocations(beneficiaryAllocationsService, authorizationService)
+	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(voluntaryPeopleService, authorizationService)
+	productTypesHandler := handlers.NewProductTypes(productTypesService, authorizationService)
+	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(organizationsDataAccessGrantsService, authorizationService)
 
 	router := http.NewRouter(
 		environment.Environment,

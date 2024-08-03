@@ -1,6 +1,7 @@
 package models
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"relif/bff/entities"
 	"time"
 )
@@ -37,7 +38,7 @@ func (allocation *BeneficiaryAllocation) ToEntity() entities.BeneficiaryAllocati
 
 func NewBeneficiaryAllocation(entity entities.BeneficiaryAllocation) BeneficiaryAllocation {
 	return BeneficiaryAllocation{
-		ID:            entity.ID,
+		ID:            primitive.NewObjectID().Hex(),
 		BeneficiaryID: entity.BeneficiaryID,
 		OldHousingID:  entity.OldHousingID,
 		OldRoomID:     entity.OldRoomID,
@@ -45,7 +46,7 @@ func NewBeneficiaryAllocation(entity entities.BeneficiaryAllocation) Beneficiary
 		RoomID:        entity.RoomID,
 		Type:          entity.Type,
 		AuditorID:     entity.AuditorID,
-		CreatedAt:     entity.CreatedAt,
+		CreatedAt:     time.Now(),
 		ExitDate:      entity.ExitDate,
 		ExitReason:    entity.ExitReason,
 	}

@@ -16,6 +16,11 @@ var (
 )
 
 var (
+	EntranceType     = "ENTRANCE"
+	ReallocationType = "REALLOCATION"
+)
+
+var (
 	ManagerOrganizationType     = "MANAGER"
 	CoordinatorOrganizationType = "COORDINATOR"
 )

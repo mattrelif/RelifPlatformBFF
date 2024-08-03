@@ -53,3 +53,7 @@ var (
 	ErrBeneficiaryNotFound      = errors.New("beneficiary with given data not found")
 	ErrBeneficiaryAlreadyExists = errors.New("beneficiary with given data already exists")
 )
+
+var (
+	ErrProductTypeNotFound = errors.New("product type with given data not found")
+)

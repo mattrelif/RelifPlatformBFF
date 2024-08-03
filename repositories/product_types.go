@@ -2,12 +2,14 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
+	"relif/bff/utils"
 	"time"
 )
 
@@ -15,7 +17,7 @@ type ProductTypes interface {
 	Create(data entities.ProductType) (entities.ProductType, error)
 	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.ProductType, error)
 	FindOneById(id string) (entities.ProductType, error)
-	FindAndUpdateOneById(id string, data entities.ProductType) (entities.ProductType, error)
+	UpdateOneById(id string, data entities.ProductType) error
 	IncreaseTotalInStock(id string, amount int) error
 	DeleteOneById(id string) error
 }
@@ -51,7 +53,12 @@ func (repository *mongoProductTypes) Create(data entities.ProductType) (entities
 func (repository *mongoProductTypes) FindOneById(id string) (entities.ProductType, error) {
 	var model models.ProductType
 
-	if err := repository.collection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&model); err != nil {
+	filter := bson.M{"_id": id}
+
+	if err := repository.collection.FindOne(context.TODO(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.ProductType{}, utils.ErrProductTypeNotFound
+		}
 		return entities.ProductType{}, err
 	}
 
@@ -89,32 +96,22 @@ func (repository *mongoProductTypes) FindManyByOrganizationId(organizationId str
 	return count, entityList, nil
 }
 
-func (repository *mongoProductTypes) FindAndUpdateOneById(id string, data entities.ProductType) (entities.ProductType, error) {
-	model := models.ProductType{
-		Name:           data.Name,
-		Description:    data.Description,
-		Brand:          data.Brand,
-		Category:       data.Category,
-		OrganizationID: data.OrganizationID,
-		UpdatedAt:      time.Now(),
-	}
+func (repository *mongoProductTypes) UpdateOneById(id string, data entities.ProductType) error {
+	model := models.NewUpdatedProductType(data)
 
-	filter := bson.M{"_id": id}
 	update := bson.M{"$set": &model}
-	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	if err := repository.collection.FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&model); err != nil {
-		return entities.ProductType{}, err
+	if _, err := repository.collection.UpdateByID(context.TODO(), id, update); err != nil {
+		return err
 	}
 
-	return model.ToEntity(), nil
+	return nil
 }
 
 func (repository *mongoProductTypes) IncreaseTotalInStock(id string, amount int) error {
-	filter := bson.M{"_id": id}
-	update := bson.M{"$inc": bson.M{"total_in_stock": amount}}
+	update := bson.M{"$inc": bson.M{"total_in_stock": amount}, "$set": bson.M{"updated_at": time.Now()}}
 
-	if err := repository.collection.FindOneAndUpdate(context.TODO(), filter, update).Err(); err != nil {
+	if _, err := repository.collection.UpdateByID(context.TODO(), id, update); err != nil {
 		return err
 	}
 

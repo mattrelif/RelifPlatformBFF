@@ -13,10 +13,6 @@ type UpdateOrganizationTypeRequests interface {
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
 	Accept(id, userId string) error
 	Reject(id, userId string, data entities.UpdateOrganizationTypeRequest) error
-	AuthorizeFindMany(user entities.User) error
-	AuthorizeFindManyByOrganizationId(user entities.User, organizationId string) error
-	AuthorizeExternalMutation(user entities.User) error
-	AuthorizeCreate(user entities.User) error
 	ExistsPendingByOrganization(organizationId string) (bool, error)
 }
 
@@ -78,48 +74,6 @@ func (service *updateOrganizationTypeRequestsImpl) Reject(id, userId string, dat
 
 	if err = service.repository.UpdateOneById(request.ID, entities.UpdateOrganizationTypeRequest{AuditorID: userId, Status: utils.RejectedStatus, RejectedAt: time.Now(), RejectReason: data.RejectReason}); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (service *updateOrganizationTypeRequestsImpl) AuthorizeFindMany(user entities.User) error {
-	if user.PlatformRole != utils.RelifMemberPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
-}
-
-func (service *updateOrganizationTypeRequestsImpl) AuthorizeFindManyByOrganizationId(user entities.User, organizationId string) error {
-	if user.OrganizationID != organizationId && user.PlatformRole != utils.OrgAdminPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
-}
-
-func (service *updateOrganizationTypeRequestsImpl) AuthorizeExternalMutation(user entities.User) error {
-	if user.PlatformRole != utils.RelifMemberPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
-}
-
-func (service *updateOrganizationTypeRequestsImpl) AuthorizeCreate(user entities.User) error {
-	if user.PlatformRole != utils.OrgAdminPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	exists, err := service.ExistsPendingByOrganization(user.OrganizationID)
-
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return utils.ErrUnauthorizedAction
 	}
 
 	return nil

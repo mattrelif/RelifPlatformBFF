@@ -15,12 +15,14 @@ import (
 )
 
 type HousingRooms struct {
-	service services.HousingRooms
+	service              services.HousingRooms
+	authorizationService services.Authorization
 }
 
-func NewHousingRooms(service services.HousingRooms) *HousingRooms {
+func NewHousingRooms(service services.HousingRooms, authorizationService services.Authorization) *HousingRooms {
 	return &HousingRooms{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -30,7 +32,7 @@ func (handler *HousingRooms) Create(w http.ResponseWriter, r *http.Request) {
 	housingId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeByHousingId(user, housingId); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateHousingResource(housingId, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -80,12 +82,22 @@ func (handler *HousingRooms) FindOneById(w http.ResponseWriter, r *http.Request)
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	room, err := handler.service.FindOneById(id, user)
-
-	if err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	room, err := handler.service.FindOneById(id)
+
+	if err != nil {
+		switch {
 		case errors.Is(err, utils.ErrHousingNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -106,7 +118,7 @@ func (handler *HousingRooms) FindManyByHousingId(w http.ResponseWriter, r *http.
 	housingId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeByHousingId(user, housingId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingData(housingId, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -155,7 +167,7 @@ func (handler *HousingRooms) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(user, id); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateHousingRoomData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -197,7 +209,7 @@ func (handler *HousingRooms) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(user, id); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateHousingRoomData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)

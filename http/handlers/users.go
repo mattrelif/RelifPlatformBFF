@@ -15,12 +15,14 @@ import (
 )
 
 type Users struct {
-	service services.Users
+	service              services.Users
+	authorizationService services.Authorization
 }
 
-func NewUsers(service services.Users) *Users {
+func NewUsers(service services.Users, authorizationService services.Authorization) *Users {
 	return &Users{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
@@ -86,7 +88,7 @@ func (handler *Users) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(id, user); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateUserData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -124,7 +126,7 @@ func (handler *Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(id, user); err != nil {
+	if err := handler.authorizationService.AuthorizeMutateUserData(id, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)

@@ -15,19 +15,21 @@ import (
 )
 
 type UpdateOrganizationTypeRequests struct {
-	service services.UpdateOrganizationTypeRequests
+	service              services.UpdateOrganizationTypeRequests
+	authorizationService services.Authorization
 }
 
-func NewUpdateOrganizationTypeRequests(service services.UpdateOrganizationTypeRequests) *UpdateOrganizationTypeRequests {
+func NewUpdateOrganizationTypeRequests(service services.UpdateOrganizationTypeRequests, authorizationService services.Authorization) *UpdateOrganizationTypeRequests {
 	return &UpdateOrganizationTypeRequests{
-		service: service,
+		service:              service,
+		authorizationService: authorizationService,
 	}
 }
 
 func (handler *UpdateOrganizationTypeRequests) Create(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeCreate(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateUpdateOrganizationTypeRequest(user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -56,7 +58,7 @@ func (handler *UpdateOrganizationTypeRequests) Create(w http.ResponseWriter, r *
 func (handler *UpdateOrganizationTypeRequests) FindMany(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeFindMany(user); err != nil {
+	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -96,7 +98,7 @@ func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationId(w http.R
 	organizationId := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeFindManyByOrganizationId(user, organizationId); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -135,7 +137,7 @@ func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationId(w http.R
 func (handler *UpdateOrganizationTypeRequests) Accept(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(user); err != nil {
+	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -144,8 +146,6 @@ func (handler *UpdateOrganizationTypeRequests) Accept(w http.ResponseWriter, r *
 
 	if err := handler.service.Accept(user.ID, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrUpdateOrganizationTypeRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -162,7 +162,7 @@ func (handler *UpdateOrganizationTypeRequests) Reject(w http.ResponseWriter, r *
 
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.service.AuthorizeExternalMutation(user); err != nil {
+	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -189,8 +189,6 @@ func (handler *UpdateOrganizationTypeRequests) Reject(w http.ResponseWriter, r *
 
 	if err = handler.service.Reject(id, user.ID, req.ToEntity()); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrUpdateOrganizationTypeRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
