@@ -11,6 +11,7 @@ import (
 	"relif/bff/http/responses"
 	"relif/bff/services"
 	"relif/bff/utils"
+	"strconv"
 )
 
 type Beneficiaries struct {
@@ -90,14 +91,30 @@ func (handler *Beneficiaries) FindManyByHousingId(w http.ResponseWriter, r *http
 		return
 	}
 
-	beneficiaries, err := handler.service.FindManyByHousingId(housingId)
+	offsetParam := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, beneficiaries, err := handler.service.FindManyByHousingId(housingId, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := responses.NewBeneficiaries(beneficiaries)
+	res := responses.FindMany[responses.Beneficiaries]{Data: responses.NewBeneficiaries(beneficiaries), Count: count}
 
 	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -121,14 +138,30 @@ func (handler *Beneficiaries) FindManyByRoomId(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	beneficiaries, err := handler.service.FindManyByRoomId(roomId)
+	offsetParam := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, beneficiaries, err := handler.service.FindManyByRoomId(roomId, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := responses.NewBeneficiaries(beneficiaries)
+	res := responses.FindMany[responses.Beneficiaries]{Data: responses.NewBeneficiaries(beneficiaries), Count: count}
 
 	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -152,14 +185,30 @@ func (handler *Beneficiaries) FindManyByOrganizationId(w http.ResponseWriter, r 
 		return
 	}
 
-	beneficiaries, err := handler.service.FindManyByOrganizationId(organizationId)
+	offsetParam := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, beneficiaries, err := handler.service.FindManyByOrganizationId(organizationId, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := responses.NewBeneficiaries(beneficiaries)
+	res := responses.FindMany[responses.Beneficiaries]{Data: responses.NewBeneficiaries(beneficiaries), Count: count}
 
 	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

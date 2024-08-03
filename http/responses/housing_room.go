@@ -8,14 +8,14 @@ import (
 type HousingRooms []HousingRoom
 
 type HousingRoom struct {
-	ID                 string
-	HousingID          string
-	Name               string
-	Status             string
-	TotalVacancies     int
-	AvailableVacancies int
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                 string    `json:"id"`
+	HousingID          string    `json:"housing_id"`
+	Name               string    `json:"name"`
+	Status             string    `json:"status"`
+	TotalVacancies     int       `json:"total_vacancies"`
+	AvailableVacancies int       `json:"available_vacancies"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 func NewHousingRoom(entity entities.HousingRoom) HousingRoom {

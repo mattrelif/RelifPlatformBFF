@@ -8,13 +8,13 @@ import (
 type Housings []Housing
 
 type Housing struct {
-	ID             string
-	OrganizationID string
-	Name           string
-	Status         string
-	Address        Address
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID             string    `json:"id"`
+	OrganizationID string    `json:"organization_id"`
+	Name           string    `json:"name"`
+	Status         string    `json:"status"`
+	Address        Address   `json:"address"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 func NewHousing(housing entities.Housing) Housing {
