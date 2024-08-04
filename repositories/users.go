@@ -45,7 +45,7 @@ func (repository *usersMongo) FindManyByOrganizationId(organizationId string, of
 	modelList := make([]models.User, 0)
 	entityList := make([]entities.User, 0)
 
-	filter := bson.M{"organization_id": organizationId}
+	filter := bson.M{"organization_id": organizationId, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -72,7 +72,8 @@ func (repository *usersMongo) FindManyByOrganizationId(organizationId string, of
 func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
 	var model models.User
 
-	filter := bson.M{"_id": id}
+	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return entities.User{}, utils.ErrUserNotFound
@@ -87,7 +88,8 @@ func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
 func (repository *usersMongo) FindOneByEmail(email string) (entities.User, error) {
 	var model models.User
 
-	filter := bson.M{"email": email}
+	filter := bson.M{"email": email, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return entities.User{}, utils.ErrUserNotFound
@@ -100,7 +102,7 @@ func (repository *usersMongo) FindOneByEmail(email string) (entities.User, error
 }
 
 func (repository *usersMongo) CountByEmail(email string) (int64, error) {
-	filter := bson.M{"email": email}
+	filter := bson.M{"email": email, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -112,7 +114,7 @@ func (repository *usersMongo) CountByEmail(email string) (int64, error) {
 }
 
 func (repository *usersMongo) CountById(id string) (int64, error) {
-	filter := bson.M{"_id": id}
+	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 

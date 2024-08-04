@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
+	"relif/bff/utils"
 )
 
 type Organizations interface {
@@ -40,7 +41,9 @@ func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []en
 	modelList := make([]models.Organization, 0)
 	entityList := make([]entities.Organization, 0)
 
-	count, err := repository.collection.CountDocuments(context.Background(), bson.M{})
+	filter := bson.M{"status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
 		return 0, nil, err
@@ -69,7 +72,9 @@ func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []en
 func (repository *mongoOrganizations) FindOneById(id string) (entities.Organization, error) {
 	var model models.Organization
 
-	if err := repository.collection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&model); err != nil {
+	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+
+	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		return entities.Organization{}, err
 	}
 

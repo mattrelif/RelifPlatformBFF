@@ -54,7 +54,7 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 	modelList := make([]models.HousingRoom, 0)
 	entityList := make([]entities.HousingRoom, 0)
 
-	filter := bson.M{"housing_id": housingId}
+	filter := bson.M{"housing_id": housingId, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoom, error) {
 	var model models.HousingRoom
 
-	filter := bson.M{"_id": id}
+	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
