@@ -13,6 +13,7 @@ type VoluntaryPerson struct {
 	Address            Address
 	Status             string
 	Segments           []string
+	Gender             string
 	MedicalInformation MedicalInformation
 	EmergencyContacts  []EmergencyContact
 	CreatedAt          time.Time

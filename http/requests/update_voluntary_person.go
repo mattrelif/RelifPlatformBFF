@@ -14,6 +14,7 @@ type UpdateVoluntaryPerson struct {
 	Phones             []string           `json:"phones"`
 	OrganizationID     string             `json:"organization_id"`
 	Segments           []string           `json:"segments"`
+	Gender             string             `json:"gender"`
 	Address            Address            `json:"address"`
 	MedicalInformation MedicalInformation `json:"medical_information"`
 	EmergencyContacts  []EmergencyContact `json:"emergency_contacts"`
@@ -35,6 +36,7 @@ func (req *UpdateVoluntaryPerson) Validate() error {
 		validation.Field(&req.Phones, validation.Each(validation.Required)),
 		validation.Field(&req.OrganizationID, validation.Required, is.MongoID),
 		validation.Field(&req.Segments, validation.Each(validation.Required)),
+		validation.Field(&req.Gender, validation.Required),
 		validation.Field(&req.Address, validation.By(func(value interface{}) error {
 			if address, ok := value.(Address); ok {
 				return address.Validate()
@@ -81,6 +83,7 @@ func (req *UpdateVoluntaryPerson) ToEntity() entities.VoluntaryPerson {
 		Phones:             req.Phones,
 		OrganizationID:     req.OrganizationID,
 		Segments:           req.Segments,
+		Gender:             req.Gender,
 		Address:            req.Address.ToEntity(),
 		MedicalInformation: req.MedicalInformation.ToEntity(),
 		EmergencyContacts:  contactsEntityList,

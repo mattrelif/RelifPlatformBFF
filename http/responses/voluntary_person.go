@@ -17,6 +17,7 @@ type VoluntaryPerson struct {
 	Address            Address            `json:"address"`
 	OrganizationID     string             `json:"organization_id"`
 	Segments           []string           `json:"segments"`
+	Gender             string             `json:"gender"`
 	MedicalInformation MedicalInformation `json:"medical_information"`
 	EmergencyContacts  []EmergencyContact `json:"emergency_contacts"`
 	CreatedAt          time.Time          `json:"created_at"`
@@ -48,6 +49,7 @@ func NewVoluntaryPerson(entity entities.VoluntaryPerson) VoluntaryPerson {
 		MedicalInformation: NewMedicalInformation(entity.MedicalInformation),
 		OrganizationID:     entity.OrganizationID,
 		Segments:           entity.Segments,
+		Gender:             entity.Gender,
 		EmergencyContacts:  contacts,
 		CreatedAt:          entity.CreatedAt,
 		UpdatedAt:          entity.UpdatedAt,

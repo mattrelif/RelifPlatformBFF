@@ -9,7 +9,7 @@ import (
 
 type Beneficiary struct {
 	ID                    string             `bson:"_id,omitempty"`
-	CurrentOrganizationID string             `bson:"current_organization_id"`
+	CurrentOrganizationID string             `bson:"current_organization_id,omitempty"`
 	FullName              string             `bson:"full_name,omitempty"`
 	Email                 string             `bson:"email,omitempty"`
 	Documents             []Document         `bson:"documents,omitempty"`

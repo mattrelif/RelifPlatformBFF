@@ -17,7 +17,6 @@ type Address struct {
 func (req *Address) Validate() error {
 	return validation.ValidateStruct(req,
 		validation.Field(&req.AddressLine1, validation.Required),
-		validation.Field(&req.AddressLine2, validation.Required),
 		validation.Field(&req.ZipCode, validation.Required),
 		validation.Field(&req.District, validation.Required),
 		validation.Field(&req.City, validation.Required),

@@ -221,7 +221,11 @@ func (service *authorizationImpl) AuthorizeCreateHousingResource(housingId strin
 		return err
 	}
 
-	return service.AuthorizeCreateHousingResource(housing.OrganizationID, user)
+	if housing.OrganizationID != user.OrganizationID {
+		return utils.ErrUnauthorizedAction
+	}
+
+	return service.AuthorizeCreateOrganizationResource(user)
 }
 
 func (service *authorizationImpl) AuthorizeMutateJoinOrganizationInviteData(inviteId string, user entities.User) error {

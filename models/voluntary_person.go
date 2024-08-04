@@ -18,6 +18,7 @@ type VoluntaryPerson struct {
 	Address            Address            `bson:"address,omitempty"`
 	Status             string             `bson:"status,omitempty"`
 	Segments           []string           `bson:"segments,omitempty"`
+	Gender             string             `bson:"gender,omitempty"`
 	MedicalInformation MedicalInformation `bson:"medical_information,omitempty"`
 	EmergencyContacts  []EmergencyContact `bson:"emergency_contacts,omitempty"`
 	CreatedAt          time.Time          `bson:"created_at,omitempty"`
@@ -49,6 +50,7 @@ func (voluntary *VoluntaryPerson) ToEntity() entities.VoluntaryPerson {
 		Address:            voluntary.Address.ToEntity(),
 		Status:             voluntary.Status,
 		Segments:           voluntary.Segments,
+		Gender:             voluntary.Gender,
 		MedicalInformation: voluntary.MedicalInformation.ToEntity(),
 		EmergencyContacts:  emergencyContacts,
 		CreatedAt:          voluntary.CreatedAt,
@@ -81,6 +83,7 @@ func NewVoluntaryPerson(entity entities.VoluntaryPerson) VoluntaryPerson {
 		Address:            NewAddress(entity.Address),
 		Status:             utils.ActiveStatus,
 		Segments:           entity.Segments,
+		Gender:             entity.Gender,
 		MedicalInformation: NewMedicalInformation(entity.MedicalInformation),
 		EmergencyContacts:  emergencyContacts,
 		CreatedAt:          time.Now(),
@@ -111,6 +114,7 @@ func NewUpdatedVoluntaryPerson(entity entities.VoluntaryPerson) VoluntaryPerson 
 		Address:            NewAddress(entity.Address),
 		Status:             utils.ActiveStatus,
 		Segments:           entity.Segments,
+		Gender:             entity.Gender,
 		MedicalInformation: NewMedicalInformation(entity.MedicalInformation),
 		EmergencyContacts:  emergencyContacts,
 		UpdatedAt:          time.Now(),

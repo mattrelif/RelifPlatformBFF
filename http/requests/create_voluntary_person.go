@@ -13,6 +13,7 @@ type CreateVoluntaryPerson struct {
 	Birthdate          string             `json:"birthdate"`
 	Phones             []string           `json:"phones"`
 	Segments           []string           `json:"segments"`
+	Gender             string             `json:"gender"`
 	Address            Address            `json:"address"`
 	MedicalInformation MedicalInformation `json:"medical_information"`
 	EmergencyContacts  []EmergencyContact `json:"emergency_contacts"`
@@ -33,6 +34,7 @@ func (req *CreateVoluntaryPerson) Validate() error {
 		validation.Field(&req.Birthdate, validation.Required),
 		validation.Field(&req.Segments, validation.Each(validation.Required)),
 		validation.Field(&req.Phones, validation.Each(validation.Required)),
+		validation.Field(&req.Gender, validation.Required),
 		validation.Field(&req.Address, validation.By(func(value interface{}) error {
 			if address, ok := value.(Address); ok {
 				return address.Validate()
@@ -79,6 +81,7 @@ func (req *CreateVoluntaryPerson) ToEntity() entities.VoluntaryPerson {
 		Phones:             req.Phones,
 		Address:            req.Address.ToEntity(),
 		Segments:           req.Segments,
+		Gender:             req.Gender,
 		MedicalInformation: req.MedicalInformation.ToEntity(),
 		EmergencyContacts:  contactsEntityList,
 		Notes:              req.Notes,
