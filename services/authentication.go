@@ -15,23 +15,26 @@ type Authentication interface {
 }
 
 type authenticationImpl struct {
-	usersService      Users
-	sessionsService   Sessions
-	passwordHashFn    utils.PasswordHashFn
-	passwordCompareFn utils.PasswordCompareFn
+	usersService         Users
+	sessionsService      Sessions
+	organizationsService Organizations
+	passwordHashFn       utils.PasswordHashFn
+	passwordCompareFn    utils.PasswordCompareFn
 }
 
 func NewAuth(
 	usersService Users,
 	sessionsService Sessions,
+	organizationsService Organizations,
 	passwordHashFn utils.PasswordHashFn,
 	passwordCompareFn utils.PasswordCompareFn,
 ) Authentication {
 	return &authenticationImpl{
-		usersService:      usersService,
-		sessionsService:   sessionsService,
-		passwordHashFn:    passwordHashFn,
-		passwordCompareFn: passwordCompareFn,
+		usersService:         usersService,
+		sessionsService:      sessionsService,
+		organizationsService: organizationsService,
+		passwordHashFn:       passwordHashFn,
+		passwordCompareFn:    passwordCompareFn,
 	}
 }
 
@@ -96,6 +99,18 @@ func (service *authenticationImpl) SignIn(email, password string) (entities.Sess
 		return entities.Session{}, err
 	}
 
+	if user.OrganizationID != "" {
+		organization, err := service.organizationsService.FindOneById(user.OrganizationID)
+
+		if err != nil {
+			return entities.Session{}, err
+		}
+
+		if organization.Status == utils.InactiveStatus {
+			return entities.Session{}, utils.ErrMemberOfInactiveOrganization
+		}
+	}
+
 	if err = service.passwordCompareFn(password, user.Password); err != nil {
 		return entities.Session{}, utils.ErrInvalidCredentials
 	}
@@ -124,6 +139,18 @@ func (service *authenticationImpl) AuthenticateSession(sessionId string) (entiti
 
 	if err != nil {
 		return entities.User{}, err
+	}
+
+	if user.OrganizationID != "" {
+		organization, err := service.organizationsService.FindOneById(user.OrganizationID)
+
+		if err != nil {
+			return entities.User{}, err
+		}
+
+		if organization.Status == utils.InactiveStatus {
+			return entities.User{}, utils.ErrMemberOfInactiveOrganization
+		}
 	}
 
 	return user, nil

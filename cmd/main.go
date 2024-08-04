@@ -80,7 +80,7 @@ func main() {
 	sessionsService := services.NewSessions(sessionsRepository, utils.GenerateUuid)
 	organizationsService := services.NewOrganizations(organizationsRepository, usersService)
 	passwordService := services.NewPassword(sesEmailService, usersService, passwordChangeRequestsRepository, utils.BcryptHash, utils.GenerateUuid)
-	authService := services.NewAuth(usersService, sessionsService, utils.BcryptHash, utils.BcryptCompare)
+	authService := services.NewAuth(usersService, sessionsService, organizationsService, utils.BcryptHash, utils.BcryptCompare)
 	joinOrganizationRequestsService := services.NewJoinOrganizationRequests(usersService, joinOrganizationRequestsRepository)
 	joinOrganizationInvitesService := services.NewJoinOrganizationInvites(usersService, joinOrganizationInvitesRepository)
 	updateOrganizationTypeRequestsService := services.NewUpdateOrganizationTypeRequests(organizationsService, updateOrganizationTypeRequestsRepository)

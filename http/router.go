@@ -101,6 +101,8 @@ func NewRouter(
 				r.Post("/{id}/beneficiaries", beneficiariesHandler.Create)
 				r.Post("/{id}/voluntary-people", voluntaryPeopleHandler.Create)
 				r.Post("/{id}/product-types", productTypesHandler.Create)
+
+				r.Delete("/{id}", organizationsHandler.Delete)
 			})
 
 			r.Route("/join-organization-invites", func(r chi.Router) {

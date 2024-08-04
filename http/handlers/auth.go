@@ -47,12 +47,7 @@ func (handler *Auth) SignUp(w http.ResponseWriter, r *http.Request) {
 	session, err := handler.service.SignUp(req.ToEntity())
 
 	if err != nil {
-		switch {
-		case errors.Is(err, utils.ErrInvalidCredentials):
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -86,12 +81,7 @@ func (handler *Auth) OrganizationSignUp(w http.ResponseWriter, r *http.Request) 
 	session, err := handler.service.OrganizationSignUp(req.ToEntity())
 
 	if err != nil {
-		switch {
-		case errors.Is(err, utils.ErrInvalidCredentials):
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -125,7 +115,14 @@ func (handler *Auth) SignIn(w http.ResponseWriter, r *http.Request) {
 	session, err := handler.service.SignIn(req.Email, req.Password)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrInvalidCredentials):
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		case errors.Is(err, utils.ErrMemberOfInactiveOrganization):
+			http.Error(w, err.Error(), http.StatusGone)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

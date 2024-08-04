@@ -2,9 +2,11 @@ package middlewares
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"relif/bff/http/cookies"
 	"relif/bff/services"
+	"relif/bff/utils"
 )
 
 type AuthenticateByCookie struct {
@@ -30,7 +32,14 @@ func (middleware *AuthenticateByCookie) Handle(next http.Handler) http.Handler {
 		user, err := middleware.authService.AuthenticateSession(sessionId)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			switch {
+			case errors.Is(err, utils.ErrMemberOfInactiveOrganization):
+				http.Error(w, err.Error(), http.StatusGone)
+			case errors.Is(err, utils.ErrUserNotFound):
+				http.Error(w, err.Error(), http.StatusNotFound)
+			default:
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			}
 			return
 		}
 

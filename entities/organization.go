@@ -9,6 +9,7 @@ type Organization struct {
 	Address     Address
 	Type        string
 	OwnerID     string
+	Status      string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

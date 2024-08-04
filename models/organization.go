@@ -13,6 +13,7 @@ type Organization struct {
 	Description string    `bson:"description,omitempty"`
 	Address     Address   `bson:"address,omitempty"`
 	Type        string    `bson:"type,omitempty"`
+	Status      string    `bson:"status,omitempty"`
 	OwnerID     string    `bson:"owner_id,omitempty"`
 	CreatedAt   time.Time `bson:"created_at,omitempty"`
 	UpdatedAt   time.Time `bson:"updated_at,omitempty"`
@@ -25,6 +26,7 @@ func (organization *Organization) ToEntity() entities.Organization {
 		Description: organization.Description,
 		Address:     organization.Address.ToEntity(),
 		Type:        organization.Type,
+		Status:      organization.Status,
 		OwnerID:     organization.OwnerID,
 		CreatedAt:   organization.CreatedAt,
 		UpdatedAt:   organization.UpdatedAt,
@@ -38,6 +40,7 @@ func NewOrganization(entity entities.Organization) Organization {
 		Description: entity.Description,
 		Address:     NewAddress(entity.Address),
 		Type:        utils.ManagerOrganizationType,
+		Status:      utils.ActiveStatus,
 		OwnerID:     entity.OwnerID,
 		CreatedAt:   time.Now(),
 	}
@@ -50,6 +53,7 @@ func NewUpdatedOrganization(entity entities.Organization) Organization {
 		Address:     NewAddress(entity.Address),
 		Type:        entity.Type,
 		OwnerID:     entity.OwnerID,
+		Status:      entity.Status,
 		UpdatedAt:   time.Now(),
 	}
 }

@@ -3,8 +3,9 @@ package utils
 import "errors"
 
 var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrUnauthorizedAction = errors.New("unauthorized action")
+	ErrInvalidCredentials           = errors.New("invalid credentials")
+	ErrUnauthorizedAction           = errors.New("unauthorized action")
+	ErrMemberOfInactiveOrganization = errors.New("member of inactive organization")
 )
 
 var (

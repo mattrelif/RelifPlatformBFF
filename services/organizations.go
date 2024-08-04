@@ -11,6 +11,7 @@ type Organizations interface {
 	FindMany(offset, limit int64) (int64, []entities.Organization, error)
 	FindOneById(id string) (entities.Organization, error)
 	UpdateOneById(id string, data entities.Organization) error
+	InactivateOneById(id string) error
 }
 
 type organizationsImpl struct {
@@ -55,4 +56,18 @@ func (service *organizationsImpl) FindOneById(organizationId string) (entities.O
 
 func (service *organizationsImpl) UpdateOneById(id string, data entities.Organization) error {
 	return service.repository.UpdateOneById(id, data)
+}
+
+func (service *organizationsImpl) InactivateOneById(id string) error {
+	organization, err := service.FindOneById(id)
+
+	if err != nil {
+		return err
+	}
+
+	data := entities.Organization{
+		Status: utils.InactiveStatus,
+	}
+	
+	return service.repository.UpdateOneById(organization.ID, data)
 }
