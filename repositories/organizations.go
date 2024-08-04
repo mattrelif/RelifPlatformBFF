@@ -72,7 +72,20 @@ func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []en
 func (repository *mongoOrganizations) FindOneById(id string) (entities.Organization, error) {
 	var model models.Organization
 
-	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"_id": id,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		return entities.Organization{}, err

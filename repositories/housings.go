@@ -42,7 +42,21 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId string,
 	modelList := make([]models.Housing, 0)
 	entityList := make([]entities.Housing, 0)
 
-	filter := bson.M{"organization_id": organizationId, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"organization_id": organizationId,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
+
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -72,8 +86,21 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId string,
 func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error) {
 	var model models.Housing
 
-	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
-
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"_id": id,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
+	
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return entities.Housing{}, utils.ErrHousingNotFound

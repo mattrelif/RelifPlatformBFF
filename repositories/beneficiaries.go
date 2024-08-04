@@ -45,7 +45,20 @@ func (repository *mongoBeneficiaries) FindManyByHousingId(housingId string, limi
 	entityList := make([]entities.Beneficiary, 0)
 	modelList := make([]models.Beneficiary, 0)
 
-	filter := bson.M{"current_housing_id": housingId, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"current_housing_id": housingId,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -77,8 +90,20 @@ func (repository *mongoBeneficiaries) FindManyByRoomId(roomId string, limit, off
 	entityList := make([]entities.Beneficiary, 0)
 	modelList := make([]models.Beneficiary, 0)
 
-	filter := bson.M{"current_room_id": roomId, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
-
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"current_room_id": roomId,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -109,7 +134,20 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId st
 	entityList := make([]entities.Beneficiary, 0)
 	modelList := make([]models.Beneficiary, 0)
 
-	filter := bson.M{"current_organization_id": organizationId, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"current_organization_id": organizationId,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -140,7 +178,20 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId st
 func (repository *mongoBeneficiaries) FindOneById(id string) (entities.Beneficiary, error) {
 	var model models.Beneficiary
 
-	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"_id": id,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -153,7 +204,20 @@ func (repository *mongoBeneficiaries) FindOneById(id string) (entities.Beneficia
 }
 
 func (repository *mongoBeneficiaries) CountByEmail(email string) (int64, error) {
-	filter := bson.M{"email": email, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"email": email,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 

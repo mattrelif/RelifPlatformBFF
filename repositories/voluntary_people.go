@@ -43,7 +43,20 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId 
 	entityList := make([]entities.VoluntaryPerson, 0)
 	modelsList := make([]models.VoluntaryPerson, 0)
 
-	filter := bson.M{"organization_id": organizationId, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"organization_id": organizationId,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -74,7 +87,20 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId 
 func (repository *mongoVoluntaryPeople) FindOneById(id string) (entities.VoluntaryPerson, error) {
 	var model models.VoluntaryPerson
 
-	filter := bson.M{"_id": id, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"_id": id,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -88,7 +114,20 @@ func (repository *mongoVoluntaryPeople) FindOneById(id string) (entities.Volunta
 }
 
 func (repository *mongoVoluntaryPeople) CountByEmail(email string) (int64, error) {
-	filter := bson.M{"email": email, "status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"email": email,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
