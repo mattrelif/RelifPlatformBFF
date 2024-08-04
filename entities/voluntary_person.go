@@ -7,7 +7,7 @@ type VoluntaryPerson struct {
 	OrganizationID     string
 	FullName           string
 	Email              string
-	Document           Document
+	Documents          []Document
 	Birthdate          string
 	Phones             []string
 	Address            Address
@@ -17,5 +17,5 @@ type VoluntaryPerson struct {
 	EmergencyContacts  []EmergencyContact
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
-	Notes              []string
+	Notes              string
 }

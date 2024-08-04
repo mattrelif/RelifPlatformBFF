@@ -12,7 +12,7 @@ type Beneficiary struct {
 	CurrentOrganizationID string             `json:"current_organization_id"`
 	FullName              string             `json:"full_name"`
 	Email                 string             `json:"email"`
-	Document              Document           `json:"document"`
+	Documents             []Document         `json:"documents"`
 	Birthdate             string             `json:"birthdate"`
 	Phones                []string           `json:"phones"`
 	CivilStatus           string             `json:"civil_status"`
@@ -27,14 +27,20 @@ type Beneficiary struct {
 	EmergencyContacts     []EmergencyContact `json:"emergency_contacts"`
 	CreatedAt             time.Time          `json:"created_at"`
 	UpdatedAt             time.Time          `json:"updated_at"`
-	Notes                 []string           `json:"notes"`
+	Notes                 string             `json:"notes"`
 }
 
 func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
-	contactsEntityList := make([]EmergencyContact, 0)
+	contacts := make([]EmergencyContact, 0)
 
 	for _, contact := range entity.EmergencyContacts {
-		contactsEntityList = append(contactsEntityList, NewEmergencyContact(contact))
+		contacts = append(contacts, NewEmergencyContact(contact))
+	}
+
+	documents := make([]Document, 0)
+
+	for _, document := range entity.Documents {
+		documents = append(documents, NewDocument(document))
 	}
 
 	return Beneficiary{
@@ -42,7 +48,7 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		CurrentOrganizationID: entity.CurrentOrganizationID,
 		FullName:              entity.FullName,
 		Email:                 entity.Email,
-		Document:              NewDocument(entity.Document),
+		Documents:             documents,
 		Birthdate:             entity.Birthdate,
 		Phones:                entity.Phones,
 		CivilStatus:           entity.CivilStatus,
@@ -54,7 +60,7 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		Occupation:            entity.Occupation,
 		Address:               NewAddress(entity.Address),
 		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),
-		EmergencyContacts:     contactsEntityList,
+		EmergencyContacts:     contacts,
 		CreatedAt:             entity.CreatedAt,
 		UpdatedAt:             entity.UpdatedAt,
 		Notes:                 entity.Notes,

@@ -12,7 +12,7 @@ type VoluntaryPerson struct {
 	OrganizationID     string             `bson:"organization_id,omitempty"`
 	FullName           string             `bson:"full_name,omitempty"`
 	Email              string             `bson:"email,omitempty"`
-	Document           Document           `bson:"document,omitempty"`
+	Documents          []Document         `bson:"documents,omitempty"`
 	Birthdate          string             `bson:"birthdate,omitempty"`
 	Phones             []string           `bson:"phones,omitempty"`
 	Address            Address            `bson:"address,omitempty"`
@@ -22,7 +22,7 @@ type VoluntaryPerson struct {
 	EmergencyContacts  []EmergencyContact `bson:"emergency_contacts,omitempty"`
 	CreatedAt          time.Time          `bson:"created_at,omitempty"`
 	UpdatedAt          time.Time          `bson:"updated_at,omitempty"`
-	Notes              []string           `bson:"notes,omitempty"`
+	Notes              string             `bson:"notes,omitempty"`
 }
 
 func (voluntary *VoluntaryPerson) ToEntity() entities.VoluntaryPerson {
@@ -32,12 +32,18 @@ func (voluntary *VoluntaryPerson) ToEntity() entities.VoluntaryPerson {
 		emergencyContacts = append(emergencyContacts, contact.ToEntity())
 	}
 
+	documents := make([]entities.Document, 0)
+
+	for _, document := range voluntary.Documents {
+		documents = append(documents, document.ToEntity())
+	}
+
 	return entities.VoluntaryPerson{
 		ID:                 voluntary.ID,
 		OrganizationID:     voluntary.OrganizationID,
 		FullName:           voluntary.FullName,
 		Email:              voluntary.Email,
-		Document:           voluntary.Document.ToEntity(),
+		Documents:          documents,
 		Birthdate:          voluntary.Birthdate,
 		Phones:             voluntary.Phones,
 		Address:            voluntary.Address.ToEntity(),
@@ -58,12 +64,18 @@ func NewVoluntaryPerson(entity entities.VoluntaryPerson) VoluntaryPerson {
 		emergencyContacts = append(emergencyContacts, NewEmergencyContact(contact))
 	}
 
+	documents := make([]Document, 0)
+
+	for _, document := range entity.Documents {
+		documents = append(documents, NewDocument(document))
+	}
+
 	return VoluntaryPerson{
 		ID:                 primitive.NewObjectID().Hex(),
 		OrganizationID:     entity.OrganizationID,
 		FullName:           entity.FullName,
 		Email:              entity.Email,
-		Document:           NewDocument(entity.Document),
+		Documents:          documents,
 		Birthdate:          entity.Birthdate,
 		Phones:             entity.Phones,
 		Address:            NewAddress(entity.Address),
@@ -83,11 +95,17 @@ func NewUpdatedVoluntaryPerson(entity entities.VoluntaryPerson) VoluntaryPerson 
 		emergencyContacts = append(emergencyContacts, NewEmergencyContact(contact))
 	}
 
+	documents := make([]Document, 0)
+
+	for _, document := range entity.Documents {
+		documents = append(documents, NewDocument(document))
+	}
+
 	return VoluntaryPerson{
 		OrganizationID:     entity.OrganizationID,
 		FullName:           entity.FullName,
 		Email:              entity.Email,
-		Document:           NewDocument(entity.Document),
+		Documents:          documents,
 		Birthdate:          entity.Birthdate,
 		Phones:             entity.Phones,
 		Address:            NewAddress(entity.Address),

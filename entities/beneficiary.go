@@ -7,7 +7,7 @@ type Beneficiary struct {
 	FullName              string
 	CurrentOrganizationID string
 	Email                 string
-	Document              Document
+	Documents             []Document
 	Birthdate             string
 	Phones                []string
 	CivilStatus           string
@@ -23,5 +23,5 @@ type Beneficiary struct {
 	EmergencyContacts     []EmergencyContact
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
-	Notes                 []string
+	Notes                 string
 }
