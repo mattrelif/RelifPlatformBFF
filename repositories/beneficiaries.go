@@ -160,7 +160,7 @@ func (repository *mongoBeneficiaries) FindManyByRoomId(roomId, search string, li
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
-	modelList := make([]models.Beneficiary, 0)
+	modelList := make([]models.FindBeneficiary, 0)
 
 	if search != "" {
 		filter = bson.M{
@@ -277,7 +277,7 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId, s
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
-	modelList := make([]models.Beneficiary, 0)
+	modelList := make([]models.FindBeneficiary, 0)
 
 	if search != "" {
 		filter = bson.M{
@@ -391,7 +391,7 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId, s
 }
 
 func (repository *mongoBeneficiaries) FindOneById(id string) (entities.Beneficiary, error) {
-	var model models.Beneficiary
+	var model models.FindBeneficiary
 
 	filter := bson.M{
 		"$and": bson.A{

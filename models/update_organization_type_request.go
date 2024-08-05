@@ -15,11 +15,11 @@ type FindUpdateOrganizationTypeRequest struct {
 	Creator        User         `bson:"creator,omitempty"`
 	AuditorID      string       `bson:"auditor_id,omitempty"`
 	Auditor        User         `bson:"auditor,omitempty"`
-	Status         string       `json:"status,omitempty"`
+	Status         string       `bson:"status,omitempty"`
 	CreatedAt      time.Time    `bson:"created_at,omitempty"`
 	AcceptedAt     time.Time    `bson:"accepted_at,omitempty"`
-	RejectReason   string       `json:"reject_reason,omitempty"`
-	RejectedAt     time.Time    `json:"rejected_at,omitempty"`
+	RejectReason   string       `bson:"reject_reason,omitempty"`
+	RejectedAt     time.Time    `bson:"rejected_at,omitempty"`
 }
 
 func (request *FindUpdateOrganizationTypeRequest) ToEntity() entities.UpdateOrganizationTypeRequest {
@@ -43,11 +43,11 @@ type UpdateOrganizationTypeRequest struct {
 	OrganizationID string    `bson:"organization_id,omitempty"`
 	CreatorID      string    `bson:"creator_id,omitempty"`
 	AuditorID      string    `bson:"auditor_id,omitempty"`
-	Status         string    `json:"status,omitempty"`
+	Status         string    `bson:"status,omitempty"`
 	CreatedAt      time.Time `bson:"created_at,omitempty"`
 	AcceptedAt     time.Time `bson:"accepted_at,omitempty"`
-	RejectReason   string    `json:"reject_reason,omitempty"`
-	RejectedAt     time.Time `json:"rejected_at,omitempty"`
+	RejectReason   string    `bson:"reject_reason,omitempty"`
+	RejectedAt     time.Time `bson:"rejected_at,omitempty"`
 }
 
 func (request *UpdateOrganizationTypeRequest) ToEntity() entities.UpdateOrganizationTypeRequest {
