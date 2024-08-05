@@ -5,7 +5,6 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
 	"relif/bff/utils"
@@ -40,7 +39,7 @@ func (repository *mongoOrganizationDataAccessRequests) Create(data entities.Orga
 }
 
 func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
-	modelList := make([]models.OrganizationDataAccessRequest, 0)
+	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
 	filter := bson.M{"requester_organization_id": organizationId}
@@ -50,8 +49,55 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "requester_id"},
+				{"foreignKey", "_id"},
+				{"as", "requester"},
+			}},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "target_organization_id"},
+				{"foreignKey", "_id"},
+				{"as", "target_organization"},
+			}},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "auditor_id"},
+				{"foreignKey", "_id"},
+				{"as", "auditor"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$requester"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$target_organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$auditor"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err
@@ -71,7 +117,7 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 }
 
 func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
-	modelList := make([]models.OrganizationDataAccessRequest, 0)
+	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
 	filter := bson.M{"target_organization_id": organizationId}
@@ -81,38 +127,55 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizat
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
-
-	if err != nil {
-		return 0, nil, err
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "requester_id"},
+				{"foreignKey", "_id"},
+				{"as", "requester"},
+			}},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "requester_organization_id"},
+				{"foreignKey", "_id"},
+				{"as", "requester_organization"},
+			}},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "auditor_id"},
+				{"foreignKey", "_id"},
+				{"as", "auditor"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$requester"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$requester_organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$auditor"}, {"preserveNullAndEmptyArrays", true}}},
+		},
 	}
 
-	defer cursor.Close(context.Background())
-
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
-
-	for _, model := range modelList {
-		entityList = append(entityList, model.ToEntity())
-	}
-
-	return count, entityList, nil
-}
-
-func (repository *mongoOrganizationDataAccessRequests) FindMany(limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
-	modelList := make([]models.OrganizationDataAccessRequest, 0)
-	entityList := make([]entities.OrganizationDataAccessRequest, 0)
-
-	count, err := repository.collection.CountDocuments(context.Background(), bson.M{})
-
-	if err != nil {
-		return 0, nil, err
-	}
-
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), bson.M{}, opts)
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err

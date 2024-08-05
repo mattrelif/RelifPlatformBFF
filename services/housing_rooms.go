@@ -10,6 +10,7 @@ type HousingRooms interface {
 	CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error)
 	FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error)
 	FindOneById(id string) (entities.HousingRoom, error)
+	FindOneCompleteById(id string) (entities.HousingRoom, error)
 	UpdateOneById(id string, data entities.HousingRoom) error
 	IncreaseAvailableVacanciesById(id string) error
 	DecreaseAvailableVacanciesById(id string) error
@@ -36,6 +37,10 @@ func (service *housingRoomsImpl) FindManyByHousingId(housingId string, limit, of
 
 func (service *housingRoomsImpl) FindOneById(id string) (entities.HousingRoom, error) {
 	return service.repository.FindOneById(id)
+}
+
+func (service *housingRoomsImpl) FindOneCompleteById(id string) (entities.HousingRoom, error) {
+	return service.repository.FindOneCompleteById(id)
 }
 
 func (service *housingRoomsImpl) UpdateOneById(id string, data entities.HousingRoom) error {

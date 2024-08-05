@@ -94,7 +94,7 @@ func (handler *HousingRooms) FindOneById(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	room, err := handler.service.FindOneById(id)
+	room, err := handler.service.FindOneCompleteById(id)
 
 	if err != nil {
 		switch {

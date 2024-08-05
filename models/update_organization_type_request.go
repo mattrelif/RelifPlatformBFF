@@ -7,6 +7,37 @@ import (
 	"time"
 )
 
+type FindUpdateOrganizationTypeRequest struct {
+	ID             string       `bson:"_id,omitempty"`
+	OrganizationID string       `bson:"organization_id,omitempty"`
+	Organization   Organization `bson:"organization,omitempty"`
+	CreatorID      string       `bson:"creator_id,omitempty"`
+	Creator        User         `bson:"creator,omitempty"`
+	AuditorID      string       `bson:"auditor_id,omitempty"`
+	Auditor        User         `bson:"auditor,omitempty"`
+	Status         string       `json:"status,omitempty"`
+	CreatedAt      time.Time    `bson:"created_at,omitempty"`
+	AcceptedAt     time.Time    `bson:"accepted_at,omitempty"`
+	RejectReason   string       `json:"reject_reason,omitempty"`
+	RejectedAt     time.Time    `json:"rejected_at,omitempty"`
+}
+
+func (request *FindUpdateOrganizationTypeRequest) ToEntity() entities.UpdateOrganizationTypeRequest {
+	return entities.UpdateOrganizationTypeRequest{
+		ID:             request.ID,
+		OrganizationID: request.OrganizationID,
+		Organization:   request.Organization.ToEntity(),
+		CreatorID:      request.CreatorID,
+		Creator:        request.Creator.ToEntity(),
+		AuditorID:      request.AuditorID,
+		Auditor:        request.Auditor.ToEntity(),
+		Status:         request.Status,
+		CreatedAt:      request.CreatedAt,
+		RejectReason:   request.RejectReason,
+		RejectedAt:     request.RejectedAt,
+	}
+}
+
 type UpdateOrganizationTypeRequest struct {
 	ID             string    `bson:"_id,omitempty"`
 	OrganizationID string    `bson:"organization_id,omitempty"`

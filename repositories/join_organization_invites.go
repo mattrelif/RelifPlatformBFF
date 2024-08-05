@@ -5,7 +5,6 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
 	"relif/bff/utils"
@@ -40,7 +39,7 @@ func (repository *mongoJoinOrganizationInvites) Create(data entities.JoinOrganiz
 }
 
 func (repository *mongoJoinOrganizationInvites) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
-	modelList := make([]models.JoinOrganizationInvite, 0)
+	modelList := make([]models.FindJoinOrganizationInvite, 0)
 	entityList := make([]entities.JoinOrganizationInvite, 0)
 
 	filter := bson.M{"organization_id": organizationId}
@@ -50,8 +49,55 @@ func (repository *mongoJoinOrganizationInvites) FindManyByOrganizationId(organiz
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "users"},
+				{"localField", "user_id"},
+				{"foreignField", "_id"},
+				{"as", "user"},
+			}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "organization_id"},
+				{"foreignField", "_id"},
+				{"as", "organization"},
+			}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "users"},
+				{"localField", "creator_id"},
+				{"foreignField", "_id"},
+				{"as", "creator"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$user"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$creator"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err
@@ -71,7 +117,7 @@ func (repository *mongoJoinOrganizationInvites) FindManyByOrganizationId(organiz
 }
 
 func (repository *mongoJoinOrganizationInvites) FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
-	modelList := make([]models.JoinOrganizationInvite, 0)
+	modelList := make([]models.FindJoinOrganizationInvite, 0)
 	entityList := make([]entities.JoinOrganizationInvite, 0)
 
 	filter := bson.M{"user_id": userId}
@@ -81,9 +127,56 @@ func (repository *mongoJoinOrganizationInvites) FindManyByUserId(userId string, 
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
-	
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "users"},
+				{"localField", "user_id"},
+				{"foreignField", "_id"},
+				{"as", "user"},
+			}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "organization_id"},
+				{"foreignField", "_id"},
+				{"as", "organization"},
+			}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "users"},
+				{"localField", "creator_id"},
+				{"foreignField", "_id"},
+				{"as", "creator"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$user"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$creator"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
+
 	if err != nil {
 		return 0, nil, err
 	}
@@ -110,6 +203,7 @@ func (repository *mongoJoinOrganizationInvites) FindOneById(id string) (entities
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return entities.JoinOrganizationInvite{}, utils.ErrJoinOrganizationInviteNotFound
 		}
+
 		return entities.JoinOrganizationInvite{}, err
 	}
 

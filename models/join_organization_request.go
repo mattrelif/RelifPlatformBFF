@@ -7,6 +7,40 @@ import (
 	"time"
 )
 
+type FindJoinOrganizationRequest struct {
+	ID             string       `bson:"_id,omitempty"`
+	UserID         string       `bson:"user_id,omitempty"`
+	User           User         `bson:"user,omitempty"`
+	OrganizationID string       `bson:"organization_id,omitempty"`
+	Organization   Organization `bson:"organization,omitempty"`
+	Status         string       `bson:"status,omitempty"`
+	AuditorID      string       `bson:"auditor_id,omitempty"`
+	Auditor        User         `bson:"auditor,omitempty"`
+	CreatedAt      time.Time    `bson:"created_at,omitempty"`
+	AcceptedAt     time.Time    `bson:"accepted_at,omitempty"`
+	RejectedAt     time.Time    `bson:"rejected_at,omitempty"`
+	RejectReason   string       `bson:"reject_reason,omitempty"`
+	ExpiresAt      *time.Time   `bson:"expires_at,omitempty"`
+}
+
+func (request *FindJoinOrganizationRequest) ToEntity() entities.JoinOrganizationRequest {
+	return entities.JoinOrganizationRequest{
+		ID:             request.ID,
+		UserID:         request.UserID,
+		User:           request.User.ToEntity(),
+		OrganizationID: request.OrganizationID,
+		Organization:   request.Organization.ToEntity(),
+		Status:         request.Status,
+		AuditorID:      request.AuditorID,
+		Auditor:        request.Auditor.ToEntity(),
+		CreatedAt:      request.CreatedAt,
+		AcceptedAt:     request.AcceptedAt,
+		RejectedAt:     request.RejectedAt,
+		RejectReason:   request.RejectReason,
+		ExpiresAt:      request.ExpiresAt,
+	}
+}
+
 type JoinOrganizationRequest struct {
 	ID             string     `bson:"_id,omitempty"`
 	UserID         string     `bson:"user_id,omitempty"`

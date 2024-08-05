@@ -10,6 +10,7 @@ import (
 type JoinOrganizationRequests interface {
 	Create(userId, organizationId string) (entities.JoinOrganizationRequest, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
 	FindOneById(id string) (entities.JoinOrganizationRequest, error)
 	Accept(id string, auditor entities.User) error
 	Reject(id string, auditor entities.User, data entities.JoinOrganizationRequest) error
@@ -37,6 +38,10 @@ func (service *joinOrganizationRequestsImpl) Create(userId, organizationId strin
 
 func (service *joinOrganizationRequestsImpl) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
 	return service.repository.FindManyByOrganizationId(organizationId, offset, limit)
+}
+
+func (service *joinOrganizationRequestsImpl) FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
+	return service.repository.FindManyByUserId(userId, offset, limit)
 }
 
 func (service *joinOrganizationRequestsImpl) FindOneById(id string) (entities.JoinOrganizationRequest, error) {

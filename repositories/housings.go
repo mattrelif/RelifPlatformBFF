@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/bff/entities"
@@ -13,6 +14,7 @@ type Housings interface {
 	Create(data entities.Housing) (entities.Housing, error)
 	FindManyByOrganizationID(organizationId, search string, limit, offset int64) (int64, []entities.Housing, error)
 	FindOneByID(id string) (entities.Housing, error)
+	FindOneCompleteByID(id string) (entities.Housing, error)
 	UpdateOneById(id string, data entities.Housing) error
 }
 
@@ -50,9 +52,7 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 				},
 				bson.M{
 					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
+						"$ne": utils.InactiveStatus,
 					},
 				},
 				bson.M{
@@ -106,9 +106,11 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
-							{"$and", bson.A{
-								bson.M{"$eq": bson.M{"$housing_id": "$$housingId"}},
-								bson.M{"$ne": bson.M{"status": utils.InactiveStatus}},
+							{"$expr", bson.D{
+								{"$and", bson.A{
+									bson.D{{"$eq", bson.A{"$housing_id", "$$housingId"}}},
+									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
+								}},
 							}},
 						}},
 					},
@@ -123,9 +125,11 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
-							{"$and", bson.A{
-								bson.M{"$eq": bson.M{"$current_housing_id": "$$housingId"}},
-								bson.M{"$ne": bson.M{"status": utils.InactiveStatus}},
+							{"$expr", bson.D{
+								{"$and", bson.A{
+									bson.D{{"$eq", bson.A{"$housing_id", "$$housingId"}}},
+									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
+								}},
 							}},
 						}},
 					},
@@ -134,8 +138,7 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 			}},
 		},
 		bson.D{
-			{"$group", bson.D{
-				{"_id", "$_id"},
+			{"$addFields", bson.D{
 				{"total_vacancies", bson.D{
 					{"$sum", "$rooms.total_vacancies"},
 				}},
@@ -180,6 +183,33 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 }
 
 func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error) {
+	var model models.Housing
+
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"_id": id,
+			},
+			bson.M{
+				"status": bson.M{
+					"$ne": utils.InactiveStatus,
+				},
+			},
+		},
+	}
+	
+	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.Housing{}, utils.ErrHousingNotFound
+		}
+
+		return entities.Housing{}, err
+	}
+
+	return model.ToEntity(), nil
+}
+
+func (repository *mongoHousings) FindOneCompleteByID(id string) (entities.Housing, error) {
 	var model models.FindHousing
 
 	filter := bson.M{
@@ -189,9 +219,7 @@ func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error
 			},
 			bson.M{
 				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
+					"$ne": utils.InactiveStatus,
 				},
 			},
 		},
@@ -208,9 +236,11 @@ func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
-							{"$and", bson.A{
-								bson.M{"$eq": bson.M{"$housing_id": "$$housingId"}},
-								bson.M{"$ne": bson.M{"status": utils.InactiveStatus}},
+							{"$expr", bson.D{
+								{"$and", bson.A{
+									bson.D{{"$eq", bson.A{"$housing_id", "$$housingId"}}},
+									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
+								}},
 							}},
 						}},
 					},
@@ -225,9 +255,11 @@ func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
-							{"$and", bson.A{
-								bson.M{"$eq": bson.M{"$current_housing_id": "$$housingId"}},
-								bson.M{"$ne": bson.M{"status": utils.InactiveStatus}},
+							{"$expr", bson.D{
+								{"$and", bson.A{
+									bson.D{{"$eq", bson.A{"$current_housing_id", "$$housingId"}}},
+									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
+								}},
 							}},
 						}},
 					},
@@ -236,8 +268,7 @@ func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error
 			}},
 		},
 		bson.D{
-			{"$group", bson.D{
-				{"_id", "$_id"},
+			{"$addFields", bson.D{
 				{"total_vacancies", bson.D{
 					{"$sum", "$rooms.total_vacancies"},
 				}},

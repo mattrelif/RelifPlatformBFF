@@ -91,6 +91,46 @@ func (handler *JoinOrganizationRequests) FindManyByOrganizationId(w http.Respons
 	}
 }
 
+func (handler *JoinOrganizationRequests) FindManyByUserId(w http.ResponseWriter, r *http.Request) {
+	userId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeAccessUserResource(userId, user); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	offsetParam := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, joinRequests, err := handler.service.FindManyByUserId(userId, int64(offset), int64(limit))
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := responses.FindMany[responses.JoinOrganizationRequests]{Data: responses.NewJoinOrganizationRequests(joinRequests), Count: count}
+
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (handler *JoinOrganizationRequests) Accept(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)

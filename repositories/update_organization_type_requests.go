@@ -5,7 +5,6 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
 	"relif/bff/utils"
@@ -56,17 +55,66 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindOneById(id string) (e
 }
 
 func (repository *mongoUpdateOrganizationTypeRequests) FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
-	modelList := make([]models.UpdateOrganizationTypeRequest, 0)
+	modelList := make([]models.FindUpdateOrganizationTypeRequest, 0)
 	entityList := make([]entities.UpdateOrganizationTypeRequest, 0)
 
-	count, err := repository.collection.CountDocuments(context.Background(), bson.M{})
+	filter := bson.M{}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetSkip(offset).SetLimit(limit)
-	cursor, err := repository.collection.Find(context.Background(), bson.M{}, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "organization_id"},
+				{"foreignKey", "_id"},
+				{"as", "organization"},
+			}},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "creator_id"},
+				{"foreignKey", "_id"},
+				{"as", "creator"},
+			}},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "auditor_id"},
+				{"foreignKey", "_id"},
+				{"as", "auditor"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$creator"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$auditor"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err
@@ -86,7 +134,7 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindMany(offset, limit in
 }
 
 func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
-	modelList := make([]models.UpdateOrganizationTypeRequest, 0)
+	modelList := make([]models.FindUpdateOrganizationTypeRequest, 0)
 	entityList := make([]entities.UpdateOrganizationTypeRequest, 0)
 
 	filter := bson.M{"organization_id": organizationId}
@@ -97,8 +145,44 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationId(
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetSkip(offset).SetLimit(limit)
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "creator_id"},
+				{"foreignKey", "_id"},
+				{"as", "creator"},
+			}},
+		},
+		bson.D{
+			{"lookup", bson.D{
+				{"from", "users"},
+				{"localField", "auditor_id"},
+				{"foreignKey", "_id"},
+				{"as", "auditor"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$creator"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$auditor"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err

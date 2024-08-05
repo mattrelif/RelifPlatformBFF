@@ -133,7 +133,7 @@ func (handler *Housings) FindOneById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	housing, err := handler.service.FindOneByID(id)
+	housing, err := handler.service.FindOneCompleteByID(id)
 
 	if err != nil {
 		switch {

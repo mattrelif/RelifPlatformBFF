@@ -7,6 +7,39 @@ import (
 	"time"
 )
 
+type FindJoinOrganizationInvite struct {
+	ID             string       `bson:"_id,omitempty"`
+	UserID         string       `bson:"user_id,omitempty"`
+	User           User         `bson:"user,omitempty"`
+	OrganizationID string       `bson:"organization_id,omitempty"`
+	Organization   Organization `bson:"organization,omitempty"`
+	CreatorID      string       `bson:"creator_id,omitempty"`
+	Creator        User         `bson:"creator,omitempty"`
+	Status         string       `bson:"status,omitempty"`
+	AcceptedAt     time.Time    `bson:"accepted_at,omitempty"`
+	RejectedAt     time.Time    `bson:"rejected_at,omitempty"`
+	RejectReason   string       `bson:"reject_reason,omitempty"`
+	CreatedAt      time.Time    `bson:"created_at,omitempty"`
+	ExpiresAt      *time.Time   `bson:"expires_at,omitempty"`
+}
+
+func (invite *FindJoinOrganizationInvite) ToEntity() entities.JoinOrganizationInvite {
+	return entities.JoinOrganizationInvite{
+		ID:             invite.ID,
+		UserID:         invite.UserID,
+		User:           invite.User.ToEntity(),
+		OrganizationID: invite.OrganizationID,
+		Organization:   invite.Organization.ToEntity(),
+		CreatorID:      invite.CreatorID,
+		Creator:        invite.Creator.ToEntity(),
+		Status:         invite.Status,
+		AcceptedAt:     invite.AcceptedAt,
+		RejectedAt:     invite.RejectedAt,
+		CreatedAt:      invite.CreatedAt,
+		ExpiresAt:      invite.ExpiresAt,
+	}
+}
+
 type JoinOrganizationInvite struct {
 	ID             string     `bson:"_id,omitempty"`
 	UserID         string     `bson:"user_id,omitempty"`

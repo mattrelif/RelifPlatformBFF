@@ -10,6 +10,7 @@ type Users interface {
 	Create(data entities.User) (entities.User, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error)
 	FindOneById(id string) (entities.User, error)
+	FindOneCompleteById(id string) (entities.User, error)
 	FindOneByEmail(email string) (entities.User, error)
 	UpdateOneById(id string, data entities.User) error
 	InactivateOneById(id string) error
@@ -47,6 +48,10 @@ func (service *usersImpl) FindManyByOrganizationId(organizationId string, offset
 
 func (service *usersImpl) FindOneById(id string) (entities.User, error) {
 	return service.repository.FindOneById(id)
+}
+
+func (service *usersImpl) FindOneCompleteById(id string) (entities.User, error) {
+	return service.repository.FindOneCompleteById(id)
 }
 
 func (service *usersImpl) FindOneByEmail(email string) (entities.User, error) {

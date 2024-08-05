@@ -14,6 +14,7 @@ type Users interface {
 	CreateUser(data entities.User) (entities.User, error)
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error)
 	FindOneById(id string) (entities.User, error)
+	FindOneCompleteById(id string) (entities.User, error)
 	FindOneByEmail(email string) (entities.User, error)
 	CountByEmail(email string) (int64, error)
 	CountById(email string) (int64, error)
@@ -111,6 +112,35 @@ func (repository *usersMongo) FindManyByOrganizationId(organizationId string, of
 }
 
 func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
+	var model models.User
+
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"_id": id,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
+
+	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.User{}, utils.ErrUserNotFound
+		}
+
+		return entities.User{}, err
+	}
+
+	return model.ToEntity(), nil
+}
+
+func (repository *usersMongo) FindOneCompleteById(id string) (entities.User, error) {
 	var model models.FindUser
 
 	filter := bson.M{

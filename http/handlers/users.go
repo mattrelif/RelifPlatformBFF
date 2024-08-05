@@ -29,14 +29,15 @@ func NewUsers(service services.Users, authorizationService services.Authorizatio
 func (handler *Users) FindOne(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	user, err := handler.service.FindOneById(id)
+	user, err := handler.service.FindOneCompleteById(id)
 
 	if err != nil {
-		if errors.Is(err, utils.ErrUserNotFound) {
+		switch {
+		case errors.Is(err, utils.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
-			return
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -49,6 +50,19 @@ func (handler *Users) FindOne(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler *Users) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
+	organizationId := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUnauthorizedAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -64,8 +78,6 @@ func (handler *Users) FindManyByOrganizationId(w http.ResponseWriter, r *http.Re
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	organizationId := chi.URLParam(r, "id")
 
 	count, users, err := handler.service.FindManyByOrganizationId(organizationId, int64(offset), int64(limit))
 
