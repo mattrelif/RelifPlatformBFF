@@ -8,9 +8,9 @@ import (
 
 type Beneficiaries interface {
 	Create(organizationId string, data entities.Beneficiary) (entities.Beneficiary, error)
-	FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.Beneficiary, error)
-	FindManyByRoomId(roomId string, limit, offset int64) (int64, []entities.Beneficiary, error)
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.Beneficiary, error)
+	FindManyByHousingId(housingId, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
+	FindManyByRoomId(roomId, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
+	FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
 	FindOneById(id string) (entities.Beneficiary, error)
 	UpdateOneById(id string, data entities.Beneficiary) error
 	InactivateOneById(id string) error
@@ -43,16 +43,16 @@ func (service *beneficiariesImpl) Create(organizationId string, data entities.Be
 	return service.repository.Create(data)
 }
 
-func (service *beneficiariesImpl) FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.Beneficiary, error) {
-	return service.repository.FindManyByHousingId(housingId, limit, offset)
+func (service *beneficiariesImpl) FindManyByHousingId(housingId, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+	return service.repository.FindManyByHousingId(housingId, search, limit, offset)
 }
 
-func (service *beneficiariesImpl) FindManyByRoomId(roomId string, limit, offset int64) (int64, []entities.Beneficiary, error) {
-	return service.repository.FindManyByRoomId(roomId, limit, offset)
+func (service *beneficiariesImpl) FindManyByRoomId(roomId, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+	return service.repository.FindManyByRoomId(roomId, search, limit, offset)
 }
 
-func (service *beneficiariesImpl) FindManyByOrganizationId(roomId string, limit, offset int64) (int64, []entities.Beneficiary, error) {
-	return service.repository.FindManyByOrganizationId(roomId, limit, offset)
+func (service *beneficiariesImpl) FindManyByOrganizationId(roomId, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+	return service.repository.FindManyByOrganizationId(roomId, search, limit, offset)
 }
 
 func (service *beneficiariesImpl) FindOneById(id string) (entities.Beneficiary, error) {
@@ -78,12 +78,4 @@ func (service *beneficiariesImpl) ExistsByEmail(email string) (bool, error) {
 	}
 
 	return count > 0, nil
-}
-
-func (service *beneficiariesImpl) AuthorizeCreate(user entities.User) error {
-	if user.PlatformRole != utils.OrgAdminPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
 }

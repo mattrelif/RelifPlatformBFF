@@ -20,6 +20,7 @@ type User struct {
 	Email          string          `json:"email"`
 	Phones         []string        `json:"phones"`
 	OrganizationID string          `json:"organization_id"`
+	Organization   Organization    `json:"organization"`
 	Role           string          `json:"role"`
 	PlatformRole   string          `json:"platform_role"`
 	Status         string          `json:"status"`
@@ -37,6 +38,7 @@ func NewUser(entity entities.User) User {
 		Email:          entity.Email,
 		Phones:         entity.Phones,
 		OrganizationID: entity.OrganizationID,
+		Organization:   NewOrganization(entity.Organization),
 		Role:           entity.Role,
 		PlatformRole:   entity.PlatformRole,
 		Status:         entity.Status,

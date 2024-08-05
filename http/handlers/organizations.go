@@ -54,7 +54,7 @@ func (handler *Organizations) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	organization, err := handler.service.Create(req.ToEntity(), user.ID)
+	organization, err := handler.service.Create(req.ToEntity(), user)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -51,8 +51,13 @@ func (service *housingRoomsImpl) DecreaseAvailableVacanciesById(id string) error
 }
 
 func (service *housingRoomsImpl) InactivateOneById(id string) error {
-	data := entities.HousingRoom{
-		Status: utils.InactiveStatus,
+	room, err := service.FindOneById(id)
+
+	if err != nil {
+		return err
 	}
-	return service.repository.UpdateOneById(id, data)
+
+	room.Status = utils.InactiveStatus
+
+	return service.repository.UpdateOneById(id, room)
 }

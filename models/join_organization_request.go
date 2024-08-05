@@ -16,6 +16,7 @@ type JoinOrganizationRequest struct {
 	CreatedAt      time.Time  `bson:"created_at,omitempty"`
 	AcceptedAt     time.Time  `bson:"accepted_at,omitempty"`
 	RejectedAt     time.Time  `bson:"rejected_at,omitempty"`
+	RejectReason   string     `bson:"reject_reason,omitempty"`
 	ExpiresAt      *time.Time `bson:"expires_at,omitempty"`
 }
 
@@ -29,6 +30,7 @@ func (request *JoinOrganizationRequest) ToEntity() entities.JoinOrganizationRequ
 		CreatedAt:      request.CreatedAt,
 		AcceptedAt:     request.AcceptedAt,
 		RejectedAt:     request.RejectedAt,
+		RejectReason:   request.RejectReason,
 		ExpiresAt:      request.ExpiresAt,
 	}
 }
@@ -48,10 +50,11 @@ func NewJoinOrganizationRequest(entity entities.JoinOrganizationRequest) JoinOrg
 
 func NewUpdatedJoinOrganizationRequest(entity entities.JoinOrganizationRequest) JoinOrganizationRequest {
 	return JoinOrganizationRequest{
-		Status:     entity.Status,
-		AuditorID:  entity.AuditorID,
-		AcceptedAt: entity.AcceptedAt,
-		RejectedAt: entity.RejectedAt,
-		ExpiresAt:  nil,
+		Status:       entity.Status,
+		AuditorID:    entity.AuditorID,
+		AcceptedAt:   entity.AcceptedAt,
+		RejectedAt:   entity.RejectedAt,
+		RejectReason: entity.RejectReason,
+		ExpiresAt:    nil,
 	}
 }

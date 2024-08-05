@@ -10,6 +10,7 @@ type JoinOrganizationInvite struct {
 	Status         string
 	AcceptedAt     time.Time
 	RejectedAt     time.Time
+	RejectReason   string
 	CreatedAt      time.Time
 	ExpiresAt      *time.Time
 }

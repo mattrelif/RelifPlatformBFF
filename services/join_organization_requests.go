@@ -12,7 +12,7 @@ type JoinOrganizationRequests interface {
 	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
 	FindOneById(id string) (entities.JoinOrganizationRequest, error)
 	Accept(id string, auditor entities.User) error
-	Reject(id string, auditor entities.User) error
+	Reject(id string, auditor entities.User, data entities.JoinOrganizationRequest) error
 }
 
 type joinOrganizationRequestsImpl struct {
@@ -50,30 +50,43 @@ func (service *joinOrganizationRequestsImpl) Accept(id string, auditor entities.
 		return err
 	}
 
-	if err = service.repository.UpdateOneById(request.ID, entities.JoinOrganizationRequest{AcceptedAt: time.Now(), AuditorID: auditor.ID}); err != nil {
+	user, err := service.usersService.FindOneById(request.UserID)
+
+	if err != nil {
 		return err
 	}
 
-	data := entities.User{
-		OrganizationID: request.OrganizationID,
-		PlatformRole:   utils.OrgMemberPlatformRole,
+	request.AcceptedAt = time.Now()
+	request.Status = utils.AcceptedStatus
+	request.AuditorID = auditor.ID
+
+	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+		return err
 	}
 
-	if err = service.usersService.UpdateOneById(request.UserID, data); err != nil {
+	user.OrganizationID = request.OrganizationID
+	user.PlatformRole = utils.OrgMemberPlatformRole
+
+	if err = service.usersService.UpdateOneById(user.ID, user); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (service *joinOrganizationRequestsImpl) Reject(id string, auditor entities.User) error {
+func (service *joinOrganizationRequestsImpl) Reject(id string, auditor entities.User, data entities.JoinOrganizationRequest) error {
 	request, err := service.repository.FindOneById(id)
 
 	if err != nil {
 		return err
 	}
 
-	if err = service.repository.UpdateOneById(request.ID, entities.JoinOrganizationRequest{RejectedAt: time.Now(), AuditorID: auditor.ID}); err != nil {
+	request.AuditorID = auditor.ID
+	request.Status = utils.RejectedStatus
+	request.RejectedAt = time.Now()
+	request.RejectReason = data.RejectReason
+
+	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
 		return err
 	}
 

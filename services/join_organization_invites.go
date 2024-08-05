@@ -13,7 +13,7 @@ type JoinOrganizationInvites interface {
 	FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error)
 	FindOneById(id string) (entities.JoinOrganizationInvite, error)
 	Accept(id string) error
-	Reject(id string) error
+	Reject(id string, data entities.JoinOrganizationInvite) error
 }
 
 type joinOrganizationInvitesImpl struct {
@@ -53,30 +53,41 @@ func (service *joinOrganizationInvitesImpl) Accept(id string) error {
 		return err
 	}
 
-	if err = service.repository.UpdateOneById(invite.ID, entities.JoinOrganizationInvite{AcceptedAt: time.Now(), Status: utils.AcceptedStatus}); err != nil {
+	user, err := service.usersService.FindOneById(invite.UserID)
+
+	if err != nil {
 		return err
 	}
 
-	data := entities.User{
-		OrganizationID: invite.OrganizationID,
-		PlatformRole:   utils.OrgMemberPlatformRole,
+	invite.AcceptedAt = time.Now()
+	invite.Status = utils.AcceptedStatus
+
+	if err = service.repository.UpdateOneById(invite.ID, invite); err != nil {
+		return err
 	}
 
-	if err = service.usersService.UpdateOneById(invite.UserID, data); err != nil {
+	user.OrganizationID = invite.OrganizationID
+	user.PlatformRole = utils.OrgMemberPlatformRole
+
+	if err = service.usersService.UpdateOneById(user.ID, user); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (service *joinOrganizationInvitesImpl) Reject(id string) error {
+func (service *joinOrganizationInvitesImpl) Reject(id string, data entities.JoinOrganizationInvite) error {
 	invite, err := service.repository.FindOneById(id)
 
 	if err != nil {
 		return err
 	}
 
-	if err = service.repository.UpdateOneById(invite.ID, entities.JoinOrganizationInvite{RejectedAt: time.Now(), Status: utils.RejectedStatus}); err != nil {
+	invite.Status = utils.RejectedStatus
+	invite.RejectedAt = time.Now()
+	invite.RejectReason = data.RejectReason
+
+	if err = service.repository.UpdateOneById(invite.ID, invite); err != nil {
 		return err
 	}
 

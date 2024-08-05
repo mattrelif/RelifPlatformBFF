@@ -9,7 +9,6 @@ type Beneficiaries []Beneficiary
 
 type Beneficiary struct {
 	ID                    string             `json:"id"`
-	CurrentOrganizationID string             `json:"current_organization_id"`
 	FullName              string             `json:"full_name"`
 	Email                 string             `json:"email"`
 	Documents             []Document         `json:"documents"`
@@ -22,7 +21,11 @@ type Beneficiary struct {
 	Occupation            string             `json:"occupation"`
 	Address               Address            `json:"address"`
 	CurrentHousingID      string             `json:"current_housing_id"`
+	CurrentHousing        Housing            `json:"current_housing,omitempty"`
 	CurrentRoomID         string             `json:"current_room_id"`
+	CurrentRoom           HousingRoom        `json:"current_room,omitempty"`
+	CurrentOrganizationID string             `json:"current_organization_id"`
+	CurrentOrganization   Organization       `json:"current_organization,omitempty"`
 	MedicalInformation    MedicalInformation `json:"medical_information"`
 	EmergencyContacts     []EmergencyContact `json:"emergency_contacts"`
 	CreatedAt             time.Time          `json:"created_at"`
@@ -45,7 +48,6 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 
 	return Beneficiary{
 		ID:                    entity.ID,
-		CurrentOrganizationID: entity.CurrentOrganizationID,
 		FullName:              entity.FullName,
 		Email:                 entity.Email,
 		Documents:             documents,
@@ -56,7 +58,11 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		Education:             entity.Education,
 		Gender:                entity.Gender,
 		CurrentHousingID:      entity.CurrentHousingID,
+		CurrentHousing:        NewHousing(entity.CurrentHousing),
 		CurrentRoomID:         entity.CurrentRoomID,
+		CurrentRoom:           NewHousingRoom(entity.CurrentRoom),
+		CurrentOrganizationID: entity.CurrentOrganizationID,
+		CurrentOrganization:   NewOrganization(entity.CurrentOrganization),
 		Occupation:            entity.Occupation,
 		Address:               NewAddress(entity.Address),
 		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),

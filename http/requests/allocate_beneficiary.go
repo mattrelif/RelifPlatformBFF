@@ -14,7 +14,6 @@ type AllocateBeneficiary struct {
 func (req *AllocateBeneficiary) Validate() error {
 	return validation.ValidateStruct(req,
 		validation.Field(&req.HousingID, validation.Required, is.MongoID),
-		validation.Field(&req.RoomID, validation.Required, is.MongoID),
 	)
 }
 

@@ -16,6 +16,7 @@ type BeneficiaryAllocation struct {
 	RoomID        string    `json:"room_id"`
 	Type          string    `json:"type"`
 	AuditorID     string    `json:"auditor_id"`
+	Auditor       User      `json:"auditor,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	ExitDate      time.Time `json:"exit_date"`
 	ExitReason    string    `json:"exit_reason"`

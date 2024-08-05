@@ -13,7 +13,7 @@ import (
 
 type VoluntaryPeople interface {
 	Create(data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
+	FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
 	FindOneById(id string) (entities.VoluntaryPerson, error)
 	CountByEmail(email string) (int64, error)
 	UpdateOneById(id string, data entities.VoluntaryPerson) error
@@ -39,23 +39,48 @@ func (repository *mongoVoluntaryPeople) Create(data entities.VoluntaryPerson) (e
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
+func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
+	var filter bson.M
+
 	entityList := make([]entities.VoluntaryPerson, 0)
 	modelsList := make([]models.VoluntaryPerson, 0)
 
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"organization_id": organizationId,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
+	if search != "" {
+		filter = bson.M{
+			"$and": bson.A{
+				bson.M{
+					"organization_id": organizationId,
+				},
+				bson.M{
+					"status": bson.M{
+						"$not": bson.M{
+							"$eq": utils.InactiveStatus,
+						},
+					},
+				},
+				bson.M{
+					"full_name": bson.D{
+						{"$regex", search},
+						{"$options", "i"},
 					},
 				},
 			},
-		},
+		}
+	} else {
+		filter = bson.M{
+			"$and": bson.A{
+				bson.M{
+					"organization_id": organizationId,
+				},
+				bson.M{
+					"status": bson.M{
+						"$not": bson.M{
+							"$eq": utils.InactiveStatus,
+						},
+					},
+				},
+			},
+		}
 	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)

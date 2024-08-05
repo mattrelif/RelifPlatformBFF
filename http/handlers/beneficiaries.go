@@ -91,6 +91,8 @@ func (handler *Beneficiaries) FindManyByHousingId(w http.ResponseWriter, r *http
 		return
 	}
 
+	search := r.URL.Query().Get("search")
+
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -107,7 +109,7 @@ func (handler *Beneficiaries) FindManyByHousingId(w http.ResponseWriter, r *http
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByHousingId(housingId, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.service.FindManyByHousingId(housingId, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -138,6 +140,8 @@ func (handler *Beneficiaries) FindManyByRoomId(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	search := r.URL.Query().Get("search")
+
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -154,7 +158,7 @@ func (handler *Beneficiaries) FindManyByRoomId(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByRoomId(roomId, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.service.FindManyByRoomId(roomId, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -185,6 +189,8 @@ func (handler *Beneficiaries) FindManyByOrganizationId(w http.ResponseWriter, r 
 		return
 	}
 
+	search := r.URL.Query().Get("search")
+
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -201,7 +207,7 @@ func (handler *Beneficiaries) FindManyByOrganizationId(w http.ResponseWriter, r 
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByOrganizationId(organizationId, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.service.FindManyByOrganizationId(organizationId, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

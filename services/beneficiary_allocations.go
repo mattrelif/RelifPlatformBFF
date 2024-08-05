@@ -36,6 +36,28 @@ func NewBeneficiaryAllocations(
 }
 
 func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, beneficiaryId string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
+	var room entities.HousingRoom
+
+	beneficiary, err := service.beneficiariesService.FindOneById(beneficiaryId)
+
+	if err != nil {
+		return entities.BeneficiaryAllocation{}, err
+	}
+
+	housing, err := service.housingsService.FindOneByID(data.HousingID)
+
+	if err != nil {
+		return entities.BeneficiaryAllocation{}, err
+	}
+
+	if data.RoomID != "" {
+		room, err = service.housingRoomsService.FindOneById(data.RoomID)
+
+		if err != nil {
+			return entities.BeneficiaryAllocation{}, err
+		}
+	}
+
 	data.AuditorID = user.ID
 	data.Type = utils.EntranceType
 	data.BeneficiaryID = beneficiaryId
@@ -46,17 +68,11 @@ func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, benefici
 		return entities.BeneficiaryAllocation{}, err
 	}
 
-	housing, err := service.housingsService.FindOneByID(allocation.HousingID)
+	beneficiary.CurrentHousingID = housing.ID
+	beneficiary.CurrentOrganizationID = housing.OrganizationID
+	beneficiary.CurrentRoomID = room.ID
 
-	if err != nil {
-		return entities.BeneficiaryAllocation{}, err
-	}
-
-	if err = service.beneficiariesService.UpdateOneById(allocation.BeneficiaryID, entities.Beneficiary{CurrentOrganizationID: housing.OrganizationID, CurrentRoomID: allocation.RoomID, CurrentHousingID: allocation.HousingID}); err != nil {
-		return entities.BeneficiaryAllocation{}, err
-	}
-
-	if err = service.housingRoomsService.DecreaseAvailableVacanciesById(allocation.RoomID); err != nil {
+	if err = service.beneficiariesService.UpdateOneById(beneficiary.ID, beneficiary); err != nil {
 		return entities.BeneficiaryAllocation{}, err
 	}
 
@@ -64,17 +80,33 @@ func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, benefici
 }
 
 func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, beneficiaryId string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
+	var room entities.HousingRoom
+
 	beneficiary, err := service.beneficiariesService.FindOneById(beneficiaryId)
 
 	if err != nil {
 		return entities.BeneficiaryAllocation{}, err
 	}
 
+	housing, err := service.housingsService.FindOneByID(data.HousingID)
+
+	if err != nil {
+		return entities.BeneficiaryAllocation{}, err
+	}
+
+	if data.RoomID != "" {
+		room, err = service.housingRoomsService.FindOneById(data.RoomID)
+
+		if err != nil {
+			return entities.BeneficiaryAllocation{}, err
+		}
+	}
+
 	data.AuditorID = user.ID
 	data.Type = utils.ReallocationType
 	data.OldRoomID = beneficiary.CurrentRoomID
 	data.OldHousingID = beneficiary.CurrentHousingID
-	data.BeneficiaryID = beneficiaryId
+	data.BeneficiaryID = beneficiary.ID
 
 	allocation, err := service.repository.Create(data)
 
@@ -82,21 +114,11 @@ func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, benefi
 		return entities.BeneficiaryAllocation{}, err
 	}
 
-	housing, err := service.housingsService.FindOneByID(allocation.HousingID)
+	beneficiary.CurrentHousingID = housing.ID
+	beneficiary.CurrentOrganizationID = housing.OrganizationID
+	beneficiary.CurrentRoomID = room.ID
 
-	if err != nil {
-		return entities.BeneficiaryAllocation{}, err
-	}
-
-	if err = service.beneficiariesService.UpdateOneById(allocation.BeneficiaryID, entities.Beneficiary{CurrentOrganizationID: housing.OrganizationID, CurrentRoomID: allocation.RoomID, CurrentHousingID: allocation.HousingID}); err != nil {
-		return entities.BeneficiaryAllocation{}, err
-	}
-
-	if err = service.housingRoomsService.IncreaseAvailableVacanciesById(allocation.OldRoomID); err != nil {
-		return entities.BeneficiaryAllocation{}, err
-	}
-
-	if err = service.housingRoomsService.DecreaseAvailableVacanciesById(allocation.RoomID); err != nil {
+	if err = service.beneficiariesService.UpdateOneById(beneficiary.ID, beneficiary); err != nil {
 		return entities.BeneficiaryAllocation{}, err
 	}
 

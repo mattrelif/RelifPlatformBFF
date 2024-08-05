@@ -54,11 +54,23 @@ func (service *updateOrganizationTypeRequestsImpl) Accept(id, userId string) err
 		return err
 	}
 
-	if err = service.repository.UpdateOneById(id, entities.UpdateOrganizationTypeRequest{AuditorID: userId, AcceptedAt: time.Now(), Status: utils.AcceptedStatus}); err != nil {
+	organization, err := service.organizationsService.FindOneById(request.OrganizationID)
+
+	if err != nil {
 		return err
 	}
 
-	if err = service.organizationsService.UpdateOneById(request.OrganizationID, entities.Organization{Type: utils.CoordinatorOrganizationType}); err != nil {
+	request.Status = utils.AcceptedStatus
+	request.AuditorID = userId
+	request.AcceptedAt = time.Now()
+
+	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+		return err
+	}
+
+	organization.Type = utils.CoordinatorOrganizationType
+
+	if err = service.organizationsService.UpdateOneById(organization.ID, organization); err != nil {
 		return err
 	}
 
@@ -72,7 +84,12 @@ func (service *updateOrganizationTypeRequestsImpl) Reject(id, userId string, dat
 		return err
 	}
 
-	if err = service.repository.UpdateOneById(request.ID, entities.UpdateOrganizationTypeRequest{AuditorID: userId, Status: utils.RejectedStatus, RejectedAt: time.Now(), RejectReason: data.RejectReason}); err != nil {
+	request.AuditorID = userId
+	request.Status = utils.RejectedStatus
+	request.RejectedAt = time.Now()
+	request.RejectReason = data.RejectReason
+
+	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
 		return err
 	}
 

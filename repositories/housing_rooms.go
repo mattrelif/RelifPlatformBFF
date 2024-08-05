@@ -2,10 +2,8 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
 	"relif/bff/utils"
@@ -51,7 +49,7 @@ func (repository *mongoHousingRooms) CreateMany(data []entities.HousingRoom, hou
 }
 
 func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error) {
-	modelList := make([]models.HousingRoom, 0)
+	modelList := make([]models.FindHousingRoom, 0)
 	entityList := make([]entities.HousingRoom, 0)
 
 	filter := bson.M{
@@ -75,9 +73,51 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"name": 1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"name": 1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "beneficiaries"},
+				{"let", bson.D{{"roomId", "$_id"}}},
+				{"pipeline", bson.A{
+					bson.D{
+						{"$match", bson.D{
+							{"$and", bson.A{
+								bson.M{"$eq": bson.M{"$current_room_id": "$$romId"}},
+								bson.M{"$ne": bson.M{"status": utils.InactiveStatus}},
+							}},
+						}},
+					},
+				}},
+				{"as", "beneficiaries"},
+			}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
+				{"occupied_vacancies", bson.D{
+					{"$size", "$beneficiaries"},
+				}},
+			}},
+		},
+		bson.D{
+			{"$project", bson.D{
+				{"beneficiaries", 0},
+			}},
+		},
+	}
 
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 	defer cursor.Close(context.Background())
 
 	if err != nil {
@@ -96,7 +136,7 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 }
 
 func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoom, error) {
-	var model models.HousingRoom
+	var model models.FindHousingRoom
 
 	filter := bson.M{
 		"$and": bson.A{
@@ -112,12 +152,55 @@ func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoo
 			},
 		},
 	}
-	
-	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return entities.HousingRoom{}, utils.ErrHousingRoomNotFound
-		}
+
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "beneficiaries"},
+				{"let", bson.D{{"roomId", "$_id"}}},
+				{"pipeline", bson.A{
+					bson.D{
+						{"$match", bson.D{
+							{"$and", bson.A{
+								bson.M{"$eq": bson.M{"$current_room_id": "$$romId"}},
+								bson.M{"$ne": bson.M{"status": utils.InactiveStatus}},
+							}},
+						}},
+					},
+				}},
+				{"as", "beneficiaries"},
+			}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
+				{"occupied_vacancies", bson.D{
+					{"$size", "$beneficiaries"},
+				}},
+			}},
+		},
+		bson.D{
+			{"$project", bson.D{
+				{"beneficiaries", 0},
+			}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
+	defer cursor.Close(context.Background())
+
+	if err != nil {
 		return entities.HousingRoom{}, err
+	}
+
+	if cursor.Next(context.Background()) {
+		if err = cursor.Decode(&model); err != nil {
+			return entities.HousingRoom{}, err
+		}
+	} else {
+		return entities.HousingRoom{}, utils.ErrHousingRoomNotFound
 	}
 
 	return model.ToEntity(), nil

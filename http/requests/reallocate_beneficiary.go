@@ -15,7 +15,6 @@ type ReallocateBeneficiary struct {
 func (req *ReallocateBeneficiary) Validate() error {
 	return validation.ValidateStruct(req,
 		validation.Field(&req.HousingID, validation.Required, is.MongoID),
-		validation.Field(&req.RoomID, validation.Required, is.MongoID),
 		validation.Field(&req.ExitReason, validation.Required),
 	)
 }

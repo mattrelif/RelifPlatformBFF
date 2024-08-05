@@ -18,6 +18,7 @@ type User struct {
 	Password       string
 	Phones         []string
 	OrganizationID string
+	Organization   Organization
 	Role           string
 	PlatformRole   string
 	Status         string

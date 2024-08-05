@@ -8,7 +8,7 @@ import (
 
 type VoluntaryPeople interface {
 	Create(user entities.User, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
+	FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
 	FindOneById(id string) (entities.VoluntaryPerson, error)
 	UpdateOneById(id string, data entities.VoluntaryPerson) error
 	InactivateOneById(id string) error
@@ -40,8 +40,8 @@ func (service *voluntaryPeopleImpl) Create(user entities.User, data entities.Vol
 	return service.repository.Create(data)
 }
 
-func (service *voluntaryPeopleImpl) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, limit, offset)
+func (service *voluntaryPeopleImpl) FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
+	return service.repository.FindManyByOrganizationId(organizationId, search, limit, offset)
 }
 
 func (service *voluntaryPeopleImpl) FindOneById(id string) (entities.VoluntaryPerson, error) {
@@ -53,10 +53,15 @@ func (service *voluntaryPeopleImpl) UpdateOneById(id string, data entities.Volun
 }
 
 func (service *voluntaryPeopleImpl) InactivateOneById(id string) error {
-	data := entities.VoluntaryPerson{
-		Status: utils.InactiveStatus,
+	voluntary, err := service.FindOneById(id)
+
+	if err != nil {
+		return err
 	}
-	return service.repository.UpdateOneById(id, data)
+
+	voluntary.OrganizationID = utils.InactiveStatus
+
+	return service.repository.UpdateOneById(id, voluntary)
 }
 
 func (service *voluntaryPeopleImpl) ExistsOneByEmail(email string) (bool, error) {

@@ -79,10 +79,9 @@ func (service *passwordImpl) UpdatePassword(code, password string) error {
 		return err
 	}
 
-	data := entities.User{
-		Password: hashed,
-	}
-	if err = service.userService.UpdateOneById(user.ID, data); err != nil {
+	user.Password = hashed
+
+	if err = service.userService.UpdateOneById(user.ID, user); err != nil {
 		return err
 	}
 

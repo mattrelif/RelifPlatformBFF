@@ -5,7 +5,6 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/bff/entities"
 	"relif/bff/models"
 	"relif/bff/utils"
@@ -42,7 +41,7 @@ func (repository *usersMongo) CreateUser(data entities.User) (entities.User, err
 }
 
 func (repository *usersMongo) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error) {
-	modelList := make([]models.User, 0)
+	modelList := make([]models.FindUser, 0)
 	entityList := make([]entities.User, 0)
 
 	filter := bson.M{
@@ -62,9 +61,37 @@ func (repository *usersMongo) FindManyByOrganizationId(organizationId string, of
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
-	opts := options.Find().SetSkip(offset).SetLimit(limit).SetSort(bson.M{"first_name": 1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	if err != nil {
+		return 0, nil, err
+	}
 
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"first_name": 1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "organization_id"},
+				{"foreignField", "_id"},
+				{"as", "organization"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 	defer cursor.Close(context.Background())
 
 	if err != nil {
@@ -83,7 +110,7 @@ func (repository *usersMongo) FindManyByOrganizationId(organizationId string, of
 }
 
 func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
-	var model models.User
+	var model models.FindUser
 
 	filter := bson.M{
 		"$and": bson.A{
@@ -100,12 +127,36 @@ func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
 		},
 	}
 
-	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return entities.User{}, utils.ErrUserNotFound
-		}
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "organization_id"},
+				{"foreignField", "_id"},
+				{"as", "organization"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
 
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
+	defer cursor.Close(context.Background())
+
+	if err != nil {
 		return entities.User{}, err
+	}
+
+	if cursor.Next(context.Background()) {
+		if err = cursor.Decode(&model); err != nil {
+			return entities.User{}, err
+		}
+	} else {
+		return entities.User{}, utils.ErrUserNotFound
 	}
 
 	return model.ToEntity(), nil

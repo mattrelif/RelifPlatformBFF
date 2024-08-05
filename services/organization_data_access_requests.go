@@ -62,13 +62,11 @@ func (service *accessOrganizationDataRequestsImpl) Accept(id string, auditor ent
 		return err
 	}
 
-	data := entities.OrganizationDataAccessRequest{
-		AuditorID:  auditor.ID,
-		Status:     utils.AcceptedStatus,
-		AcceptedAt: time.Now(),
-	}
+	request.AcceptedAt = time.Now()
+	request.Status = utils.AcceptedStatus
+	request.AuditorID = auditor.ID
 
-	if err = service.repository.UpdateOneById(request.ID, data); err != nil {
+	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
 		return err
 	}
 
@@ -93,11 +91,12 @@ func (service *accessOrganizationDataRequestsImpl) Reject(id string, auditor ent
 		return err
 	}
 
-	data.AuditorID = auditor.ID
-	data.Status = utils.RejectedStatus
-	data.RejectedAt = time.Now()
+	request.AuditorID = auditor.ID
+	request.Status = utils.RejectedStatus
+	request.RejectedAt = time.Now()
+	request.RejectReason = data.RejectReason
 
-	if err = service.repository.UpdateOneById(request.ID, data); err != nil {
+	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
 		return err
 	}
 

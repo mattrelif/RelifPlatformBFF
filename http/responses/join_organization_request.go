@@ -15,6 +15,7 @@ type JoinOrganizationRequest struct {
 	AuditorID      string     `json:"auditor_id"`
 	AcceptedAt     time.Time  `json:"accepted_at"`
 	RejectedAt     time.Time  `json:"rejected_at"`
+	RejectedReason string     `json:"rejected_reason"`
 	CreatedAt      time.Time  `json:"created_at"`
 	ExpiresAt      *time.Time `json:"expires_at"`
 }
@@ -28,6 +29,7 @@ func NewJoinOrganizationRequest(entity entities.JoinOrganizationRequest) JoinOrg
 		AuditorID:      entity.AuditorID,
 		AcceptedAt:     entity.AcceptedAt,
 		RejectedAt:     entity.RejectedAt,
+		RejectedReason: entity.RejectReason,
 		CreatedAt:      entity.CreatedAt,
 		ExpiresAt:      entity.ExpiresAt,
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 type Organizations interface {
-	Create(data entities.Organization, ownerId string) (entities.Organization, error)
+	Create(data entities.Organization, owner entities.User) (entities.Organization, error)
 	FindMany(offset, limit int64) (int64, []entities.Organization, error)
 	FindOneById(id string) (entities.Organization, error)
 	UpdateOneById(id string, data entities.Organization) error
@@ -26,20 +26,19 @@ func NewOrganizations(repository repositories.Organizations, usersService Users)
 	}
 }
 
-func (service *organizationsImpl) Create(data entities.Organization, ownerId string) (entities.Organization, error) {
-	data.OwnerID = ownerId
+func (service *organizationsImpl) Create(data entities.Organization, owner entities.User) (entities.Organization, error) {
+	data.OwnerID = owner.ID
+
 	organization, err := service.repository.Create(data)
 
 	if err != nil {
 		return entities.Organization{}, err
 	}
 
-	userData := entities.User{
-		OrganizationID: organization.ID,
-		PlatformRole:   utils.OrgAdminPlatformRole,
-	}
+	owner.OrganizationID = organization.ID
+	owner.PlatformRole = utils.OrgAdminPlatformRole
 
-	if err = service.usersService.UpdateOneById(ownerId, userData); err != nil {
+	if err = service.usersService.UpdateOneById(owner.ID, owner); err != nil {
 		return entities.Organization{}, err
 	}
 
@@ -65,9 +64,7 @@ func (service *organizationsImpl) InactivateOneById(id string) error {
 		return err
 	}
 
-	data := entities.Organization{
-		Status: utils.InactiveStatus,
-	}
-	
-	return service.repository.UpdateOneById(organization.ID, data)
+	organization.Status = utils.InactiveStatus
+
+	return service.repository.UpdateOneById(organization.ID, organization)
 }

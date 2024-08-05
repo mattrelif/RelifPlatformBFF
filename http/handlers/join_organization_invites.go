@@ -179,6 +179,8 @@ func (handler *JoinOrganizationInvites) Accept(w http.ResponseWriter, r *http.Re
 }
 
 func (handler *JoinOrganizationInvites) Reject(w http.ResponseWriter, r *http.Request) {
+	var req requests.RejectJoinOrganizationInvite
+
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
@@ -194,7 +196,25 @@ func (handler *JoinOrganizationInvites) Reject(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := handler.service.Reject(id); err != nil {
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = json.Unmarshal(body, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = handler.service.Reject(id, req.ToEntity()); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrJoinOrganizationInviteNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)

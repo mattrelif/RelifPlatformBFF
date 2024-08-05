@@ -107,13 +107,13 @@ func NewRouter(
 
 			r.Route("/join-organization-invites", func(r chi.Router) {
 				r.Post("/", joinOrganizationInvitesHandler.Create)
-				r.Delete("/{id}/accept", joinOrganizationInvitesHandler.Accept)
-				r.Delete("/{id}/reject", joinOrganizationInvitesHandler.Reject)
+				r.Put("/{id}/accept", joinOrganizationInvitesHandler.Accept)
+				r.Put("/{id}/reject", joinOrganizationInvitesHandler.Reject)
 			})
 
 			r.Route("/join-organization-requests", func(r chi.Router) {
-				r.Delete("/{id}/accept", joinOrganizationRequestsHandler.Accept)
-				r.Delete("/{id}/reject", joinOrganizationRequestsHandler.Reject)
+				r.Put("/{id}/accept", joinOrganizationRequestsHandler.Accept)
+				r.Put("/{id}/reject", joinOrganizationRequestsHandler.Reject)
 			})
 
 			r.Route("/organization-data-access-requests", func(r chi.Router) {

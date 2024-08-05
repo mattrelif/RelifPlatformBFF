@@ -15,6 +15,7 @@ type JoinOrganizationInvite struct {
 	Status         string     `json:"status"`
 	AcceptedAt     time.Time  `json:"accepted_at"`
 	RejectedAt     time.Time  `json:"rejected_at"`
+	RejectedReason string     `json:"rejected_reason"`
 	CreatedAt      time.Time  `json:"created_at"`
 	ExpiresAt      *time.Time `json:"expires_at"`
 }
@@ -28,6 +29,7 @@ func NewJoinOrganizationInvite(entity entities.JoinOrganizationInvite) JoinOrgan
 		Status:         entity.Status,
 		AcceptedAt:     entity.AcceptedAt,
 		RejectedAt:     entity.RejectedAt,
+		RejectedReason: entity.RejectReason,
 		CreatedAt:      entity.CreatedAt,
 		ExpiresAt:      entity.ExpiresAt,
 	}

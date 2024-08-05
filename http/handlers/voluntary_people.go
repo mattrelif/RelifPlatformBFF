@@ -91,6 +91,8 @@ func (handler *VoluntaryPeople) FindManyByOrganizationId(w http.ResponseWriter, 
 		return
 	}
 
+	search := r.URL.Query().Get("search")
+
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -107,7 +109,7 @@ func (handler *VoluntaryPeople) FindManyByOrganizationId(w http.ResponseWriter, 
 		return
 	}
 
-	count, voluntaries, err := handler.service.FindManyByOrganizationId(organizationId, int64(limit), int64(offset))
+	count, voluntaries, err := handler.service.FindManyByOrganizationId(organizationId, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

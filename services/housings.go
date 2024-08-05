@@ -8,7 +8,7 @@ import (
 
 type Housings interface {
 	Create(user entities.User, housing entities.Housing) (entities.Housing, error)
-	FindManyByOrganizationID(organizationId string, limit, offset int64) (int64, []entities.Housing, error)
+	FindManyByOrganizationID(organizationId, search string, limit, offset int64) (int64, []entities.Housing, error)
 	FindOneByID(id string) (entities.Housing, error)
 	UpdateOneByID(id string, housing entities.Housing) error
 	InactivateOneByID(id string) error
@@ -29,8 +29,8 @@ func (service *housingsImpl) Create(user entities.User, housing entities.Housing
 	return service.repository.Create(housing)
 }
 
-func (service *housingsImpl) FindManyByOrganizationID(organizationId string, limit, offset int64) (int64, []entities.Housing, error) {
-	return service.repository.FindManyByOrganizationID(organizationId, limit, offset)
+func (service *housingsImpl) FindManyByOrganizationID(organizationId, search string, limit, offset int64) (int64, []entities.Housing, error) {
+	return service.repository.FindManyByOrganizationID(organizationId, search, limit, offset)
 }
 
 func (service *housingsImpl) FindOneByID(id string) (entities.Housing, error) {
@@ -42,8 +42,13 @@ func (service *housingsImpl) UpdateOneByID(id string, housing entities.Housing) 
 }
 
 func (service *housingsImpl) InactivateOneByID(id string) error {
-	data := entities.Housing{
-		Status: utils.InactiveStatus,
+	housing, err := service.FindOneByID(id)
+
+	if err != nil {
+		return err
 	}
-	return service.repository.UpdateOneById(id, data)
+
+	housing.Status = utils.InactiveStatus
+
+	return service.repository.UpdateOneById(id, housing)
 }

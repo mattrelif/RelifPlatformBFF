@@ -11,5 +11,6 @@ type JoinOrganizationRequest struct {
 	CreatedAt      time.Time
 	AcceptedAt     time.Time
 	RejectedAt     time.Time
+	RejectReason   string
 	ExpiresAt      *time.Time
 }

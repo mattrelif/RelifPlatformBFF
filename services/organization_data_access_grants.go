@@ -3,7 +3,6 @@ package services
 import (
 	"relif/bff/entities"
 	"relif/bff/repositories"
-	"relif/bff/utils"
 )
 
 type OrganizationDataAccessGrants interface {
@@ -53,18 +52,4 @@ func (service *organizationDataAccessGrantsImpl) ExistsByOrganizationIdAndTarget
 	}
 
 	return count > 0, nil
-}
-
-func (service *organizationDataAccessGrantsImpl) AuthorizeExternalMutation(user entities.User, id string) error {
-	grant, err := service.repository.FindOneById(id)
-
-	if err != nil {
-		return err
-	}
-
-	if user.OrganizationID != grant.TargetOrganizationID && user.PlatformRole != utils.OrgAdminPlatformRole {
-		return utils.ErrUnauthorizedAction
-	}
-
-	return nil
 }

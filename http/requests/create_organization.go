@@ -14,7 +14,6 @@ type CreateOrganization struct {
 func (req *CreateOrganization) Validate() error {
 	return validation.ValidateStruct(req,
 		validation.Field(&req.Name, validation.Required),
-		validation.Field(&req.Description, validation.Required),
 		validation.Field(&req.Address, validation.By(func(value interface{}) error {
 			if address, ok := value.(Address); ok {
 				return address.Validate()

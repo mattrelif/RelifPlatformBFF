@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
+	"io"
 	"net/http"
 	"relif/bff/entities"
+	"relif/bff/http/requests"
 	"relif/bff/http/responses"
 	"relif/bff/services"
 	"relif/bff/utils"
@@ -119,6 +121,8 @@ func (handler *JoinOrganizationRequests) Accept(w http.ResponseWriter, r *http.R
 }
 
 func (handler *JoinOrganizationRequests) Reject(w http.ResponseWriter, r *http.Request) {
+	var req requests.RejectJoinOrganizationRequest
+
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
@@ -134,7 +138,25 @@ func (handler *JoinOrganizationRequests) Reject(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := handler.service.Reject(id, user); err != nil {
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = json.Unmarshal(body, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = handler.service.Reject(id, user, req.ToEntity()); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
