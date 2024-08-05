@@ -80,26 +80,26 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindMany(offset, limit in
 			{"$limit", limit},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "organization_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "organization"},
 			}},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "creator_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "creator"},
 			}},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "auditor_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "auditor"},
 			}},
 		},
@@ -159,18 +159,18 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationId(
 			{"$limit", limit},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "creator_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "creator"},
 			}},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "auditor_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "auditor"},
 			}},
 		},

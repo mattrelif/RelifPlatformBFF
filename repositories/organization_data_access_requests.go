@@ -63,26 +63,26 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 			{"$limit", limit},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "requester_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "requester"},
 			}},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "target_organization_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "target_organization"},
 			}},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "auditor_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "auditor"},
 			}},
 		},
@@ -141,26 +141,26 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizat
 			{"$limit", limit},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "requester_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "requester"},
 			}},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "requester_organization_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "requester_organization"},
 			}},
 		},
 		bson.D{
-			{"lookup", bson.D{
+			{"$lookup", bson.D{
 				{"from", "users"},
 				{"localField", "auditor_id"},
-				{"foreignKey", "_id"},
+				{"foreignField", "_id"},
 				{"as", "auditor"},
 			}},
 		},

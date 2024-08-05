@@ -95,7 +95,7 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$current_room_id", "$$romId"}}},
+									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomId"}}},
 									bson.D{{"$ne", bson.A{"status", utils.InactiveStatus}}},
 								}},
 							}},
@@ -153,7 +153,7 @@ func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoo
 			},
 		},
 	}
-	
+
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return entities.HousingRoom{}, utils.ErrHousingRoomNotFound
@@ -194,7 +194,7 @@ func (repository *mongoHousingRooms) FindOneCompleteById(id string) (entities.Ho
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$current_room_id", "$$romId"}}},
+									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomId"}}},
 									bson.D{{"$ne", bson.A{"status", utils.InactiveStatus}}},
 								}},
 							}},
