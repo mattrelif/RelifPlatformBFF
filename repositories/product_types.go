@@ -78,12 +78,13 @@ func (repository *mongoProductTypes) FindManyByOrganizationId(organizationId str
 	}
 
 	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"name": 1})
-
 	cursor, err := repository.collection.Find(context.TODO(), filter, opts)
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.TODO(), &modelList); err != nil {
 		return 0, nil, err

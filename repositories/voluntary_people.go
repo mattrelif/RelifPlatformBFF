@@ -90,13 +90,13 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId,
 	}
 
 	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"full_name": 1})
-
 	cursor, err := repository.collection.Find(context.Background(), filter, opts)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelsList); err != nil {
 		return 0, nil, err

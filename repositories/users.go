@@ -92,11 +92,12 @@ func (repository *usersMongo) FindManyByOrganizationId(organizationId string, of
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -145,11 +146,12 @@ func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return entities.User{}, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if cursor.Next(context.Background()) {
 		if err = cursor.Decode(&model); err != nil {

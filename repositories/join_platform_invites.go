@@ -47,13 +47,13 @@ func (repository *mongoJoinPlatformInvites) FindManyByOrganizationId(organizatio
 	}
 
 	opts := options.Find().SetSkip(offset).SetLimit(limit).SetSort(bson.M{"created_at": -1})
-
 	cursor, err := repository.collection.Find(context.Background(), filter, opts)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -70,6 +70,7 @@ func (repository *mongoJoinPlatformInvites) FindOneAndDeleteByCode(code string) 
 	var model models.JoinPlatformInvite
 
 	filter := bson.M{"code": code}
+	
 	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Decode(&model); err != nil {
 		return entities.JoinPlatformInvite{}, err
 	}

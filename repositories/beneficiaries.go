@@ -138,11 +138,12 @@ func (repository *mongoBeneficiaries) FindManyByHousingId(housingId, search stri
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -254,11 +255,12 @@ func (repository *mongoBeneficiaries) FindManyByRoomId(roomId, search string, li
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -370,11 +372,12 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId, s
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -445,11 +448,12 @@ func (repository *mongoBeneficiaries) FindOneById(id string) (entities.Beneficia
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return entities.Beneficiary{}, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if cursor.Next(context.Background()) {
 		if err = cursor.Decode(&model); err != nil {

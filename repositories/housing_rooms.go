@@ -118,11 +118,12 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
@@ -189,11 +190,12 @@ func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoo
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return entities.HousingRoom{}, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if cursor.Next(context.Background()) {
 		if err = cursor.Decode(&model); err != nil {

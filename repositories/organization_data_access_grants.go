@@ -53,13 +53,13 @@ func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationId(or
 	}
 
 	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-
 	cursor, err := repository.collection.Find(context.Background(), filter, opts)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelsList); err != nil {
 		return 0, nil, err
@@ -85,13 +85,13 @@ func (repository *mongoOrganizationDataAccessGrants) FindManyByTargetOrganizatio
 	}
 
 	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-
 	cursor, err := repository.collection.Find(context.Background(), filter, opts)
-	defer cursor.Close(context.Background())
 
 	if err != nil {
 		return 0, nil, err
 	}
+
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelsList); err != nil {
 		return 0, nil, err
