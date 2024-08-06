@@ -135,6 +135,7 @@ func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationId(w http.R
 }
 
 func (handler *UpdateOrganizationTypeRequests) Accept(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
 	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
@@ -142,9 +143,7 @@ func (handler *UpdateOrganizationTypeRequests) Accept(w http.ResponseWriter, r *
 		return
 	}
 
-	id := chi.URLParam(r, "id")
-
-	if err := handler.service.Accept(user.ID, id); err != nil {
+	if err := handler.service.Accept(id, user.ID); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUpdateOrganizationTypeRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)

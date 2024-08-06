@@ -35,11 +35,16 @@ func NewOrganizationDataAccessRequests(
 }
 
 func (service *accessOrganizationDataRequestsImpl) Create(requester entities.User, targetOrganizationId string) (entities.OrganizationDataAccessRequest, error) {
+	if requester.OrganizationID == targetOrganizationId {
+		return entities.OrganizationDataAccessRequest{}, utils.ErrUnauthorizedAction
+	}
+
 	data := entities.OrganizationDataAccessRequest{
 		RequesterID:             requester.ID,
 		RequesterOrganizationID: requester.OrganizationID,
 		TargetOrganizationID:    targetOrganizationId,
 	}
+
 	return service.repository.Create(data)
 }
 

@@ -191,11 +191,6 @@ func (handler *JoinOrganizationRequests) Reject(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err = req.Validate(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	if err = handler.service.Reject(id, user, req.ToEntity()); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrJoinOrganizationRequestNotFound):
