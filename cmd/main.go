@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 	"os"
@@ -26,20 +25,21 @@ var (
 func init() {
 	var err error
 
-	fmt.Println("Initializing platform bff")
-	fmt.Println(os.Getenv("APPLICATION_ENVIRONMENT"))
-
 	logger, err = zap.NewProduction()
 
 	if err != nil {
 		panic(err)
 	}
 
+	logger.Info("initializing environment")
+
 	environment, err = settings.NewEnvironment()
 
 	if err != nil {
 		logger.Fatal("could not initialize environment settings", zap.Error(err))
 	}
+
+	logger.Info("initializing AWS configuration")
 
 	awsConfig, err = settings.NewAWSConfig(environment.AWS.Region)
 
