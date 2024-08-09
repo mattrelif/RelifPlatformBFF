@@ -57,5 +57,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/my-ecr-repo:${{ env.VERSION }}
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/my-ecr-repo:latest
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/relif-platform-bff:${{ env.VERSION }}
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/relif-platform-bff:latest
