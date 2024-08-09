@@ -49,17 +49,13 @@ jobs:
       - name: Log in to Amazon ECR
         id: ecr_login
         uses: aws-actions/amazon-ecr-login@v2
-        with:
-          aws-region: us-east-1
 
       - name: Build and push Docker image to AWS ECR
         id: ecr_push
         uses: docker/build-push-action@v4
-        env:
-          REGISTRY: ${{ steps.ecr_login.outputs.registry }}
         with:
           context: .
           push: true
           tags: |
-            $REGISTRY/relif-platform-bff:${{ env.VERSION }}
-            $REGISTRY/relif-platform-bff:latest
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/my-ecr-repo:${{ env.VERSION }}
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/my-ecr-repo:latest
