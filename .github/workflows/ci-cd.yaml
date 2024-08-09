@@ -20,22 +20,36 @@ jobs:
         id: bump_version
         run: |
           #!/bin/bash
+
+          # Obter a última tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
           
-          LATEST_TAG=$(git describe --tags --abbrev=0)
+          # Se não houver tags, iniciar a partir de v0.1.0
+          if [ -z "$LATEST_TAG" ]; then
+            NEW_TAG="v0.1.0"
+          else
+            # Separar a versão em partes
+            IFS='.' read -r -a VERSION_PARTS <<< "${LATEST_TAG#v}"
+            
+            # Incrementar a versão menor
+            MAJOR=${VERSION_PARTS[0]}
+            MINOR=${VERSION_PARTS[1]}
+            PATCH=${VERSION_PARTS[2]}
+            NEW_MINOR=$((MINOR + 1))
+            
+            # Criar a nova versão
+            NEW_TAG="v$MAJOR.$NEW_MINOR.$PATCH"
+          fi
           
-          IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
+          # Criar e enviar a nova tag
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
           
-          MAJOR=${VERSION_PARTS[0]}
-          MINOR=${VERSION_PARTS[1]}
-          PATCH=${VERSION_PARTS[2]}
-          NEW_MINOR=$((MINOR + 1))
-          
-          NEW_TAG="$MAJOR.$NEW_MINOR.$PATCH"
-          
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
-          
+          # Exportar a nova tag como variável de ambiente
           echo "VERSION=$NEW_TAG" >> $GITHUB_ENV
+          
+          # Exibir a nova tag
+          echo "Nova versão: $NEW_TAG"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
