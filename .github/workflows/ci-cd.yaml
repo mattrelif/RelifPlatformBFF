@@ -51,11 +51,18 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push Docker image to AWS ECR
-        id: ecr_push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/relif-platform-bff:${{ env.VERSION }}
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/relif-platform-bff:latest
+        run: |
+          #!/bin/bash
+          
+          # Obter o URL do ECR
+          IMAGE_NAME=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/relif-platform-bff
+          IMAGE_TAG=${{ env.VERSION }}
+
+          # Construir a imagem Docker
+          docker build -t $IMAGE_NAME:$IMAGE_TAG .
+
+          # Tag para latest
+          docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+
+          # Enviar a imagem Docker para o ECR
+          docker push --all-tags $IMAGE_NAME
