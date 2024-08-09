@@ -1,6 +1,6 @@
 package models
 
-import "relif/bff/entities"
+import "relif/platform-bff/entities"
 
 type EmergencyContact struct {
 	Relationship string   `bson:"relationship,omitempty"`

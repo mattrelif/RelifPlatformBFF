@@ -5,10 +5,10 @@ import (
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"net/http"
-	"relif/bff/entities"
-	"relif/bff/http/responses"
-	"relif/bff/services"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/http/responses"
+	"relif/platform-bff/services"
+	"relif/platform-bff/utils"
 	"strconv"
 )
 

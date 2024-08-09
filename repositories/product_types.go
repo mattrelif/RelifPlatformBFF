@@ -7,9 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"relif/bff/entities"
-	"relif/bff/models"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/models"
+	"relif/platform-bff/utils"
 	"time"
 )
 

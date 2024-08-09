@@ -5,12 +5,12 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"relif/bff/entities"
-	"relif/bff/http/cookies"
-	"relif/bff/http/requests"
-	"relif/bff/http/responses"
-	"relif/bff/services"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/http/cookies"
+	"relif/platform-bff/http/requests"
+	"relif/platform-bff/http/responses"
+	"relif/platform-bff/services"
+	"relif/platform-bff/utils"
 )
 
 type Auth struct {

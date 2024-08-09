@@ -5,9 +5,9 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"relif/bff/entities"
-	"relif/bff/models"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/models"
+	"relif/platform-bff/utils"
 )
 
 type JoinOrganizationInvites interface {

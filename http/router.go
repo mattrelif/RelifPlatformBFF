@@ -5,8 +5,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"net/http"
-	"relif/bff/http/handlers"
-	"relif/bff/http/middlewares"
+	"relif/platform-bff/http/handlers"
+	"relif/platform-bff/http/middlewares"
 )
 
 func NewRouter(

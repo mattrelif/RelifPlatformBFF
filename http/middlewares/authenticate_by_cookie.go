@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"relif/bff/http/cookies"
-	"relif/bff/services"
-	"relif/bff/utils"
+	"relif/platform-bff/http/cookies"
+	"relif/platform-bff/services"
+	"relif/platform-bff/utils"
 )
 
 type AuthenticateByCookie struct {

@@ -2,8 +2,8 @@ package services
 
 import (
 	"errors"
-	"relif/bff/entities"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/utils"
 )
 
 type Authentication interface {

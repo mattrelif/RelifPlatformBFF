@@ -1,9 +1,9 @@
 package services
 
 import (
-	"relif/bff/entities"
-	"relif/bff/repositories"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/repositories"
+	"relif/platform-bff/utils"
 )
 
 type BeneficiaryAllocations interface {

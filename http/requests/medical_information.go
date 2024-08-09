@@ -1,7 +1,7 @@
 package requests
 
 import (
-	"relif/bff/entities"
+	"relif/platform-bff/entities"
 )
 
 type MedicalInformation struct {

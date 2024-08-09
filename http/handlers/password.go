@@ -5,8 +5,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
-	"relif/bff/http/requests"
-	"relif/bff/services"
+	"relif/platform-bff/http/requests"
+	"relif/platform-bff/services"
 )
 
 type Password struct {

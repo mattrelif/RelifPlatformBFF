@@ -1,8 +1,8 @@
 package services
 
 import (
-	"relif/bff/entities"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/utils"
 )
 
 type Authorization interface {

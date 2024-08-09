@@ -1,6 +1,6 @@
 package models
 
-import "relif/bff/entities"
+import "relif/platform-bff/entities"
 
 type Address struct {
 	AddressLine1 string `bson:"address_line_1,omitempty"`

@@ -1,6 +1,6 @@
 package responses
 
-import "relif/bff/entities"
+import "relif/platform-bff/entities"
 
 type Address struct {
 	AddressLine1 string `json:"address_line_1"`

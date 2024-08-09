@@ -6,11 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
-	"relif/bff/entities"
-	"relif/bff/http/requests"
-	"relif/bff/http/responses"
-	"relif/bff/services"
-	"relif/bff/utils"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/http/requests"
+	"relif/platform-bff/http/responses"
+	"relif/platform-bff/services"
+	"relif/platform-bff/utils"
 	"strconv"
 )
 

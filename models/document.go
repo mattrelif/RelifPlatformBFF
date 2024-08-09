@@ -1,6 +1,6 @@
 package models
 
-import "relif/bff/entities"
+import "relif/platform-bff/entities"
 
 type Document struct {
 	Type  string `bson:"type,omitempty"`

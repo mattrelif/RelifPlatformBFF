@@ -1,7 +1,7 @@
 package responses
 
 import (
-	"relif/bff/entities"
+	"relif/platform-bff/entities"
 )
 
 type EmergencyContact struct {

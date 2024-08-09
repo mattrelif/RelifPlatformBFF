@@ -1,4 +1,4 @@
-module relif/bff
+module relif/platform-bff
 
 go 1.22.5
 

@@ -1,8 +1,8 @@
 package services
 
 import (
-	"relif/bff/entities"
-	"relif/bff/repositories"
+	"relif/platform-bff/entities"
+	"relif/platform-bff/repositories"
 )
 
 type ProductTypes interface {

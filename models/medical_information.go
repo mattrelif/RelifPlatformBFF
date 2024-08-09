@@ -1,6 +1,6 @@
 package models
 
-import "relif/bff/entities"
+import "relif/platform-bff/entities"
 
 type MedicalInformation struct {
 	Allergies                  []string `bson:"allergies"`

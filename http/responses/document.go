@@ -1,6 +1,6 @@
 package responses
 
-import "relif/bff/entities"
+import "relif/platform-bff/entities"
 
 type Document struct {
 	Type  string `json:"type"`
