@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -30,13 +32,13 @@ jobs:
           else
             # Separar a versão em partes
             IFS='.' read -r -a VERSION_PARTS <<< "${LATEST_TAG#v}"
-            
+          
             # Incrementar a versão menor
             MAJOR=${VERSION_PARTS[0]}
             MINOR=${VERSION_PARTS[1]}
             PATCH=${VERSION_PARTS[2]}
             NEW_MINOR=$((MINOR + 1))
-            
+          
             # Criar a nova versão
             NEW_TAG="v$MAJOR.$NEW_MINOR.$PATCH"
           fi
