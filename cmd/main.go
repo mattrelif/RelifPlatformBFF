@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 	"os"
@@ -24,6 +25,9 @@ var (
 
 func init() {
 	var err error
+
+	fmt.Println("Initializing platform bff")
+	fmt.Println(os.Getenv("APPLICATION_ENVIRONMENT"))
 
 	logger, err = zap.NewProduction()
 
