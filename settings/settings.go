@@ -64,7 +64,9 @@ func NewSettings(secretsManagerClient *secretsmanager.Client) (*Settings, error)
 			return nil, err
 		}
 
-		if err = json.Unmarshal([]byte(*result.SecretString), &settings); err != nil {
+		secretString := *result.SecretString
+
+		if err = json.Unmarshal([]byte(secretString), &settings); err != nil {
 			return nil, err
 		}
 	}

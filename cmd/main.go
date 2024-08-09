@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 	"os"
@@ -48,8 +47,6 @@ func init() {
 	if err != nil {
 		logger.Fatal("could not initialize settings", zap.Error(err))
 	}
-
-	logger.Info("settings initialized", zap.String("settings", fmt.Sprintf("%+v", stgs)))
 }
 
 func main() {
