@@ -41,12 +41,6 @@ func (req *CreateVoluntaryPerson) Validate() error {
 			}
 			return nil
 		})),
-		validation.Field(&req.MedicalInformation, validation.By(func(value interface{}) error {
-			if medicalInformation, ok := value.(MedicalInformation); ok {
-				return medicalInformation.Validate()
-			}
-			return nil
-		})),
 		validation.Field(&req.EmergencyContacts, validation.By(func(value interface{}) error {
 			if contacts, ok := value.([]EmergencyContact); ok {
 				for _, contact := range contacts {

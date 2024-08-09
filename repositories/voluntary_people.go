@@ -13,10 +13,10 @@ import (
 
 type VoluntaryPeople interface {
 	Create(data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
-	FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
-	FindOneById(id string) (entities.VoluntaryPerson, error)
+	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
+	FindOneByID(id string) (entities.VoluntaryPerson, error)
 	CountByEmail(email string) (int64, error)
-	UpdateOneById(id string, data entities.VoluntaryPerson) error
+	UpdateOneByID(id string, data entities.VoluntaryPerson) error
 }
 
 type mongoVoluntaryPeople struct {
@@ -39,7 +39,7 @@ func (repository *mongoVoluntaryPeople) Create(data entities.VoluntaryPerson) (e
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
+func (repository *mongoVoluntaryPeople) FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
 	var filter bson.M
 
 	entityList := make([]entities.VoluntaryPerson, 0)
@@ -49,7 +49,7 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId,
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"organization_id": organizationId,
+					"organization_id": organizationID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -70,7 +70,7 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId,
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"organization_id": organizationId,
+					"organization_id": organizationID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -109,7 +109,7 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationId(organizationId,
 	return count, entityList, nil
 }
 
-func (repository *mongoVoluntaryPeople) FindOneById(id string) (entities.VoluntaryPerson, error) {
+func (repository *mongoVoluntaryPeople) FindOneByID(id string) (entities.VoluntaryPerson, error) {
 	var model models.VoluntaryPerson
 
 	filter := bson.M{
@@ -163,7 +163,7 @@ func (repository *mongoVoluntaryPeople) CountByEmail(email string) (int64, error
 	return count, nil
 }
 
-func (repository *mongoVoluntaryPeople) UpdateOneById(id string, data entities.VoluntaryPerson) error {
+func (repository *mongoVoluntaryPeople) UpdateOneByID(id string, data entities.VoluntaryPerson) error {
 	model := models.NewUpdatedVoluntaryPerson(data)
 
 	update := bson.M{"$set": &model}

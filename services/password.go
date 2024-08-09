@@ -73,7 +73,7 @@ func (service *passwordImpl) UpdatePassword(code, password string) error {
 		return err
 	}
 
-	user, err := service.userService.FindOneById(request.UserID)
+	user, err := service.userService.FindOneByID(request.UserID)
 
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (service *passwordImpl) UpdatePassword(code, password string) error {
 
 	user.Password = hashed
 
-	if err = service.userService.UpdateOneById(user.ID, user); err != nil {
+	if err = service.userService.UpdateOneByID(user.ID, user); err != nil {
 		return err
 	}
 

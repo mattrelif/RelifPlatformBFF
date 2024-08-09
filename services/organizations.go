@@ -9,9 +9,10 @@ import (
 type Organizations interface {
 	Create(data entities.Organization, owner entities.User) (entities.Organization, error)
 	FindMany(offset, limit int64) (int64, []entities.Organization, error)
-	FindOneById(id string) (entities.Organization, error)
-	UpdateOneById(id string, data entities.Organization) error
-	InactivateOneById(id string) error
+	FindOneByID(id string) (entities.Organization, error)
+	UpdateOneByID(id string, data entities.Organization) error
+	InactivateOneByID(id string) error
+	ReactivateOneByID(id string) error
 }
 
 type organizationsImpl struct {
@@ -38,7 +39,7 @@ func (service *organizationsImpl) Create(data entities.Organization, owner entit
 	owner.OrganizationID = organization.ID
 	owner.PlatformRole = utils.OrgAdminPlatformRole
 
-	if err = service.usersService.UpdateOneById(owner.ID, owner); err != nil {
+	if err = service.usersService.UpdateOneByID(owner.ID, owner); err != nil {
 		return entities.Organization{}, err
 	}
 
@@ -49,16 +50,16 @@ func (service *organizationsImpl) FindMany(offset, limit int64) (int64, []entiti
 	return service.repository.FindMany(offset, limit)
 }
 
-func (service *organizationsImpl) FindOneById(organizationId string) (entities.Organization, error) {
-	return service.repository.FindOneById(organizationId)
+func (service *organizationsImpl) FindOneByID(organizationID string) (entities.Organization, error) {
+	return service.repository.FindOneByID(organizationID)
 }
 
-func (service *organizationsImpl) UpdateOneById(id string, data entities.Organization) error {
-	return service.repository.UpdateOneById(id, data)
+func (service *organizationsImpl) UpdateOneByID(id string, data entities.Organization) error {
+	return service.repository.UpdateOneByID(id, data)
 }
 
-func (service *organizationsImpl) InactivateOneById(id string) error {
-	organization, err := service.FindOneById(id)
+func (service *organizationsImpl) InactivateOneByID(id string) error {
+	organization, err := service.FindOneByID(id)
 
 	if err != nil {
 		return err
@@ -66,5 +67,17 @@ func (service *organizationsImpl) InactivateOneById(id string) error {
 
 	organization.Status = utils.InactiveStatus
 
-	return service.repository.UpdateOneById(organization.ID, organization)
+	return service.repository.UpdateOneByID(organization.ID, organization)
+}
+
+func (service *organizationsImpl) ReactivateOneByID(id string) error {
+	organization, err := service.FindOneByID(id)
+
+	if err != nil {
+		return err
+	}
+
+	organization.Status = utils.ActiveStatus
+
+	return service.repository.UpdateOneByID(organization.ID, organization)
 }

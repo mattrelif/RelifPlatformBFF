@@ -8,10 +8,10 @@ import (
 )
 
 type JoinOrganizationRequests interface {
-	Create(userId, organizationId string) (entities.JoinOrganizationRequest, error)
-	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
-	FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
-	FindOneById(id string) (entities.JoinOrganizationRequest, error)
+	Create(userID, organizationID string) (entities.JoinOrganizationRequest, error)
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindOneByID(id string) (entities.JoinOrganizationRequest, error)
 	Accept(id string, auditor entities.User) error
 	Reject(id string, auditor entities.User, data entities.JoinOrganizationRequest) error
 }
@@ -28,34 +28,34 @@ func NewJoinOrganizationRequests(usersService Users, repository repositories.Joi
 	}
 }
 
-func (service *joinOrganizationRequestsImpl) Create(userId, organizationId string) (entities.JoinOrganizationRequest, error) {
+func (service *joinOrganizationRequestsImpl) Create(userID, organizationID string) (entities.JoinOrganizationRequest, error) {
 	data := entities.JoinOrganizationRequest{
-		UserID:         userId,
-		OrganizationID: organizationId,
+		UserID:         userID,
+		OrganizationID: organizationID,
 	}
 	return service.repository.Create(data)
 }
 
-func (service *joinOrganizationRequestsImpl) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, offset, limit)
+func (service *joinOrganizationRequestsImpl) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, offset, limit)
 }
 
-func (service *joinOrganizationRequestsImpl) FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
-	return service.repository.FindManyByUserId(userId, offset, limit)
+func (service *joinOrganizationRequestsImpl) FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
+	return service.repository.FindManyByUserID(userID, offset, limit)
 }
 
-func (service *joinOrganizationRequestsImpl) FindOneById(id string) (entities.JoinOrganizationRequest, error) {
-	return service.repository.FindOneById(id)
+func (service *joinOrganizationRequestsImpl) FindOneByID(id string) (entities.JoinOrganizationRequest, error) {
+	return service.repository.FindOneByID(id)
 }
 
 func (service *joinOrganizationRequestsImpl) Accept(id string, auditor entities.User) error {
-	request, err := service.repository.FindOneById(id)
+	request, err := service.repository.FindOneByID(id)
 
 	if err != nil {
 		return err
 	}
 
-	user, err := service.usersService.FindOneById(request.UserID)
+	user, err := service.usersService.FindOneByID(request.UserID)
 
 	if err != nil {
 		return err
@@ -65,14 +65,14 @@ func (service *joinOrganizationRequestsImpl) Accept(id string, auditor entities.
 	request.Status = utils.AcceptedStatus
 	request.AuditorID = auditor.ID
 
-	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+	if err = service.repository.UpdateOneByID(request.ID, request); err != nil {
 		return err
 	}
 
 	user.OrganizationID = request.OrganizationID
 	user.PlatformRole = utils.OrgMemberPlatformRole
 
-	if err = service.usersService.UpdateOneById(user.ID, user); err != nil {
+	if err = service.usersService.UpdateOneByID(user.ID, user); err != nil {
 		return err
 	}
 
@@ -80,7 +80,7 @@ func (service *joinOrganizationRequestsImpl) Accept(id string, auditor entities.
 }
 
 func (service *joinOrganizationRequestsImpl) Reject(id string, auditor entities.User, data entities.JoinOrganizationRequest) error {
-	request, err := service.repository.FindOneById(id)
+	request, err := service.repository.FindOneByID(id)
 
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func (service *joinOrganizationRequestsImpl) Reject(id string, auditor entities.
 	request.RejectedAt = time.Now()
 	request.RejectReason = data.RejectReason
 
-	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+	if err = service.repository.UpdateOneByID(request.ID, request); err != nil {
 		return err
 	}
 

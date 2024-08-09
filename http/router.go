@@ -13,6 +13,7 @@ func NewRouter(
 	environment,
 	routerContext string,
 	authenticateByCookieMiddleware *middlewares.AuthenticateByCookie,
+	healthHandler *handlers.Health,
 	authHandler *handlers.Auth,
 	beneficiariesHandler *handlers.Beneficiaries,
 	beneficiaryAllocationsHandler *handlers.BeneficiaryAllocations,
@@ -48,6 +49,8 @@ func NewRouter(
 	}
 
 	router.Route(routerContext, func(r chi.Router) {
+		r.Get("/health", healthHandler.HealthCheck)
+
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/sign-up", authHandler.SignUp)
 			r.Post("/org-sign-up", authHandler.OrganizationSignUp)
@@ -74,28 +77,31 @@ func NewRouter(
 				r.Put("/{id}", usersHandler.UpdateOne)
 				r.Delete("/{id}", usersHandler.DeleteOne)
 
-				r.Get("/{id}/join-organization-requests", joinOrganizationRequestsHandler.FindManyByUserId)
-				r.Get("/{id}/join-organization-invites", joinOrganizationInvitesHandler.FindManyByUserId)
+				r.Get("/{id}/join-organization-requests", joinOrganizationRequestsHandler.FindManyByUserID)
+				r.Get("/{id}/join-organization-invites", joinOrganizationInvitesHandler.FindManyByUserID)
 			})
 
 			r.Route("/organizations", func(r chi.Router) {
 				r.Post("/", organizationsHandler.Create)
+
 				r.Get("/", organizationsHandler.FindMany)
 				r.Get("/{id}", organizationsHandler.FindOne)
+				r.Get("/{id}/users", usersHandler.FindManyByOrganizationID)
+				r.Get("/{id}/join-invites", joinOrganizationInvitesHandler.FindManyByOrganizationID)
+				r.Get("/{id}/join-requests", joinOrganizationRequestsHandler.FindManyByOrganizationID)
+				r.Get("/{id}/requested-data-access-requests", organizationDataAccessRequestsHandler.FindManyByRequesterOrganizationID)
+				r.Get("/{id}/targeted-data-access-requests", organizationDataAccessRequestsHandler.FindManyByTargetOrganizationID)
+				r.Get("/{id}/data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationID)
+				r.Get("/{id}/targeted-data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationID)
+				r.Get("/{id}/update-organization-type-requests", updateOrganizationTypeRequestsHandler.FindManyByOrganizationID)
+				r.Get("/{id}/housings", housingsHandler.FindManyByOrganizationID)
+				r.Get("/{id}/join-platform-invites", joinPlatformInvitesHandler.FindManyByOrganizationID)
+				r.Get("/{id}/voluntary-people", voluntaryPeopleHandler.FindManyByOrganizationID)
+				r.Get("/{id}/product-types", productTypesHandler.FindManyByOrganizationID)
+				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByOrganizationID)
+
 				r.Put("/{id}", organizationsHandler.UpdateOne)
-				r.Get("/{id}/users", usersHandler.FindManyByOrganizationId)
-				r.Get("/{id}/join-invites", joinOrganizationInvitesHandler.FindManyByOrganizationId)
-				r.Get("/{id}/join-requests", joinOrganizationRequestsHandler.FindManyByOrganizationId)
-				r.Get("/{id}/requested-data-access-requests", organizationDataAccessRequestsHandler.FindManyByRequesterOrganizationId)
-				r.Get("/{id}/targeted-data-access-requests", organizationDataAccessRequestsHandler.FindManyByTargetOrganizationId)
-				r.Get("/{id}/data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationId)
-				r.Get("/{id}/targeted-data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationId)
-				r.Get("/{id}/update-organization-type-requests", updateOrganizationTypeRequestsHandler.FindManyByOrganizationId)
-				r.Get("/{id}/housings", housingsHandler.FindManyByOrganizationId)
-				r.Get("/{id}/join-platform-invites", joinPlatformInvitesHandler.FindManyByOrganizationId)
-				r.Get("/{id}/voluntary-people", voluntaryPeopleHandler.FindManyByOrganizationId)
-				r.Get("/{id}/product-types", productTypesHandler.FindManyByOrganizationId)
-				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByOrganizationId)
+				r.Put("/{id}", organizationsHandler.ReactivateOne)
 
 				r.Post("/{id}/join-organization-requests", joinOrganizationRequestsHandler.Create)
 				r.Post("/{id}/request-organization-data-access", organizationDataAccessRequestsHandler.Create)
@@ -135,41 +141,45 @@ func NewRouter(
 
 			r.Route("/housings", func(r chi.Router) {
 				r.Post("/", housingsHandler.Create)
-				r.Get("/{id}", housingsHandler.FindOneById)
+				r.Get("/{id}", housingsHandler.FindOneByID)
 				r.Put("/{id}", housingsHandler.Update)
 				r.Delete("/{id}", housingsHandler.Delete)
-				r.Get("/{id}/rooms", housingRoomsHandler.FindManyByHousingId)
-				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByHousingId)
-				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByHousingId)
+
+				r.Get("/{id}/rooms", housingRoomsHandler.FindManyByHousingID)
+				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByHousingID)
+				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByHousingID)
 
 				r.Post("/{id}/rooms", housingRoomsHandler.Create)
 			})
 
 			r.Route("/housing-rooms", func(r chi.Router) {
-				r.Get("/{id}", housingRoomsHandler.FindOneById)
+				r.Get("/{id}", housingRoomsHandler.FindOneByID)
 				r.Put("/{id}", housingRoomsHandler.Update)
 				r.Delete("/{id}", housingRoomsHandler.Delete)
-				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByRoomId)
-				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByRoomId)
+
+				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByRoomID)
+				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByRoomID)
 			})
 
 			r.Route("/beneficiaries", func(r chi.Router) {
-				r.Get("/{id}", beneficiariesHandler.FindOneById)
+				r.Get("/{id}", beneficiariesHandler.FindOneByID)
 				r.Put("/{id}", beneficiariesHandler.Update)
 				r.Delete("/{id}", beneficiariesHandler.Delete)
+
 				r.Post("/{id}/allocate", beneficiaryAllocationsHandler.Allocate)
 				r.Post("/{id}/reallocate", beneficiaryAllocationsHandler.Reallocate)
-				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryId)
+
+				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryID)
 			})
 
 			r.Route("/voluntary-people", func(r chi.Router) {
-				r.Get("/{id}", voluntaryPeopleHandler.FindOneById)
+				r.Get("/{id}", voluntaryPeopleHandler.FindOneByID)
 				r.Put("/{id}", voluntaryPeopleHandler.Update)
 				r.Delete("/{id}", voluntaryPeopleHandler.Delete)
 			})
 
 			r.Route("/product-types", func(r chi.Router) {
-				r.Get("/{id}", productTypesHandler.FindOneById)
+				r.Get("/{id}", productTypesHandler.FindOneByID)
 				r.Put("/{id}", productTypesHandler.Update)
 				r.Delete("/{id}", productTypesHandler.Delete)
 			})

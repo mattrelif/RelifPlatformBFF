@@ -8,7 +8,7 @@ import (
 
 type JoinPlatformInvites interface {
 	Create(data entities.JoinPlatformInvite, inviter entities.User) (entities.JoinPlatformInvite, error)
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error)
+	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error)
 	ConsumeByCode(code string) (entities.JoinPlatformInvite, error)
 }
 
@@ -56,8 +56,8 @@ func (service *joinPlatformInvitesImpl) Create(data entities.JoinPlatformInvite,
 	return invite, nil
 }
 
-func (service *joinPlatformInvitesImpl) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, limit, offset)
+func (service *joinPlatformInvitesImpl) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, limit, offset)
 }
 
 func (service *joinPlatformInvitesImpl) ConsumeByCode(code string) (entities.JoinPlatformInvite, error) {

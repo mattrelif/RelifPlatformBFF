@@ -12,10 +12,10 @@ import (
 
 type JoinOrganizationRequests interface {
 	Create(data entities.JoinOrganizationRequest) (entities.JoinOrganizationRequest, error)
-	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
-	FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
-	FindOneById(id string) (entities.JoinOrganizationRequest, error)
-	UpdateOneById(id string, data entities.JoinOrganizationRequest) error
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindOneByID(id string) (entities.JoinOrganizationRequest, error)
+	UpdateOneByID(id string, data entities.JoinOrganizationRequest) error
 }
 
 type mongoJoinOrganizationRequests struct {
@@ -38,11 +38,11 @@ func (repository *mongoJoinOrganizationRequests) Create(data entities.JoinOrgani
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
+func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
 	modelList := make([]models.FindJoinOrganizationRequest, 0)
 	entityList := make([]entities.JoinOrganizationRequest, 0)
 
-	filter := bson.M{"organization_id": organizationId}
+	filter := bson.M{"organization_id": organizationID}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -116,11 +116,11 @@ func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationId(organi
 	return count, entityList, nil
 }
 
-func (repository *mongoJoinOrganizationRequests) FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
+func (repository *mongoJoinOrganizationRequests) FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
 	modelList := make([]models.FindJoinOrganizationRequest, 0)
 	entityList := make([]entities.JoinOrganizationRequest, 0)
 
-	filter := bson.M{"user_id": userId}
+	filter := bson.M{"user_id": userID}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -194,7 +194,7 @@ func (repository *mongoJoinOrganizationRequests) FindManyByUserId(userId string,
 	return count, entityList, nil
 }
 
-func (repository *mongoJoinOrganizationRequests) FindOneById(id string) (entities.JoinOrganizationRequest, error) {
+func (repository *mongoJoinOrganizationRequests) FindOneByID(id string) (entities.JoinOrganizationRequest, error) {
 	var model models.JoinOrganizationRequest
 
 	filter := bson.M{"_id": id}
@@ -209,7 +209,7 @@ func (repository *mongoJoinOrganizationRequests) FindOneById(id string) (entitie
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoJoinOrganizationRequests) UpdateOneById(id string, data entities.JoinOrganizationRequest) error {
+func (repository *mongoJoinOrganizationRequests) UpdateOneByID(id string, data entities.JoinOrganizationRequest) error {
 	model := models.NewUpdatedJoinOrganizationRequest(data)
 
 	update := bson.M{"$set": &model}

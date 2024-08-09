@@ -11,7 +11,7 @@ import (
 
 type JoinPlatformInvites interface {
 	Create(data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error)
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error)
+	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error)
 	FindOneAndDeleteByCode(code string) (entities.JoinPlatformInvite, error)
 }
 
@@ -35,11 +35,11 @@ func (repository *mongoJoinPlatformInvites) Create(data entities.JoinPlatformInv
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoJoinPlatformInvites) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error) {
+func (repository *mongoJoinPlatformInvites) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error) {
 	modelList := make([]models.JoinPlatformInvite, 0)
 	entityList := make([]entities.JoinPlatformInvite, 0)
 
-	filter := bson.M{"organization_id": organizationId}
+	filter := bson.M{"organization_id": organizationID}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -70,7 +70,7 @@ func (repository *mongoJoinPlatformInvites) FindOneAndDeleteByCode(code string) 
 	var model models.JoinPlatformInvite
 
 	filter := bson.M{"code": code}
-	
+
 	if err := repository.collection.FindOneAndDelete(context.Background(), filter).Decode(&model); err != nil {
 		return entities.JoinPlatformInvite{}, err
 	}

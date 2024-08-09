@@ -12,10 +12,10 @@ import (
 
 type Housings interface {
 	Create(data entities.Housing) (entities.Housing, error)
-	FindManyByOrganizationID(organizationId, search string, limit, offset int64) (int64, []entities.Housing, error)
+	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Housing, error)
 	FindOneByID(id string) (entities.Housing, error)
 	FindOneCompleteByID(id string) (entities.Housing, error)
-	UpdateOneById(id string, data entities.Housing) error
+	UpdateOneByID(id string, data entities.Housing) error
 }
 
 type mongoHousings struct {
@@ -38,7 +38,7 @@ func (repository *mongoHousings) Create(data entities.Housing) (entities.Housing
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search string, limit, offset int64) (int64, []entities.Housing, error) {
+func (repository *mongoHousings) FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Housing, error) {
 	var filter bson.M
 
 	modelList := make([]models.FindHousing, 0)
@@ -48,7 +48,7 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"organization_id": organizationId,
+					"organization_id": organizationID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -67,7 +67,7 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"organization_id": organizationId,
+					"organization_id": organizationID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -102,13 +102,13 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "housing_rooms"},
-				{"let", bson.D{{"housingId", "$_id"}}},
+				{"let", bson.D{{"housingID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$housing_id", "$$housingId"}}},
+									bson.D{{"$eq", bson.A{"$housing_id", "$$housingID"}}},
 									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
 								}},
 							}},
@@ -121,13 +121,13 @@ func (repository *mongoHousings) FindManyByOrganizationID(organizationId, search
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "beneficiaries"},
-				{"let", bson.D{{"housingId", "$_id"}}},
+				{"let", bson.D{{"housingID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$housing_id", "$$housingId"}}},
+									bson.D{{"$eq", bson.A{"$current_housing_id", "$$housingID"}}},
 									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
 								}},
 							}},
@@ -197,7 +197,7 @@ func (repository *mongoHousings) FindOneByID(id string) (entities.Housing, error
 			},
 		},
 	}
-	
+
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return entities.Housing{}, utils.ErrHousingNotFound
@@ -232,13 +232,13 @@ func (repository *mongoHousings) FindOneCompleteByID(id string) (entities.Housin
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "housing_rooms"},
-				{"let", bson.D{{"housingId", "$_id"}}},
+				{"let", bson.D{{"housingID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$housing_id", "$$housingId"}}},
+									bson.D{{"$eq", bson.A{"$housing_id", "$$housingID"}}},
 									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
 								}},
 							}},
@@ -251,13 +251,13 @@ func (repository *mongoHousings) FindOneCompleteByID(id string) (entities.Housin
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "beneficiaries"},
-				{"let", bson.D{{"housingId", "$_id"}}},
+				{"let", bson.D{{"housingID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$current_housing_id", "$$housingId"}}},
+									bson.D{{"$eq", bson.A{"$current_housing_id", "$$housingID"}}},
 									bson.D{{"$ne", bson.A{"$status", utils.InactiveStatus}}},
 								}},
 							}},
@@ -310,7 +310,7 @@ func (repository *mongoHousings) FindOneCompleteByID(id string) (entities.Housin
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoHousings) UpdateOneById(id string, data entities.Housing) error {
+func (repository *mongoHousings) UpdateOneByID(id string, data entities.Housing) error {
 	model := models.NewUpdatedHousing(data)
 
 	update := bson.M{"$set": &model}

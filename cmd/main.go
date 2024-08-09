@@ -74,7 +74,7 @@ func main() {
 	voluntaryPeopleRepository := repositories.NewMongoVoluntaryPeople(database)
 	productTypesRepository := repositories.NewMongoProductTypesRepository(database)
 
-	sesEmailService := services.NewSesEmail(sesClient)
+	sesEmailService := services.NewSesEmail(sesClient, environment.Email.Domain)
 
 	usersService := services.NewUsers(usersRepository)
 	sessionsService := services.NewSessions(sessionsRepository, utils.GenerateUuid)
@@ -128,10 +128,13 @@ func main() {
 	productTypesHandler := handlers.NewProductTypes(productTypesService, authorizationService)
 	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(organizationsDataAccessGrantsService, authorizationService)
 
+	healthHandler := handlers.NewHealth()
+
 	router := http.NewRouter(
 		environment.Environment,
 		environment.Router.Context,
 		authenticateByCookieMiddleware,
+		healthHandler,
 		authHandler,
 		beneficiariesHandler,
 		beneficiaryAllocationsHandler,

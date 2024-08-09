@@ -12,11 +12,11 @@ import (
 
 type UpdateOrganizationTypeRequests interface {
 	Create(data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error)
-	FindOneById(id string) (entities.UpdateOrganizationTypeRequest, error)
+	FindOneByID(id string) (entities.UpdateOrganizationTypeRequest, error)
 	FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
-	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
-	UpdateOneById(id string, data entities.UpdateOrganizationTypeRequest) error
-	CountPendingByOrganizationId(organizationId string) (int64, error)
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
+	UpdateOneByID(id string, data entities.UpdateOrganizationTypeRequest) error
+	CountPendingByOrganizationID(organizationID string) (int64, error)
 }
 
 type mongoUpdateOrganizationTypeRequests struct {
@@ -39,7 +39,7 @@ func (repository *mongoUpdateOrganizationTypeRequests) Create(data entities.Upda
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoUpdateOrganizationTypeRequests) FindOneById(id string) (entities.UpdateOrganizationTypeRequest, error) {
+func (repository *mongoUpdateOrganizationTypeRequests) FindOneByID(id string) (entities.UpdateOrganizationTypeRequest, error) {
 	var model models.UpdateOrganizationTypeRequest
 
 	filter := bson.M{"_id": id}
@@ -133,11 +133,11 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindMany(offset, limit in
 	return count, entityList, nil
 }
 
-func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
+func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
 	modelList := make([]models.FindUpdateOrganizationTypeRequest, 0)
 	entityList := make([]entities.UpdateOrganizationTypeRequest, 0)
 
-	filter := bson.M{"organization_id": organizationId}
+	filter := bson.M{"organization_id": organizationID}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -201,7 +201,7 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationId(
 	return count, entityList, nil
 }
 
-func (repository *mongoUpdateOrganizationTypeRequests) UpdateOneById(id string, data entities.UpdateOrganizationTypeRequest) error {
+func (repository *mongoUpdateOrganizationTypeRequests) UpdateOneByID(id string, data entities.UpdateOrganizationTypeRequest) error {
 	model := models.NewUpdatedUpdateOrganizationTypeRequest(data)
 
 	update := bson.M{"$set": &model}
@@ -213,8 +213,8 @@ func (repository *mongoUpdateOrganizationTypeRequests) UpdateOneById(id string, 
 	return nil
 }
 
-func (repository *mongoUpdateOrganizationTypeRequests) CountPendingByOrganizationId(organizationId string) (int64, error) {
-	filter := bson.M{"organization_id": organizationId, "status": utils.PendingStatus}
+func (repository *mongoUpdateOrganizationTypeRequests) CountPendingByOrganizationID(organizationID string) (int64, error) {
+	filter := bson.M{"organization_id": organizationID, "status": utils.PendingStatus}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 

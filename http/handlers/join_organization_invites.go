@@ -69,11 +69,11 @@ func (handler *JoinOrganizationInvites) Create(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (handler *JoinOrganizationInvites) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *JoinOrganizationInvites) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -94,7 +94,7 @@ func (handler *JoinOrganizationInvites) FindManyByOrganizationId(w http.Response
 		return
 	}
 
-	count, joinRequests, err := handler.service.FindManyByOrganizationId(organizationId, int64(offset), int64(limit))
+	count, joinRequests, err := handler.service.FindManyByOrganizationID(organizationID, int64(offset), int64(limit))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -109,11 +109,11 @@ func (handler *JoinOrganizationInvites) FindManyByOrganizationId(w http.Response
 	}
 }
 
-func (handler *JoinOrganizationInvites) FindManyByUserId(w http.ResponseWriter, r *http.Request) {
-	userId := chi.URLParam(r, "id")
+func (handler *JoinOrganizationInvites) FindManyByUserID(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessUserResource(userId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessUserResource(userID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -134,7 +134,7 @@ func (handler *JoinOrganizationInvites) FindManyByUserId(w http.ResponseWriter, 
 		return
 	}
 
-	count, joinRequests, err := handler.service.FindManyByUserId(userId, int64(offset), int64(limit))
+	count, joinRequests, err := handler.service.FindManyByUserID(userID, int64(offset), int64(limit))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

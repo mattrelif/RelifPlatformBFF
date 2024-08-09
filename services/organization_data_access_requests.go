@@ -8,10 +8,10 @@ import (
 )
 
 type OrganizationDataAccessRequests interface {
-	Create(requester entities.User, targetOrganizationId string) (entities.OrganizationDataAccessRequest, error)
-	FindManyByRequesterOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
-	FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
-	FindOneById(id string) (entities.OrganizationDataAccessRequest, error)
+	Create(requester entities.User, targetOrganizationID string) (entities.OrganizationDataAccessRequest, error)
+	FindManyByRequesterOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
+	FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
+	FindOneByID(id string) (entities.OrganizationDataAccessRequest, error)
 	Accept(id string, auditor entities.User) error
 	Reject(id string, auditor entities.User, data entities.OrganizationDataAccessRequest) error
 }
@@ -34,34 +34,34 @@ func NewOrganizationDataAccessRequests(
 	}
 }
 
-func (service *accessOrganizationDataRequestsImpl) Create(requester entities.User, targetOrganizationId string) (entities.OrganizationDataAccessRequest, error) {
-	if requester.OrganizationID == targetOrganizationId {
+func (service *accessOrganizationDataRequestsImpl) Create(requester entities.User, targetOrganizationID string) (entities.OrganizationDataAccessRequest, error) {
+	if requester.OrganizationID == targetOrganizationID {
 		return entities.OrganizationDataAccessRequest{}, utils.ErrUnauthorizedAction
 	}
 
 	data := entities.OrganizationDataAccessRequest{
 		RequesterID:             requester.ID,
 		RequesterOrganizationID: requester.OrganizationID,
-		TargetOrganizationID:    targetOrganizationId,
+		TargetOrganizationID:    targetOrganizationID,
 	}
 
 	return service.repository.Create(data)
 }
 
-func (service *accessOrganizationDataRequestsImpl) FindManyByRequesterOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
-	return service.repository.FindManyByRequesterOrganizationId(organizationId, limit, offset)
+func (service *accessOrganizationDataRequestsImpl) FindManyByRequesterOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
+	return service.repository.FindManyByRequesterOrganizationID(organizationID, limit, offset)
 }
 
-func (service *accessOrganizationDataRequestsImpl) FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
-	return service.repository.FindManyByTargetOrganizationId(organizationId, limit, offset)
+func (service *accessOrganizationDataRequestsImpl) FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
+	return service.repository.FindManyByTargetOrganizationID(organizationID, limit, offset)
 }
 
-func (service *accessOrganizationDataRequestsImpl) FindOneById(id string) (entities.OrganizationDataAccessRequest, error) {
-	return service.repository.FindOneById(id)
+func (service *accessOrganizationDataRequestsImpl) FindOneByID(id string) (entities.OrganizationDataAccessRequest, error) {
+	return service.repository.FindOneByID(id)
 }
 
 func (service *accessOrganizationDataRequestsImpl) Accept(id string, auditor entities.User) error {
-	request, err := service.FindOneById(id)
+	request, err := service.FindOneByID(id)
 
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func (service *accessOrganizationDataRequestsImpl) Accept(id string, auditor ent
 	request.Status = utils.AcceptedStatus
 	request.AuditorID = auditor.ID
 
-	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+	if err = service.repository.UpdateOneByID(request.ID, request); err != nil {
 		return err
 	}
 
@@ -90,7 +90,7 @@ func (service *accessOrganizationDataRequestsImpl) Accept(id string, auditor ent
 }
 
 func (service *accessOrganizationDataRequestsImpl) Reject(id string, auditor entities.User, data entities.OrganizationDataAccessRequest) error {
-	request, err := service.FindOneById(id)
+	request, err := service.FindOneByID(id)
 
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (service *accessOrganizationDataRequestsImpl) Reject(id string, auditor ent
 	request.RejectedAt = time.Now()
 	request.RejectReason = data.RejectReason
 
-	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+	if err = service.repository.UpdateOneByID(request.ID, request); err != nil {
 		return err
 	}
 

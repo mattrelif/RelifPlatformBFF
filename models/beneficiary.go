@@ -198,7 +198,7 @@ func NewUpdatedBeneficiary(entity entities.Beneficiary) Beneficiary {
 		Gender:                entity.Gender,
 		Occupation:            entity.Occupation,
 		Address:               NewAddress(entity.Address),
-		Status:                utils.ActiveStatus,
+		Status:                entity.Status,
 		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),
 		EmergencyContacts:     emergencyContacts,
 		UpdatedAt:             time.Now(),

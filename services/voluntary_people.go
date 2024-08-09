@@ -8,10 +8,10 @@ import (
 
 type VoluntaryPeople interface {
 	Create(user entities.User, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
-	FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
-	FindOneById(id string) (entities.VoluntaryPerson, error)
-	UpdateOneById(id string, data entities.VoluntaryPerson) error
-	InactivateOneById(id string) error
+	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
+	FindOneByID(id string) (entities.VoluntaryPerson, error)
+	UpdateOneByID(id string, data entities.VoluntaryPerson) error
+	InactivateOneByID(id string) error
 }
 
 type voluntaryPeopleImpl struct {
@@ -40,28 +40,28 @@ func (service *voluntaryPeopleImpl) Create(user entities.User, data entities.Vol
 	return service.repository.Create(data)
 }
 
-func (service *voluntaryPeopleImpl) FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, search, limit, offset)
+func (service *voluntaryPeopleImpl) FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, search, limit, offset)
 }
 
-func (service *voluntaryPeopleImpl) FindOneById(id string) (entities.VoluntaryPerson, error) {
-	return service.repository.FindOneById(id)
+func (service *voluntaryPeopleImpl) FindOneByID(id string) (entities.VoluntaryPerson, error) {
+	return service.repository.FindOneByID(id)
 }
 
-func (service *voluntaryPeopleImpl) UpdateOneById(id string, data entities.VoluntaryPerson) error {
-	return service.repository.UpdateOneById(id, data)
+func (service *voluntaryPeopleImpl) UpdateOneByID(id string, data entities.VoluntaryPerson) error {
+	return service.repository.UpdateOneByID(id, data)
 }
 
-func (service *voluntaryPeopleImpl) InactivateOneById(id string) error {
-	voluntary, err := service.FindOneById(id)
+func (service *voluntaryPeopleImpl) InactivateOneByID(id string) error {
+	voluntary, err := service.FindOneByID(id)
 
 	if err != nil {
 		return err
 	}
 
-	voluntary.OrganizationID = utils.InactiveStatus
+	voluntary.Status = utils.InactiveStatus
 
-	return service.repository.UpdateOneById(id, voluntary)
+	return service.repository.UpdateOneByID(id, voluntary)
 }
 
 func (service *voluntaryPeopleImpl) ExistsOneByEmail(email string) (bool, error) {

@@ -29,10 +29,10 @@ func NewHousingRooms(service services.HousingRooms, authorizationService service
 func (handler *HousingRooms) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateManyHousingRooms
 
-	housingId := chi.URLParam(r, "id")
+	housingID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateHousingResource(housingId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateHousingResource(housingID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -62,7 +62,7 @@ func (handler *HousingRooms) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rooms, err := handler.service.CreateMany(req.ToEntity(), housingId)
+	rooms, err := handler.service.CreateMany(req.ToEntity(), housingID)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,7 +78,7 @@ func (handler *HousingRooms) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (handler *HousingRooms) FindOneById(w http.ResponseWriter, r *http.Request) {
+func (handler *HousingRooms) FindOneByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
@@ -94,7 +94,7 @@ func (handler *HousingRooms) FindOneById(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	room, err := handler.service.FindOneCompleteById(id)
+	room, err := handler.service.FindOneCompleteByID(id)
 
 	if err != nil {
 		switch {
@@ -114,11 +114,11 @@ func (handler *HousingRooms) FindOneById(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (handler *HousingRooms) FindManyByHousingId(w http.ResponseWriter, r *http.Request) {
-	housingId := chi.URLParam(r, "id")
+func (handler *HousingRooms) FindManyByHousingID(w http.ResponseWriter, r *http.Request) {
+	housingID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingData(housingId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingData(housingID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -146,7 +146,7 @@ func (handler *HousingRooms) FindManyByHousingId(w http.ResponseWriter, r *http.
 		return
 	}
 
-	count, rooms, err := handler.service.FindManyByHousingId(housingId, int64(limit), int64(offset))
+	count, rooms, err := handler.service.FindManyByHousingID(housingID, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -197,7 +197,7 @@ func (handler *HousingRooms) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
+	if err := handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -221,7 +221,7 @@ func (handler *HousingRooms) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.InactivateOneById(id); err != nil {
+	if err := handler.service.InactivateOneByID(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -30,9 +30,9 @@ func (handler *BeneficiaryAllocations) Allocate(w http.ResponseWriter, r *http.R
 	var req requests.AllocateBeneficiary
 
 	user := r.Context().Value("user").(entities.User)
-	beneficiaryId := chi.URLParam(r, "id")
+	beneficiaryID := chi.URLParam(r, "id")
 
-	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -62,7 +62,7 @@ func (handler *BeneficiaryAllocations) Allocate(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	allocation, err := handler.service.Allocate(user, beneficiaryId, req.ToEntity())
+	allocation, err := handler.service.Allocate(user, beneficiaryID, req.ToEntity())
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -82,9 +82,9 @@ func (handler *BeneficiaryAllocations) Reallocate(w http.ResponseWriter, r *http
 	var req requests.ReallocateBeneficiary
 
 	user := r.Context().Value("user").(entities.User)
-	beneficiaryId := chi.URLParam(r, "id")
+	beneficiaryID := chi.URLParam(r, "id")
 
-	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -114,7 +114,7 @@ func (handler *BeneficiaryAllocations) Reallocate(w http.ResponseWriter, r *http
 		return
 	}
 
-	allocation, err := handler.service.Reallocate(user, beneficiaryId, req.ToEntity())
+	allocation, err := handler.service.Reallocate(user, beneficiaryID, req.ToEntity())
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -130,11 +130,11 @@ func (handler *BeneficiaryAllocations) Reallocate(w http.ResponseWriter, r *http
 	}
 }
 
-func (handler *BeneficiaryAllocations) FindManyByBeneficiaryId(w http.ResponseWriter, r *http.Request) {
-	beneficiaryId := chi.URLParam(r, "id")
+func (handler *BeneficiaryAllocations) FindManyByBeneficiaryID(w http.ResponseWriter, r *http.Request) {
+	beneficiaryID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessBeneficiaryData(beneficiaryId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessBeneficiaryData(beneficiaryID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -162,7 +162,7 @@ func (handler *BeneficiaryAllocations) FindManyByBeneficiaryId(w http.ResponseWr
 		return
 	}
 
-	count, allocations, err := handler.service.FindManyByBeneficiaryId(beneficiaryId, int64(offset), int64(limit))
+	count, allocations, err := handler.service.FindManyByBeneficiaryID(beneficiaryID, int64(offset), int64(limit))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -177,11 +177,11 @@ func (handler *BeneficiaryAllocations) FindManyByBeneficiaryId(w http.ResponseWr
 	}
 }
 
-func (handler *BeneficiaryAllocations) FindManyByHousingId(w http.ResponseWriter, r *http.Request) {
-	housingId := chi.URLParam(r, "id")
+func (handler *BeneficiaryAllocations) FindManyByHousingID(w http.ResponseWriter, r *http.Request) {
+	housingID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingData(housingId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingData(housingID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -209,7 +209,7 @@ func (handler *BeneficiaryAllocations) FindManyByHousingId(w http.ResponseWriter
 		return
 	}
 
-	count, allocations, err := handler.service.FindManyByHousingId(housingId, int64(offset), int64(limit))
+	count, allocations, err := handler.service.FindManyByHousingID(housingID, int64(offset), int64(limit))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -224,11 +224,11 @@ func (handler *BeneficiaryAllocations) FindManyByHousingId(w http.ResponseWriter
 	}
 }
 
-func (handler *BeneficiaryAllocations) FindManyByRoomId(w http.ResponseWriter, r *http.Request) {
-	roomId := chi.URLParam(r, "id")
+func (handler *BeneficiaryAllocations) FindManyByRoomID(w http.ResponseWriter, r *http.Request) {
+	roomID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -256,7 +256,7 @@ func (handler *BeneficiaryAllocations) FindManyByRoomId(w http.ResponseWriter, r
 		return
 	}
 
-	count, allocations, err := handler.service.FindManyByRoomId(roomId, int64(offset), int64(limit))
+	count, allocations, err := handler.service.FindManyByRoomID(roomID, int64(offset), int64(limit))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

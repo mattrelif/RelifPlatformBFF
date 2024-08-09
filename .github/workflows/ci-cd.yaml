@@ -1,0 +1,63 @@
+name: Build and Push Docker Image to AWS ECR
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Bump version and push tag
+        id: bump_version
+        run: |
+          #!/bin/bash
+          
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          
+          IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
+          
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          NEW_MINOR=$((MINOR + 1))
+          
+          NEW_TAG="$MAJOR.$NEW_MINOR.$PATCH"
+          
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
+          
+          echo "VERSION=$NEW_TAG" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Log in to Amazon ECR
+        id: ecr_login
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          aws-region: us-east-1
+
+      - name: Build and push Docker image to AWS ECR
+        id: ecr_push
+        uses: docker/build-push-action@v4
+        env:
+          REGISTRY: ${{ steps.ecr_login.outputs.registry }}
+        with:
+          context: .
+          push: true
+          tags: |
+            $REGISTRY/relif-platform-bff:${{ env.VERSION }}
+            $REGISTRY/relif-platform-bff:latest

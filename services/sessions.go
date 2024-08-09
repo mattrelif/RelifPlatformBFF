@@ -7,9 +7,9 @@ import (
 )
 
 type Sessions interface {
-	Generate(userId string) (entities.Session, error)
-	FindOneBySessionId(sessionId string) (entities.Session, error)
-	DeleteOneBySessionId(sessionId string) error
+	Generate(userID string) (entities.Session, error)
+	FindOneBySessionID(sessionID string) (entities.Session, error)
+	DeleteOneBySessionID(sessionID string) error
 }
 
 type sessionsImpl struct {
@@ -24,9 +24,9 @@ func NewSessions(repository repositories.Sessions, uuidGenerator utils.UuidGener
 	}
 }
 
-func (service *sessionsImpl) Generate(userId string) (entities.Session, error) {
+func (service *sessionsImpl) Generate(userID string) (entities.Session, error) {
 	session := entities.Session{
-		UserID:    userId,
+		UserID:    userID,
 		SessionID: service.uuidGenerator(),
 	}
 
@@ -39,10 +39,10 @@ func (service *sessionsImpl) Generate(userId string) (entities.Session, error) {
 	return session, nil
 }
 
-func (service *sessionsImpl) FindOneBySessionId(sessionId string) (entities.Session, error) {
-	return service.repository.FindOneBySessionId(sessionId)
+func (service *sessionsImpl) FindOneBySessionID(sessionID string) (entities.Session, error) {
+	return service.repository.FindOneBySessionID(sessionID)
 }
 
-func (service *sessionsImpl) DeleteOneBySessionId(sessionId string) error {
-	return service.repository.DeleteOneBySessionId(sessionId)
+func (service *sessionsImpl) DeleteOneBySessionID(sessionID string) error {
+	return service.repository.DeleteOneBySessionID(sessionID)
 }

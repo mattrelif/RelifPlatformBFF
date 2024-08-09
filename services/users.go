@@ -8,14 +8,14 @@ import (
 
 type Users interface {
 	Create(data entities.User) (entities.User, error)
-	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error)
-	FindOneById(id string) (entities.User, error)
-	FindOneCompleteById(id string) (entities.User, error)
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.User, error)
+	FindOneByID(id string) (entities.User, error)
+	FindOneCompleteByID(id string) (entities.User, error)
 	FindOneByEmail(email string) (entities.User, error)
-	UpdateOneById(id string, data entities.User) error
-	InactivateOneById(id string) error
+	UpdateOneByID(id string, data entities.User) error
+	InactivateOneByID(id string) error
 	ExistsByEmail(email string) (bool, error)
-	ExistsById(id string) (bool, error)
+	ExistsByID(id string) (bool, error)
 }
 
 type usersImpl struct {
@@ -42,28 +42,36 @@ func (service *usersImpl) Create(data entities.User) (entities.User, error) {
 	return service.repository.CreateUser(data)
 }
 
-func (service *usersImpl) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, offset, limit)
+func (service *usersImpl) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.User, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, offset, limit)
 }
 
-func (service *usersImpl) FindOneById(id string) (entities.User, error) {
-	return service.repository.FindOneById(id)
+func (service *usersImpl) FindOneByID(id string) (entities.User, error) {
+	return service.repository.FindOneByID(id)
 }
 
-func (service *usersImpl) FindOneCompleteById(id string) (entities.User, error) {
-	return service.repository.FindOneCompleteById(id)
+func (service *usersImpl) FindOneCompleteByID(id string) (entities.User, error) {
+	return service.repository.FindOneCompleteByID(id)
 }
 
 func (service *usersImpl) FindOneByEmail(email string) (entities.User, error) {
 	return service.repository.FindOneByEmail(email)
 }
 
-func (service *usersImpl) UpdateOneById(id string, data entities.User) error {
-	return service.repository.UpdateOneById(id, data)
+func (service *usersImpl) UpdateOneByID(id string, data entities.User) error {
+	return service.repository.UpdateOneByID(id, data)
 }
 
-func (service *usersImpl) InactivateOneById(id string) error {
-	return service.repository.UpdateOneById(id, entities.User{Status: utils.InactiveStatus})
+func (service *usersImpl) InactivateOneByID(id string) error {
+	user, err := service.FindOneByID(id)
+
+	if err != nil {
+		return err
+	}
+
+	user.Status = utils.InactiveStatus
+
+	return service.repository.UpdateOneByID(user.ID, user)
 }
 
 func (service *usersImpl) ExistsByEmail(email string) (bool, error) {
@@ -76,8 +84,8 @@ func (service *usersImpl) ExistsByEmail(email string) (bool, error) {
 	return count > 0, nil
 }
 
-func (service *usersImpl) ExistsById(id string) (bool, error) {
-	count, err := service.repository.CountById(id)
+func (service *usersImpl) ExistsByID(id string) (bool, error) {
+	count, err := service.repository.CountByID(id)
 
 	if err != nil {
 		return false, err

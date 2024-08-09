@@ -94,11 +94,11 @@ func (handler *UpdateOrganizationTypeRequests) FindMany(w http.ResponseWriter, r
 	}
 }
 
-func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -119,7 +119,7 @@ func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationId(w http.R
 		return
 	}
 
-	count, reqs, err := handler.service.FindManyByOrganizationId(organizationId, int64(offset), int64(limit))
+	count, reqs, err := handler.service.FindManyByOrganizationID(organizationID, int64(offset), int64(limit))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

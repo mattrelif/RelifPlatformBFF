@@ -144,9 +144,9 @@ func (handler *Auth) Me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler *Auth) SignOut(w http.ResponseWriter, r *http.Request) {
-	sessionId := r.Context().Value("sessionId").(string)
+	sessionID := r.Context().Value("sessionID").(string)
 
-	if err := handler.service.SignOut(sessionId); err != nil {
+	if err := handler.service.SignOut(sessionID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

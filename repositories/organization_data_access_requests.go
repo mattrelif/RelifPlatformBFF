@@ -12,10 +12,10 @@ import (
 
 type OrganizationDataAccessRequests interface {
 	Create(data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error)
-	FindManyByRequesterOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
-	FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
-	FindOneById(id string) (entities.OrganizationDataAccessRequest, error)
-	UpdateOneById(id string, data entities.OrganizationDataAccessRequest) error
+	FindManyByRequesterOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
+	FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
+	FindOneByID(id string) (entities.OrganizationDataAccessRequest, error)
+	UpdateOneByID(id string, data entities.OrganizationDataAccessRequest) error
 }
 
 type mongoOrganizationDataAccessRequests struct {
@@ -38,11 +38,11 @@ func (repository *mongoOrganizationDataAccessRequests) Create(data entities.Orga
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
+func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
 	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
-	filter := bson.M{"requester_organization_id": organizationId}
+	filter := bson.M{"requester_organization_id": organizationID}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -116,11 +116,11 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
+func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
 	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
-	filter := bson.M{"target_organization_id": organizationId}
+	filter := bson.M{"target_organization_id": organizationID}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -194,7 +194,7 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizat
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizationDataAccessRequests) UpdateOneById(id string, data entities.OrganizationDataAccessRequest) error {
+func (repository *mongoOrganizationDataAccessRequests) UpdateOneByID(id string, data entities.OrganizationDataAccessRequest) error {
 	model := models.NewUpdatedOrganizationDataAccessRequest(data)
 
 	update := bson.M{"$set": &model}
@@ -206,7 +206,7 @@ func (repository *mongoOrganizationDataAccessRequests) UpdateOneById(id string, 
 	return nil
 }
 
-func (repository *mongoOrganizationDataAccessRequests) FindOneById(id string) (entities.OrganizationDataAccessRequest, error) {
+func (repository *mongoOrganizationDataAccessRequests) FindOneByID(id string) (entities.OrganizationDataAccessRequest, error) {
 	var model models.OrganizationDataAccessRequest
 
 	filter := bson.M{"_id": id}

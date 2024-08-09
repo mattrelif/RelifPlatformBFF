@@ -75,11 +75,11 @@ func (handler *Beneficiaries) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (handler *Beneficiaries) FindManyByHousingId(w http.ResponseWriter, r *http.Request) {
-	housingId := chi.URLParam(r, "id")
+func (handler *Beneficiaries) FindManyByHousingID(w http.ResponseWriter, r *http.Request) {
+	housingID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingData(housingId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingData(housingID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -109,7 +109,7 @@ func (handler *Beneficiaries) FindManyByHousingId(w http.ResponseWriter, r *http
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByHousingId(housingId, search, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.service.FindManyByHousingID(housingID, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,11 +124,11 @@ func (handler *Beneficiaries) FindManyByHousingId(w http.ResponseWriter, r *http
 	}
 }
 
-func (handler *Beneficiaries) FindManyByRoomId(w http.ResponseWriter, r *http.Request) {
-	roomId := chi.URLParam(r, "id")
+func (handler *Beneficiaries) FindManyByRoomID(w http.ResponseWriter, r *http.Request) {
+	roomID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -158,7 +158,7 @@ func (handler *Beneficiaries) FindManyByRoomId(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByRoomId(roomId, search, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.service.FindManyByRoomID(roomID, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -173,11 +173,11 @@ func (handler *Beneficiaries) FindManyByRoomId(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (handler *Beneficiaries) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *Beneficiaries) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -207,7 +207,7 @@ func (handler *Beneficiaries) FindManyByOrganizationId(w http.ResponseWriter, r 
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByOrganizationId(organizationId, search, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.service.FindManyByOrganizationID(organizationID, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -222,7 +222,7 @@ func (handler *Beneficiaries) FindManyByOrganizationId(w http.ResponseWriter, r 
 	}
 }
 
-func (handler *Beneficiaries) FindOneById(w http.ResponseWriter, r *http.Request) {
+func (handler *Beneficiaries) FindOneByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
@@ -238,7 +238,7 @@ func (handler *Beneficiaries) FindOneById(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	beneficiary, err := handler.service.FindOneById(id)
+	beneficiary, err := handler.service.FindOneByID(id)
 
 	if err != nil {
 		switch {
@@ -294,7 +294,7 @@ func (handler *Beneficiaries) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
+	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -318,7 +318,7 @@ func (handler *Beneficiaries) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.InactivateOneById(id); err != nil {
+	if err := handler.service.InactivateOneByID(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

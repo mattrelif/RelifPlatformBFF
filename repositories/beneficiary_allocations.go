@@ -12,9 +12,9 @@ import (
 
 type BeneficiaryAllocations interface {
 	Create(data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error)
-	FindManyByBeneficiaryId(beneficiaryId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
-	FindManyByHousingId(housingId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
-	FindManyByRoomId(roomId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByRoomID(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
 }
 
 type mongoBeneficiaryAllocations struct {
@@ -37,11 +37,11 @@ func (repository *mongoBeneficiaryAllocations) Create(data entities.BeneficiaryA
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryId(beneficiaryId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
-	oid, err := primitive.ObjectIDFromHex(beneficiaryId)
+	oid, err := primitive.ObjectIDFromHex(beneficiaryID)
 
 	if err != nil {
 		return 0, nil, err
@@ -74,11 +74,11 @@ func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryId(beneficia
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaryAllocations) FindManyByHousingId(housingId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+func (repository *mongoBeneficiaryAllocations) FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
-	oid, err := primitive.ObjectIDFromHex(housingId)
+	oid, err := primitive.ObjectIDFromHex(housingID)
 
 	if err != nil {
 		return 0, nil, err
@@ -111,11 +111,11 @@ func (repository *mongoBeneficiaryAllocations) FindManyByHousingId(housingId str
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaryAllocations) FindManyByRoomId(roomId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+func (repository *mongoBeneficiaryAllocations) FindManyByRoomID(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
-	oid, err := primitive.ObjectIDFromHex(roomId)
+	oid, err := primitive.ObjectIDFromHex(roomID)
 
 	if err != nil {
 		return 0, nil, err

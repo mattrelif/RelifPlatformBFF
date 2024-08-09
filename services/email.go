@@ -10,42 +10,44 @@ import (
 )
 
 type Email interface {
-	SendPasswordResetEmail(requestId string, user entities.User) error
+	SendPasswordResetEmail(requestID string, user entities.User) error
 	SendPasswordChangedEmail(user entities.User) error
 	SendPlatformInviteEmail(inviter entities.User, invitedEmail, code string) error
 }
 
 type emailSes struct {
 	client *ses.Client
+	domain string
 }
 
-func NewSesEmail(client *ses.Client) Email {
+func NewSesEmail(client *ses.Client, domain string) Email {
 	return &emailSes{
 		client: client,
+		domain: domain,
 	}
 }
 
-func (service *emailSes) SendPasswordResetEmail(requestId string, user entities.User) error {
+func (service *emailSes) SendPasswordResetEmail(requestID string, user entities.User) error {
 	var greetingLanguageMap = map[string]string{
-		"pt-BR": "",
-		"en-US": "",
-		"es-ES": "",
+		"pt": "",
+		"en": "",
+		"es": "",
 	}
 
 	var subjectLanguageMap = map[string]string{
-		"pt-BR": "",
-		"en-US": "",
-		"es-ES": "",
+		"pt": "",
+		"en": "",
+		"es": "",
 	}
 
 	var textLanguageMap = map[string]string{
-		"pt-BR": "",
-		"en-US": "",
-		"es-ES": "",
+		"pt": "",
+		"en": "",
+		"es": "",
 	}
 
 	input := &ses.SendTemplatedEmailInput{
-		Source: aws.String("noreply@relif.com"),
+		Source: aws.String(service.domain),
 		Destination: &types.Destination{
 			ToAddresses: []string{user.Email},
 		},
@@ -55,7 +57,7 @@ func (service *emailSes) SendPasswordResetEmail(requestId string, user entities.
 				greetingLanguageMap[user.Preferences.Language],
 				subjectLanguageMap[user.Preferences.Language],
 				textLanguageMap[user.Preferences.Language],
-				requestId,
+				requestID,
 				user.FirstName,
 			)),
 	}
@@ -70,25 +72,25 @@ func (service *emailSes) SendPasswordResetEmail(requestId string, user entities.
 
 func (service *emailSes) SendPasswordChangedEmail(user entities.User) error {
 	var greetingLanguageMap = map[string]string{
-		"pt-BR": "",
-		"en-US": "",
-		"es-ES": "",
+		"pt": "",
+		"en": "",
+		"es": "",
 	}
 
 	var subjectLanguageMap = map[string]string{
-		"pt-BR": "",
-		"en-US": "",
-		"es-ES": "",
+		"pt": "",
+		"en": "",
+		"es": "",
 	}
 
 	var textLanguageMap = map[string]string{
-		"pt-BR": "",
-		"en-US": "",
-		"es-ES": "",
+		"pt": "",
+		"en": "",
+		"es": "",
 	}
 
 	input := &ses.SendTemplatedEmailInput{
-		Source: aws.String("noreply@relif.com"),
+		Source: aws.String(service.domain),
 		Destination: &types.Destination{
 			ToAddresses: []string{user.Email},
 		},
@@ -112,7 +114,7 @@ func (service *emailSes) SendPasswordChangedEmail(user entities.User) error {
 
 func (service *emailSes) SendPlatformInviteEmail(inviter entities.User, invitedEmail, code string) error {
 	input := &ses.SendTemplatedEmailInput{
-		Source: aws.String("noreply@relif.com"),
+		Source: aws.String(service.domain),
 		Destination: &types.Destination{
 			ToAddresses: []string{invitedEmail},
 		},

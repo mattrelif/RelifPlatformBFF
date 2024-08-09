@@ -11,12 +11,12 @@ import (
 
 type Beneficiaries interface {
 	Create(data entities.Beneficiary) (entities.Beneficiary, error)
-	FindManyByHousingId(housingId, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
-	FindManyByRoomId(roomId, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
-	FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
-	FindOneById(id string) (entities.Beneficiary, error)
+	FindManyByHousingID(housingID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
+	FindManyByRoomID(roomID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
+	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
+	FindOneByID(id string) (entities.Beneficiary, error)
 	CountByEmail(email string) (int64, error)
-	UpdateOneById(id string, data entities.Beneficiary) error
+	UpdateOneByID(id string, data entities.Beneficiary) error
 }
 
 type mongoBeneficiaries struct {
@@ -39,7 +39,7 @@ func (repository *mongoBeneficiaries) Create(data entities.Beneficiary) (entitie
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoBeneficiaries) FindManyByHousingId(housingId, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+func (repository *mongoBeneficiaries) FindManyByHousingID(housingID, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
@@ -49,7 +49,7 @@ func (repository *mongoBeneficiaries) FindManyByHousingId(housingId, search stri
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"current_housing_id": housingId,
+					"current_housing_id": housingID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -70,7 +70,7 @@ func (repository *mongoBeneficiaries) FindManyByHousingId(housingId, search stri
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"current_housing_id": housingId,
+					"current_housing_id": housingID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -156,7 +156,7 @@ func (repository *mongoBeneficiaries) FindManyByHousingId(housingId, search stri
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaries) FindManyByRoomId(roomId, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+func (repository *mongoBeneficiaries) FindManyByRoomID(roomID, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
@@ -166,7 +166,7 @@ func (repository *mongoBeneficiaries) FindManyByRoomId(roomId, search string, li
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"current_room_id": roomId,
+					"current_room_id": roomID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -187,7 +187,7 @@ func (repository *mongoBeneficiaries) FindManyByRoomId(roomId, search string, li
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"current_room_id": roomId,
+					"current_room_id": roomID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -273,7 +273,7 @@ func (repository *mongoBeneficiaries) FindManyByRoomId(roomId, search string, li
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+func (repository *mongoBeneficiaries) FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
@@ -283,7 +283,7 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId, s
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"current_organization_id": organizationId,
+					"current_organization_id": organizationID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -304,7 +304,7 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId, s
 		filter = bson.M{
 			"$and": bson.A{
 				bson.M{
-					"current_organization_id": organizationId,
+					"current_organization_id": organizationID,
 				},
 				bson.M{
 					"status": bson.M{
@@ -390,7 +390,7 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationId(organizationId, s
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaries) FindOneById(id string) (entities.Beneficiary, error) {
+func (repository *mongoBeneficiaries) FindOneByID(id string) (entities.Beneficiary, error) {
 	var model models.FindBeneficiary
 
 	filter := bson.M{
@@ -491,7 +491,7 @@ func (repository *mongoBeneficiaries) CountByEmail(email string) (int64, error) 
 	return count, nil
 }
 
-func (repository *mongoBeneficiaries) UpdateOneById(id string, data entities.Beneficiary) error {
+func (repository *mongoBeneficiaries) UpdateOneByID(id string, data entities.Beneficiary) error {
 	model := models.NewUpdatedBeneficiary(data)
 
 	update := bson.M{"$set": &model}

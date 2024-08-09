@@ -12,13 +12,13 @@ import (
 )
 
 type HousingRooms interface {
-	CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error)
-	FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error)
-	FindOneById(id string) (entities.HousingRoom, error)
-	FindOneCompleteById(id string) (entities.HousingRoom, error)
-	UpdateOneById(id string, data entities.HousingRoom) error
-	IncreaseAvailableVacanciesById(id string) error
-	DecreaseAvailableVacanciesById(id string) error
+	CreateMany(data []entities.HousingRoom, housingID string) ([]entities.HousingRoom, error)
+	FindManyByHousingID(housingID string, limit, offset int64) (int64, []entities.HousingRoom, error)
+	FindOneByID(id string) (entities.HousingRoom, error)
+	FindOneCompleteByID(id string) (entities.HousingRoom, error)
+	UpdateOneByID(id string, data entities.HousingRoom) error
+	IncreaseAvailableVacanciesByID(id string) error
+	DecreaseAvailableVacanciesByID(id string) error
 }
 
 type mongoHousingRooms struct {
@@ -31,12 +31,12 @@ func NewMongoHousingRooms(database *mongo.Database) HousingRooms {
 	}
 }
 
-func (repository *mongoHousingRooms) CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error) {
+func (repository *mongoHousingRooms) CreateMany(data []entities.HousingRoom, housingID string) ([]entities.HousingRoom, error) {
 	modelList := make([]interface{}, 0)
 	entityList := make([]entities.HousingRoom, 0)
 
 	for _, room := range data {
-		room.HousingID = housingId
+		room.HousingID = housingID
 		model := models.NewHousingRoom(room)
 
 		modelList = append(modelList, model)
@@ -50,14 +50,14 @@ func (repository *mongoHousingRooms) CreateMany(data []entities.HousingRoom, hou
 	return entityList, nil
 }
 
-func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error) {
+func (repository *mongoHousingRooms) FindManyByHousingID(housingID string, limit, offset int64) (int64, []entities.HousingRoom, error) {
 	modelList := make([]models.FindHousingRoom, 0)
 	entityList := make([]entities.HousingRoom, 0)
 
 	filter := bson.M{
 		"$and": bson.A{
 			bson.M{
-				"housing_id": housingId,
+				"housing_id": housingID,
 			},
 			bson.M{
 				"status": bson.M{
@@ -89,13 +89,13 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "beneficiaries"},
-				{"let", bson.D{{"roomId", "$_id"}}},
+				{"let", bson.D{{"roomID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomId"}}},
+									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomID"}}},
 									bson.D{{"$ne", bson.A{"status", utils.InactiveStatus}}},
 								}},
 							}},
@@ -138,7 +138,7 @@ func (repository *mongoHousingRooms) FindManyByHousingId(housingId string, limit
 	return count, entityList, nil
 }
 
-func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoom, error) {
+func (repository *mongoHousingRooms) FindOneByID(id string) (entities.HousingRoom, error) {
 	var model models.HousingRoom
 
 	filter := bson.M{
@@ -165,7 +165,7 @@ func (repository *mongoHousingRooms) FindOneById(id string) (entities.HousingRoo
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoHousingRooms) FindOneCompleteById(id string) (entities.HousingRoom, error) {
+func (repository *mongoHousingRooms) FindOneCompleteByID(id string) (entities.HousingRoom, error) {
 	var model models.FindHousingRoom
 
 	filter := bson.M{
@@ -188,13 +188,13 @@ func (repository *mongoHousingRooms) FindOneCompleteById(id string) (entities.Ho
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "beneficiaries"},
-				{"let", bson.D{{"roomId", "$_id"}}},
+				{"let", bson.D{{"roomID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
 						{"$match", bson.D{
 							{"$expr", bson.D{
 								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomId"}}},
+									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomID"}}},
 									bson.D{{"$ne", bson.A{"status", utils.InactiveStatus}}},
 								}},
 							}},
@@ -237,7 +237,7 @@ func (repository *mongoHousingRooms) FindOneCompleteById(id string) (entities.Ho
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoHousingRooms) UpdateOneById(id string, data entities.HousingRoom) error {
+func (repository *mongoHousingRooms) UpdateOneByID(id string, data entities.HousingRoom) error {
 	model := models.NewUpdatedHousingRoom(data)
 
 	update := bson.M{"$set": &model}
@@ -249,7 +249,7 @@ func (repository *mongoHousingRooms) UpdateOneById(id string, data entities.Hous
 	return nil
 }
 
-func (repository *mongoHousingRooms) IncreaseAvailableVacanciesById(id string) error {
+func (repository *mongoHousingRooms) IncreaseAvailableVacanciesByID(id string) error {
 	model := models.HousingRoom{
 		UpdatedAt: time.Now(),
 	}
@@ -263,7 +263,7 @@ func (repository *mongoHousingRooms) IncreaseAvailableVacanciesById(id string) e
 	return nil
 }
 
-func (repository *mongoHousingRooms) DecreaseAvailableVacanciesById(id string) error {
+func (repository *mongoHousingRooms) DecreaseAvailableVacanciesByID(id string) error {
 	model := models.HousingRoom{
 		UpdatedAt: time.Now(),
 	}

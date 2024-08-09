@@ -7,11 +7,11 @@ import (
 )
 
 type BeneficiaryAllocations interface {
-	Allocate(user entities.User, beneficiaryId string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error)
-	Reallocate(user entities.User, beneficiaryId string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error)
-	FindManyByBeneficiaryId(beneficiaryId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
-	FindManyByHousingId(housingId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
-	FindManyByRoomId(roomId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	Allocate(user entities.User, beneficiaryID string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error)
+	Reallocate(user entities.User, beneficiaryID string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error)
+	FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByRoomID(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
 }
 
 type beneficiaryAllocationsImpl struct {
@@ -35,10 +35,10 @@ func NewBeneficiaryAllocations(
 	}
 }
 
-func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, beneficiaryId string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
+func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, beneficiaryID string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
 	var room entities.HousingRoom
 
-	beneficiary, err := service.beneficiariesService.FindOneById(beneficiaryId)
+	beneficiary, err := service.beneficiariesService.FindOneByID(beneficiaryID)
 
 	if err != nil {
 		return entities.BeneficiaryAllocation{}, err
@@ -51,7 +51,7 @@ func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, benefici
 	}
 
 	if data.RoomID != "" {
-		room, err = service.housingRoomsService.FindOneById(data.RoomID)
+		room, err = service.housingRoomsService.FindOneByID(data.RoomID)
 
 		if err != nil {
 			return entities.BeneficiaryAllocation{}, err
@@ -60,7 +60,7 @@ func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, benefici
 
 	data.AuditorID = user.ID
 	data.Type = utils.EntranceType
-	data.BeneficiaryID = beneficiaryId
+	data.BeneficiaryID = beneficiaryID
 
 	allocation, err := service.repository.Create(data)
 
@@ -72,17 +72,17 @@ func (service *beneficiaryAllocationsImpl) Allocate(user entities.User, benefici
 	beneficiary.CurrentOrganizationID = housing.OrganizationID
 	beneficiary.CurrentRoomID = room.ID
 
-	if err = service.beneficiariesService.UpdateOneById(beneficiary.ID, beneficiary); err != nil {
+	if err = service.beneficiariesService.UpdateOneByID(beneficiary.ID, beneficiary); err != nil {
 		return entities.BeneficiaryAllocation{}, err
 	}
 
 	return allocation, nil
 }
 
-func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, beneficiaryId string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
+func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, beneficiaryID string, data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error) {
 	var room entities.HousingRoom
 
-	beneficiary, err := service.beneficiariesService.FindOneById(beneficiaryId)
+	beneficiary, err := service.beneficiariesService.FindOneByID(beneficiaryID)
 
 	if err != nil {
 		return entities.BeneficiaryAllocation{}, err
@@ -95,7 +95,7 @@ func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, benefi
 	}
 
 	if data.RoomID != "" {
-		room, err = service.housingRoomsService.FindOneById(data.RoomID)
+		room, err = service.housingRoomsService.FindOneByID(data.RoomID)
 
 		if err != nil {
 			return entities.BeneficiaryAllocation{}, err
@@ -118,21 +118,21 @@ func (service *beneficiaryAllocationsImpl) Reallocate(user entities.User, benefi
 	beneficiary.CurrentOrganizationID = housing.OrganizationID
 	beneficiary.CurrentRoomID = room.ID
 
-	if err = service.beneficiariesService.UpdateOneById(beneficiary.ID, beneficiary); err != nil {
+	if err = service.beneficiariesService.UpdateOneByID(beneficiary.ID, beneficiary); err != nil {
 		return entities.BeneficiaryAllocation{}, err
 	}
 
 	return allocation, err
 }
 
-func (service *beneficiaryAllocationsImpl) FindManyByBeneficiaryId(beneficiaryId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
-	return service.repository.FindManyByBeneficiaryId(beneficiaryId, offset, limit)
+func (service *beneficiaryAllocationsImpl) FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+	return service.repository.FindManyByBeneficiaryID(beneficiaryID, offset, limit)
 }
 
-func (service *beneficiaryAllocationsImpl) FindManyByHousingId(housingId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
-	return service.repository.FindManyByHousingId(housingId, offset, limit)
+func (service *beneficiaryAllocationsImpl) FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+	return service.repository.FindManyByHousingID(housingID, offset, limit)
 }
 
-func (service *beneficiaryAllocationsImpl) FindManyByRoomId(roomId string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
-	return service.repository.FindManyByRoomId(roomId, offset, limit)
+func (service *beneficiaryAllocationsImpl) FindManyByRoomID(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+	return service.repository.FindManyByRoomID(roomID, offset, limit)
 }

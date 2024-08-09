@@ -7,14 +7,14 @@ import (
 )
 
 type HousingRooms interface {
-	CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error)
-	FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error)
-	FindOneById(id string) (entities.HousingRoom, error)
-	FindOneCompleteById(id string) (entities.HousingRoom, error)
-	UpdateOneById(id string, data entities.HousingRoom) error
-	IncreaseAvailableVacanciesById(id string) error
-	DecreaseAvailableVacanciesById(id string) error
-	InactivateOneById(id string) error
+	CreateMany(data []entities.HousingRoom, housingID string) ([]entities.HousingRoom, error)
+	FindManyByHousingID(housingID string, limit, offset int64) (int64, []entities.HousingRoom, error)
+	FindOneByID(id string) (entities.HousingRoom, error)
+	FindOneCompleteByID(id string) (entities.HousingRoom, error)
+	UpdateOneByID(id string, data entities.HousingRoom) error
+	IncreaseAvailableVacanciesByID(id string) error
+	DecreaseAvailableVacanciesByID(id string) error
+	InactivateOneByID(id string) error
 }
 
 type housingRoomsImpl struct {
@@ -27,36 +27,36 @@ func NewHousingRooms(repository repositories.HousingRooms) HousingRooms {
 	}
 }
 
-func (service *housingRoomsImpl) CreateMany(data []entities.HousingRoom, housingId string) ([]entities.HousingRoom, error) {
-	return service.repository.CreateMany(data, housingId)
+func (service *housingRoomsImpl) CreateMany(data []entities.HousingRoom, housingID string) ([]entities.HousingRoom, error) {
+	return service.repository.CreateMany(data, housingID)
 }
 
-func (service *housingRoomsImpl) FindManyByHousingId(housingId string, limit, offset int64) (int64, []entities.HousingRoom, error) {
-	return service.repository.FindManyByHousingId(housingId, limit, offset)
+func (service *housingRoomsImpl) FindManyByHousingID(housingID string, limit, offset int64) (int64, []entities.HousingRoom, error) {
+	return service.repository.FindManyByHousingID(housingID, limit, offset)
 }
 
-func (service *housingRoomsImpl) FindOneById(id string) (entities.HousingRoom, error) {
-	return service.repository.FindOneById(id)
+func (service *housingRoomsImpl) FindOneByID(id string) (entities.HousingRoom, error) {
+	return service.repository.FindOneByID(id)
 }
 
-func (service *housingRoomsImpl) FindOneCompleteById(id string) (entities.HousingRoom, error) {
-	return service.repository.FindOneCompleteById(id)
+func (service *housingRoomsImpl) FindOneCompleteByID(id string) (entities.HousingRoom, error) {
+	return service.repository.FindOneCompleteByID(id)
 }
 
-func (service *housingRoomsImpl) UpdateOneById(id string, data entities.HousingRoom) error {
-	return service.repository.UpdateOneById(id, data)
+func (service *housingRoomsImpl) UpdateOneByID(id string, data entities.HousingRoom) error {
+	return service.repository.UpdateOneByID(id, data)
 }
 
-func (service *housingRoomsImpl) IncreaseAvailableVacanciesById(id string) error {
-	return service.repository.IncreaseAvailableVacanciesById(id)
+func (service *housingRoomsImpl) IncreaseAvailableVacanciesByID(id string) error {
+	return service.repository.IncreaseAvailableVacanciesByID(id)
 }
 
-func (service *housingRoomsImpl) DecreaseAvailableVacanciesById(id string) error {
-	return service.repository.DecreaseAvailableVacanciesById(id)
+func (service *housingRoomsImpl) DecreaseAvailableVacanciesByID(id string) error {
+	return service.repository.DecreaseAvailableVacanciesByID(id)
 }
 
-func (service *housingRoomsImpl) InactivateOneById(id string) error {
-	room, err := service.FindOneById(id)
+func (service *housingRoomsImpl) InactivateOneByID(id string) error {
+	room, err := service.FindOneByID(id)
 
 	if err != nil {
 		return err
@@ -64,5 +64,5 @@ func (service *housingRoomsImpl) InactivateOneById(id string) error {
 
 	room.Status = utils.InactiveStatus
 
-	return service.repository.UpdateOneById(id, room)
+	return service.repository.UpdateOneByID(id, room)
 }

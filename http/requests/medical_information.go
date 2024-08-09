@@ -1,7 +1,6 @@
 package requests
 
 import (
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"relif/bff/entities"
 )
 
@@ -18,19 +17,6 @@ type MedicalInformation struct {
 	Addictions                 []string `json:"addictions"`
 	Disabilities               []string `json:"disabilities"`
 	ProthesisOrMedicalDevices  []string `json:"prothesis_or_medical_devices"`
-}
-
-func (req *MedicalInformation) Validate() error {
-	return validation.ValidateStruct(req,
-		validation.Field(&req.Allergies, validation.Each(validation.Required)),
-		validation.Field(&req.CurrentMedications, validation.Each(validation.Required)),
-		validation.Field(&req.RecurrentMedicalConditions, validation.Each(validation.Required)),
-		validation.Field(&req.HealthInsurancePlans, validation.Each(validation.Required)),
-		validation.Field(&req.BloodType, validation.Required),
-		validation.Field(&req.TakenVaccines, validation.Each(validation.Required)),
-		validation.Field(&req.Weight, validation.Required),
-		validation.Field(&req.Height, validation.Required),
-	)
 }
 
 func (req *MedicalInformation) ToEntity() entities.MedicalInformation {

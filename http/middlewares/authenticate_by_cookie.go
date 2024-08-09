@@ -28,8 +28,8 @@ func (middleware *AuthenticateByCookie) Handle(next http.Handler) http.Handler {
 			return
 		}
 
-		sessionId := cookie.Value
-		user, err := middleware.authService.AuthenticateSession(sessionId)
+		sessionID := cookie.Value
+		user, err := middleware.authService.AuthenticateSession(sessionID)
 
 		if err != nil {
 			switch {
@@ -45,7 +45,7 @@ func (middleware *AuthenticateByCookie) Handle(next http.Handler) http.Handler {
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "user", user)
-		ctx = context.WithValue(ctx, "sessionId", sessionId)
+		ctx = context.WithValue(ctx, "sessionID", sessionID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

@@ -7,32 +7,32 @@ import (
 
 type Authorization interface {
 	AuthorizePrivateActions(user entities.User) error
-	AuthorizeAccessUserResource(userId string, user entities.User) error
-	AuthorizeMutateUserData(userId string, user entities.User) error
-	AuthorizeAccessOrganizationData(organizationId string, user entities.User) error
-	AuthorizeAccessPrivateOrganizationData(organizationId string, user entities.User) error
-	AuthorizeMutateOrganizationData(organizationId string, user entities.User) error
+	AuthorizeAccessUserResource(userID string, user entities.User) error
+	AuthorizeMutateUserData(userID string, user entities.User) error
+	AuthorizeAccessOrganizationData(organizationID string, user entities.User) error
+	AuthorizeAccessPrivateOrganizationData(organizationID string, user entities.User) error
+	AuthorizeMutateOrganizationData(organizationID string, user entities.User) error
 	AuthorizeCreateOrganization(user entities.User) error
 	AuthorizeCreateOrganizationResource(user entities.User) error
 	AuthorizeCreateAccessOrganizationDataRequest(user entities.User) error
-	AuthorizeMutateAccessOrganizationDataRequestData(requestId string, user entities.User) error
-	AuthorizeMutateOrganizationDataAccessGrantsData(grantId string, user entities.User) error
-	AuthorizeAccessHousingData(housingId string, user entities.User) error
-	AuthorizeMutateHousingData(housingId string, user entities.User) error
-	AuthorizeCreateHousingResource(housingId string, user entities.User) error
-	AuthorizeMutateJoinOrganizationInviteData(inviteId string, user entities.User) error
+	AuthorizeMutateAccessOrganizationDataRequestData(requestID string, user entities.User) error
+	AuthorizeMutateOrganizationDataAccessGrantsData(grantID string, user entities.User) error
+	AuthorizeAccessHousingData(housingID string, user entities.User) error
+	AuthorizeMutateHousingData(housingID string, user entities.User) error
+	AuthorizeCreateHousingResource(housingID string, user entities.User) error
+	AuthorizeMutateJoinOrganizationInviteData(inviteID string, user entities.User) error
 	AuthorizeCreateUpdateOrganizationTypeRequest(user entities.User) error
 	AuthorizeCreateJoinOrganizationRequest(user entities.User) error
-	AuthorizeMutateJoinOrganizationRequest(requestId string, user entities.User) error
-	AuthorizeAccessHousingRoomData(roomId string, user entities.User) error
-	AuthorizeMutateHousingRoomData(roomId string, user entities.User) error
-	AuthorizeAccessBeneficiaryData(beneficiaryId string, user entities.User) error
-	AuthorizeMutateBeneficiaryData(beneficiaryId string, user entities.User) error
-	AuthorizeCreateBeneficiaryResource(beneficiaryId string, user entities.User) error
-	AuthorizeAccessVoluntaryPersonData(voluntaryId string, user entities.User) error
-	AuthorizeMutateVoluntaryPersonData(voluntaryId string, user entities.User) error
-	AuthorizeAccessProductTypeData(typeId string, user entities.User) error
-	AuthorizeMutateProductTypeData(typeId string, user entities.User) error
+	AuthorizeMutateJoinOrganizationRequest(requestID string, user entities.User) error
+	AuthorizeAccessHousingRoomData(roomID string, user entities.User) error
+	AuthorizeMutateHousingRoomData(roomID string, user entities.User) error
+	AuthorizeAccessBeneficiaryData(beneficiaryID string, user entities.User) error
+	AuthorizeMutateBeneficiaryData(beneficiaryID string, user entities.User) error
+	AuthorizeCreateBeneficiaryResource(beneficiaryID string, user entities.User) error
+	AuthorizeAccessVoluntaryPersonData(voluntaryID string, user entities.User) error
+	AuthorizeMutateVoluntaryPersonData(voluntaryID string, user entities.User) error
+	AuthorizeAccessProductTypeData(typeID string, user entities.User) error
+	AuthorizeMutateProductTypeData(typeID string, user entities.User) error
 }
 
 type authorizationImpl struct {
@@ -88,16 +88,16 @@ func (service *authorizationImpl) AuthorizePrivateActions(user entities.User) er
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeAccessUserResource(userId string, user entities.User) error {
-	if user.ID != userId && user.PlatformRole != utils.RelifMemberPlatformRole {
+func (service *authorizationImpl) AuthorizeAccessUserResource(userID string, user entities.User) error {
+	if user.ID != userID && user.PlatformRole != utils.RelifMemberPlatformRole {
 		return utils.ErrUnauthorizedAction
 	}
 
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeMutateUserData(userId string, user entities.User) error {
-	target, err := service.usersService.FindOneById(userId)
+func (service *authorizationImpl) AuthorizeMutateUserData(userID string, user entities.User) error {
+	target, err := service.usersService.FindOneByID(userID)
 
 	if err != nil {
 		return err
@@ -110,30 +110,30 @@ func (service *authorizationImpl) AuthorizeMutateUserData(userId string, user en
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeAccessOrganizationData(organizationId string, user entities.User) error {
-	accessGranted, err := service.organizationDataAccessGrantsService.ExistsByOrganizationIdAndTargetOrganizationId(user.OrganizationID, organizationId)
+func (service *authorizationImpl) AuthorizeAccessOrganizationData(organizationID string, user entities.User) error {
+	accessGranted, err := service.organizationDataAccessGrantsService.ExistsByOrganizationIDAndTargetOrganizationID(user.OrganizationID, organizationID)
 
 	if err != nil {
 		return err
 	}
 
-	if user.OrganizationID != organizationId && !accessGranted {
+	if user.OrganizationID != organizationID && !accessGranted {
 		return utils.ErrUnauthorizedAction
 	}
 
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeAccessPrivateOrganizationData(organizationId string, user entities.User) error {
-	if (user.OrganizationID != organizationId && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
+func (service *authorizationImpl) AuthorizeAccessPrivateOrganizationData(organizationID string, user entities.User) error {
+	if (user.OrganizationID != organizationID && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
 		return utils.ErrUnauthorizedAction
 	}
 
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeMutateOrganizationData(organizationId string, user entities.User) error {
-	if (user.OrganizationID != organizationId && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
+func (service *authorizationImpl) AuthorizeMutateOrganizationData(organizationID string, user entities.User) error {
+	if (user.OrganizationID != organizationID && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
 		return utils.ErrUnauthorizedAction
 	}
 
@@ -157,7 +157,7 @@ func (service *authorizationImpl) AuthorizeCreateOrganizationResource(user entit
 }
 
 func (service *authorizationImpl) AuthorizeCreateAccessOrganizationDataRequest(user entities.User) error {
-	organization, err := service.organizationsService.FindOneById(user.OrganizationID)
+	organization, err := service.organizationsService.FindOneByID(user.OrganizationID)
 
 	if err != nil {
 		return err
@@ -170,8 +170,8 @@ func (service *authorizationImpl) AuthorizeCreateAccessOrganizationDataRequest(u
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeMutateAccessOrganizationDataRequestData(requestId string, user entities.User) error {
-	request, err := service.organizationDataAccessRequestsService.FindOneById(requestId)
+func (service *authorizationImpl) AuthorizeMutateAccessOrganizationDataRequestData(requestID string, user entities.User) error {
+	request, err := service.organizationDataAccessRequestsService.FindOneByID(requestID)
 
 	if err != nil {
 		return err
@@ -184,8 +184,8 @@ func (service *authorizationImpl) AuthorizeMutateAccessOrganizationDataRequestDa
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeMutateOrganizationDataAccessGrantsData(grantId string, user entities.User) error {
-	grant, err := service.organizationDataAccessGrantsService.FindOneById(grantId)
+func (service *authorizationImpl) AuthorizeMutateOrganizationDataAccessGrantsData(grantID string, user entities.User) error {
+	grant, err := service.organizationDataAccessGrantsService.FindOneByID(grantID)
 
 	if err != nil {
 		return err
@@ -194,8 +194,8 @@ func (service *authorizationImpl) AuthorizeMutateOrganizationDataAccessGrantsDat
 	return service.AuthorizeMutateOrganizationData(grant.OrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeAccessHousingData(housingId string, user entities.User) error {
-	housing, err := service.housingsService.FindOneByID(housingId)
+func (service *authorizationImpl) AuthorizeAccessHousingData(housingID string, user entities.User) error {
+	housing, err := service.housingsService.FindOneByID(housingID)
 
 	if err != nil {
 		return err
@@ -204,8 +204,8 @@ func (service *authorizationImpl) AuthorizeAccessHousingData(housingId string, u
 	return service.AuthorizeAccessOrganizationData(housing.OrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeMutateHousingData(housingId string, user entities.User) error {
-	housing, err := service.housingsService.FindOneByID(housingId)
+func (service *authorizationImpl) AuthorizeMutateHousingData(housingID string, user entities.User) error {
+	housing, err := service.housingsService.FindOneByID(housingID)
 
 	if err != nil {
 		return err
@@ -214,8 +214,8 @@ func (service *authorizationImpl) AuthorizeMutateHousingData(housingId string, u
 	return service.AuthorizeMutateOrganizationData(housing.OrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeCreateHousingResource(housingId string, user entities.User) error {
-	housing, err := service.housingsService.FindOneByID(housingId)
+func (service *authorizationImpl) AuthorizeCreateHousingResource(housingID string, user entities.User) error {
+	housing, err := service.housingsService.FindOneByID(housingID)
 
 	if err != nil {
 		return err
@@ -228,8 +228,8 @@ func (service *authorizationImpl) AuthorizeCreateHousingResource(housingId strin
 	return service.AuthorizeCreateOrganizationResource(user)
 }
 
-func (service *authorizationImpl) AuthorizeMutateJoinOrganizationInviteData(inviteId string, user entities.User) error {
-	invite, err := service.joinOrganizationInvitesService.FindOneById(inviteId)
+func (service *authorizationImpl) AuthorizeMutateJoinOrganizationInviteData(inviteID string, user entities.User) error {
+	invite, err := service.joinOrganizationInvitesService.FindOneByID(inviteID)
 
 	if err != nil {
 		return err
@@ -264,8 +264,8 @@ func (service *authorizationImpl) AuthorizeCreateJoinOrganizationRequest(user en
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeMutateJoinOrganizationRequest(requestId string, user entities.User) error {
-	request, err := service.joinOrganizationRequestsService.FindOneById(requestId)
+func (service *authorizationImpl) AuthorizeMutateJoinOrganizationRequest(requestID string, user entities.User) error {
+	request, err := service.joinOrganizationRequestsService.FindOneByID(requestID)
 
 	if err != nil {
 		return err
@@ -274,8 +274,8 @@ func (service *authorizationImpl) AuthorizeMutateJoinOrganizationRequest(request
 	return service.AuthorizeMutateOrganizationData(request.OrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeAccessHousingRoomData(roomId string, user entities.User) error {
-	room, err := service.housingRoomsService.FindOneById(roomId)
+func (service *authorizationImpl) AuthorizeAccessHousingRoomData(roomID string, user entities.User) error {
+	room, err := service.housingRoomsService.FindOneByID(roomID)
 
 	if err != nil {
 		return err
@@ -284,8 +284,8 @@ func (service *authorizationImpl) AuthorizeAccessHousingRoomData(roomId string, 
 	return service.AuthorizeAccessHousingData(room.HousingID, user)
 }
 
-func (service *authorizationImpl) AuthorizeMutateHousingRoomData(roomId string, user entities.User) error {
-	room, err := service.housingRoomsService.FindOneById(roomId)
+func (service *authorizationImpl) AuthorizeMutateHousingRoomData(roomID string, user entities.User) error {
+	room, err := service.housingRoomsService.FindOneByID(roomID)
 
 	if err != nil {
 		return err
@@ -294,8 +294,8 @@ func (service *authorizationImpl) AuthorizeMutateHousingRoomData(roomId string, 
 	return service.AuthorizeMutateHousingData(room.HousingID, user)
 }
 
-func (service *authorizationImpl) AuthorizeAccessBeneficiaryData(beneficiaryId string, user entities.User) error {
-	beneficiary, err := service.beneficiariesService.FindOneById(beneficiaryId)
+func (service *authorizationImpl) AuthorizeAccessBeneficiaryData(beneficiaryID string, user entities.User) error {
+	beneficiary, err := service.beneficiariesService.FindOneByID(beneficiaryID)
 
 	if err != nil {
 		return err
@@ -304,8 +304,8 @@ func (service *authorizationImpl) AuthorizeAccessBeneficiaryData(beneficiaryId s
 	return service.AuthorizeAccessOrganizationData(beneficiary.CurrentOrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeMutateBeneficiaryData(beneficiaryId string, user entities.User) error {
-	beneficiary, err := service.beneficiariesService.FindOneById(beneficiaryId)
+func (service *authorizationImpl) AuthorizeMutateBeneficiaryData(beneficiaryID string, user entities.User) error {
+	beneficiary, err := service.beneficiariesService.FindOneByID(beneficiaryID)
 
 	if err != nil {
 		return err
@@ -314,8 +314,8 @@ func (service *authorizationImpl) AuthorizeMutateBeneficiaryData(beneficiaryId s
 	return service.AuthorizeMutateOrganizationData(beneficiary.CurrentOrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeCreateBeneficiaryResource(beneficiaryId string, user entities.User) error {
-	beneficiary, err := service.beneficiariesService.FindOneById(beneficiaryId)
+func (service *authorizationImpl) AuthorizeCreateBeneficiaryResource(beneficiaryID string, user entities.User) error {
+	beneficiary, err := service.beneficiariesService.FindOneByID(beneficiaryID)
 
 	if err != nil {
 		return err
@@ -328,8 +328,8 @@ func (service *authorizationImpl) AuthorizeCreateBeneficiaryResource(beneficiary
 	return service.AuthorizeCreateOrganizationResource(user)
 }
 
-func (service *authorizationImpl) AuthorizeAccessVoluntaryPersonData(voluntaryId string, user entities.User) error {
-	voluntary, err := service.voluntaryPeopleService.FindOneById(voluntaryId)
+func (service *authorizationImpl) AuthorizeAccessVoluntaryPersonData(voluntaryID string, user entities.User) error {
+	voluntary, err := service.voluntaryPeopleService.FindOneByID(voluntaryID)
 
 	if err != nil {
 		return err
@@ -338,8 +338,8 @@ func (service *authorizationImpl) AuthorizeAccessVoluntaryPersonData(voluntaryId
 	return service.AuthorizeAccessOrganizationData(voluntary.OrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeMutateVoluntaryPersonData(voluntaryId string, user entities.User) error {
-	voluntary, err := service.voluntaryPeopleService.FindOneById(voluntaryId)
+func (service *authorizationImpl) AuthorizeMutateVoluntaryPersonData(voluntaryID string, user entities.User) error {
+	voluntary, err := service.voluntaryPeopleService.FindOneByID(voluntaryID)
 
 	if err != nil {
 		return err
@@ -348,8 +348,8 @@ func (service *authorizationImpl) AuthorizeMutateVoluntaryPersonData(voluntaryId
 	return service.AuthorizeMutateOrganizationData(voluntary.OrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeAccessProductTypeData(typeId string, user entities.User) error {
-	productType, err := service.productTypesService.FindOneById(typeId)
+func (service *authorizationImpl) AuthorizeAccessProductTypeData(typeID string, user entities.User) error {
+	productType, err := service.productTypesService.FindOneByID(typeID)
 
 	if err != nil {
 		return err
@@ -358,8 +358,8 @@ func (service *authorizationImpl) AuthorizeAccessProductTypeData(typeId string, 
 	return service.AuthorizeAccessOrganizationData(productType.OrganizationID, user)
 }
 
-func (service *authorizationImpl) AuthorizeMutateProductTypeData(typeId string, user entities.User) error {
-	productType, err := service.productTypesService.FindOneById(typeId)
+func (service *authorizationImpl) AuthorizeMutateProductTypeData(typeID string, user entities.User) error {
+	productType, err := service.productTypesService.FindOneByID(typeID)
 
 	if err != nil {
 		return err

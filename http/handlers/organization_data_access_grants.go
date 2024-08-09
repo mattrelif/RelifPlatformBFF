@@ -24,11 +24,11 @@ func NewOrganizationDataAccessGrants(service services.OrganizationDataAccessGran
 	}
 }
 
-func (handler *OrganizationDataAccessGrants) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *OrganizationDataAccessGrants) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -49,7 +49,7 @@ func (handler *OrganizationDataAccessGrants) FindManyByOrganizationId(w http.Res
 		return
 	}
 
-	count, grants, err := handler.service.FindManyByOrganizationId(organizationId, int64(limit), int64(offset))
+	count, grants, err := handler.service.FindManyByOrganizationID(organizationID, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -64,11 +64,11 @@ func (handler *OrganizationDataAccessGrants) FindManyByOrganizationId(w http.Res
 	}
 }
 
-func (handler *OrganizationDataAccessGrants) FindManyByTargetOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *OrganizationDataAccessGrants) FindManyByTargetOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -89,7 +89,7 @@ func (handler *OrganizationDataAccessGrants) FindManyByTargetOrganizationId(w ht
 		return
 	}
 
-	count, grants, err := handler.service.FindManyByTargetOrganizationId(organizationId, int64(limit), int64(offset))
+	count, grants, err := handler.service.FindManyByTargetOrganizationID(organizationID, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -120,7 +120,7 @@ func (handler *OrganizationDataAccessGrants) Delete(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if err := handler.service.DeleteOneById(id); err != nil {
+	if err := handler.service.DeleteOneByID(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

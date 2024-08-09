@@ -7,11 +7,11 @@ import (
 
 type OrganizationDataAccessGrants interface {
 	Create(grant entities.OrganizationDataAccessGrant) error
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
-	FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
-	FindOneById(id string) (entities.OrganizationDataAccessGrant, error)
-	DeleteOneById(id string) error
-	ExistsByOrganizationIdAndTargetOrganizationId(organizationId, targetOrganizationId string) (bool, error)
+	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
+	FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
+	FindOneByID(id string) (entities.OrganizationDataAccessGrant, error)
+	DeleteOneByID(id string) error
+	ExistsByOrganizationIDAndTargetOrganizationID(organizationID, targetOrganizationID string) (bool, error)
 }
 
 type organizationDataAccessGrantsImpl struct {
@@ -28,24 +28,24 @@ func (service *organizationDataAccessGrantsImpl) Create(grant entities.Organizat
 	return service.repository.Create(grant)
 }
 
-func (service *organizationDataAccessGrantsImpl) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, limit, offset)
+func (service *organizationDataAccessGrantsImpl) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, limit, offset)
 }
 
-func (service *organizationDataAccessGrantsImpl) FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
-	return service.repository.FindManyByTargetOrganizationId(organizationId, limit, offset)
+func (service *organizationDataAccessGrantsImpl) FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
+	return service.repository.FindManyByTargetOrganizationID(organizationID, limit, offset)
 }
 
-func (service *organizationDataAccessGrantsImpl) FindOneById(id string) (entities.OrganizationDataAccessGrant, error) {
-	return service.repository.FindOneById(id)
+func (service *organizationDataAccessGrantsImpl) FindOneByID(id string) (entities.OrganizationDataAccessGrant, error) {
+	return service.repository.FindOneByID(id)
 }
 
-func (service *organizationDataAccessGrantsImpl) DeleteOneById(id string) error {
-	return service.repository.DeleteOneById(id)
+func (service *organizationDataAccessGrantsImpl) DeleteOneByID(id string) error {
+	return service.repository.DeleteOneByID(id)
 }
 
-func (service *organizationDataAccessGrantsImpl) ExistsByOrganizationIdAndTargetOrganizationId(organizationId, targetOrganizationId string) (bool, error) {
-	count, err := service.repository.CountByOrganizationIdAndTargetOrganizationId(organizationId, targetOrganizationId)
+func (service *organizationDataAccessGrantsImpl) ExistsByOrganizationIDAndTargetOrganizationID(organizationID, targetOrganizationID string) (bool, error) {
+	count, err := service.repository.CountByOrganizationIDAndTargetOrganizationID(organizationID, targetOrganizationID)
 
 	if err != nil {
 		return false, err

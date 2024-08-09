@@ -77,11 +77,11 @@ func (handler *ProductTypes) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (handler *ProductTypes) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *ProductTypes) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -109,7 +109,7 @@ func (handler *ProductTypes) FindManyByOrganizationId(w http.ResponseWriter, r *
 		return
 	}
 
-	count, productTypes, err := handler.service.FindManyByOrganizationId(organizationId, int64(limit), int64(offset))
+	count, productTypes, err := handler.service.FindManyByOrganizationID(organizationID, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,7 +124,7 @@ func (handler *ProductTypes) FindManyByOrganizationId(w http.ResponseWriter, r *
 	}
 }
 
-func (handler *ProductTypes) FindOneById(w http.ResponseWriter, r *http.Request) {
+func (handler *ProductTypes) FindOneByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
@@ -140,7 +140,7 @@ func (handler *ProductTypes) FindOneById(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	productType, err := handler.service.FindOneById(id)
+	productType, err := handler.service.FindOneByID(id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -191,7 +191,7 @@ func (handler *ProductTypes) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
+	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -215,7 +215,7 @@ func (handler *ProductTypes) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.DeleteOneById(id); err != nil {
+	if err := handler.service.DeleteOneByID(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

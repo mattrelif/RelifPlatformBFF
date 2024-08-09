@@ -70,11 +70,11 @@ func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (handler *Housings) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *Housings) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -102,7 +102,7 @@ func (handler *Housings) FindManyByOrganizationId(w http.ResponseWriter, r *http
 		return
 	}
 
-	count, housings, err := handler.service.FindManyByOrganizationID(organizationId, search, int64(limit), int64(offset))
+	count, housings, err := handler.service.FindManyByOrganizationID(organizationID, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -117,7 +117,7 @@ func (handler *Housings) FindManyByOrganizationId(w http.ResponseWriter, r *http
 	}
 }
 
-func (handler *Housings) FindOneById(w http.ResponseWriter, r *http.Request) {
+func (handler *Housings) FindOneByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 

@@ -10,10 +10,10 @@ import (
 type UpdateOrganizationTypeRequests interface {
 	Create(user entities.User) (entities.UpdateOrganizationTypeRequest, error)
 	FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
-	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
-	Accept(id, userId string) error
-	Reject(id, userId string, data entities.UpdateOrganizationTypeRequest) error
-	ExistsPendingByOrganization(organizationId string) (bool, error)
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
+	Accept(id, userID string) error
+	Reject(id, userID string, data entities.UpdateOrganizationTypeRequest) error
+	ExistsPendingByOrganization(organizationID string) (bool, error)
 }
 
 type updateOrganizationTypeRequestsImpl struct {
@@ -43,61 +43,61 @@ func (service *updateOrganizationTypeRequestsImpl) FindMany(offset, limit int64)
 	return service.repository.FindMany(offset, limit)
 }
 
-func (service *updateOrganizationTypeRequestsImpl) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, offset, limit)
+func (service *updateOrganizationTypeRequestsImpl) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, offset, limit)
 }
 
-func (service *updateOrganizationTypeRequestsImpl) Accept(id, userId string) error {
-	request, err := service.repository.FindOneById(id)
+func (service *updateOrganizationTypeRequestsImpl) Accept(id, userID string) error {
+	request, err := service.repository.FindOneByID(id)
 
 	if err != nil {
 		return err
 	}
 
-	organization, err := service.organizationsService.FindOneById(request.OrganizationID)
+	organization, err := service.organizationsService.FindOneByID(request.OrganizationID)
 
 	if err != nil {
 		return err
 	}
 
 	request.Status = utils.AcceptedStatus
-	request.AuditorID = userId
+	request.AuditorID = userID
 	request.AcceptedAt = time.Now()
 
-	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+	if err = service.repository.UpdateOneByID(request.ID, request); err != nil {
 		return err
 	}
 
 	organization.Type = utils.CoordinatorOrganizationType
 
-	if err = service.organizationsService.UpdateOneById(organization.ID, organization); err != nil {
+	if err = service.organizationsService.UpdateOneByID(organization.ID, organization); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (service *updateOrganizationTypeRequestsImpl) Reject(id, userId string, data entities.UpdateOrganizationTypeRequest) error {
-	request, err := service.repository.FindOneById(id)
+func (service *updateOrganizationTypeRequestsImpl) Reject(id, userID string, data entities.UpdateOrganizationTypeRequest) error {
+	request, err := service.repository.FindOneByID(id)
 
 	if err != nil {
 		return err
 	}
 
-	request.AuditorID = userId
+	request.AuditorID = userID
 	request.Status = utils.RejectedStatus
 	request.RejectedAt = time.Now()
 	request.RejectReason = data.RejectReason
 
-	if err = service.repository.UpdateOneById(request.ID, request); err != nil {
+	if err = service.repository.UpdateOneByID(request.ID, request); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (service *updateOrganizationTypeRequestsImpl) ExistsPendingByOrganization(organizationId string) (bool, error) {
-	count, err := service.repository.CountPendingByOrganizationId(organizationId)
+func (service *updateOrganizationTypeRequestsImpl) ExistsPendingByOrganization(organizationID string) (bool, error) {
+	count, err := service.repository.CountPendingByOrganizationID(organizationID)
 
 	if err != nil {
 		return false, err

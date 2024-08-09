@@ -105,7 +105,7 @@ func (handler *Organizations) FindMany(w http.ResponseWriter, r *http.Request) {
 func (handler *Organizations) FindOne(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	organization, err := handler.service.FindOneById(id)
+	organization, err := handler.service.FindOneByID(id)
 
 	if err != nil {
 		switch {
@@ -161,7 +161,7 @@ func (handler *Organizations) UpdateOne(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
+	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -178,7 +178,29 @@ func (handler *Organizations) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.InactivateOneById(id); err != nil {
+	if err := handler.service.InactivateOneByID(id); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (handler *Organizations) ReactivateOne(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	if err := handler.service.ReactivateOneByID(id); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrOrganizationNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)

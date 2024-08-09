@@ -15,11 +15,11 @@ import (
 
 type ProductTypes interface {
 	Create(data entities.ProductType) (entities.ProductType, error)
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.ProductType, error)
-	FindOneById(id string) (entities.ProductType, error)
-	UpdateOneById(id string, data entities.ProductType) error
+	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.ProductType, error)
+	FindOneByID(id string) (entities.ProductType, error)
+	UpdateOneByID(id string, data entities.ProductType) error
 	IncreaseTotalInStock(id string, amount int) error
-	DeleteOneById(id string) error
+	DeleteOneByID(id string) error
 }
 
 type mongoProductTypes struct {
@@ -50,7 +50,7 @@ func (repository *mongoProductTypes) Create(data entities.ProductType) (entities
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoProductTypes) FindOneById(id string) (entities.ProductType, error) {
+func (repository *mongoProductTypes) FindOneByID(id string) (entities.ProductType, error) {
 	var model models.ProductType
 
 	filter := bson.M{"_id": id}
@@ -65,11 +65,11 @@ func (repository *mongoProductTypes) FindOneById(id string) (entities.ProductTyp
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoProductTypes) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.ProductType, error) {
+func (repository *mongoProductTypes) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.ProductType, error) {
 	modelList := make([]models.ProductType, 0)
 	entityList := make([]entities.ProductType, 0)
 
-	filter := bson.M{"organization_id": organizationId}
+	filter := bson.M{"organization_id": organizationID}
 
 	count, err := repository.collection.CountDocuments(context.TODO(), filter)
 
@@ -97,7 +97,7 @@ func (repository *mongoProductTypes) FindManyByOrganizationId(organizationId str
 	return count, entityList, nil
 }
 
-func (repository *mongoProductTypes) UpdateOneById(id string, data entities.ProductType) error {
+func (repository *mongoProductTypes) UpdateOneByID(id string, data entities.ProductType) error {
 	model := models.NewUpdatedProductType(data)
 
 	update := bson.M{"$set": &model}
@@ -119,7 +119,7 @@ func (repository *mongoProductTypes) IncreaseTotalInStock(id string, amount int)
 	return nil
 }
 
-func (repository *mongoProductTypes) DeleteOneById(id string) error {
+func (repository *mongoProductTypes) DeleteOneByID(id string) error {
 	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOneAndDelete(context.TODO(), filter).Err(); err != nil {

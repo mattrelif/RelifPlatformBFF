@@ -13,11 +13,11 @@ import (
 
 type OrganizationDataAccessGrants interface {
 	Create(data entities.OrganizationDataAccessGrant) error
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
-	FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
-	FindOneById(id string) (entities.OrganizationDataAccessGrant, error)
-	DeleteOneById(id string) error
-	CountByOrganizationIdAndTargetOrganizationId(organizationId, targetOrganizationId string) (int64, error)
+	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
+	FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
+	FindOneByID(id string) (entities.OrganizationDataAccessGrant, error)
+	DeleteOneByID(id string) error
+	CountByOrganizationIDAndTargetOrganizationID(organizationID, targetOrganizationID string) (int64, error)
 }
 
 type mongoOrganizationDataAccessGrants struct {
@@ -40,11 +40,11 @@ func (repository *mongoOrganizationDataAccessGrants) Create(data entities.Organi
 	return nil
 }
 
-func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
+func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
 	entityList := make([]entities.OrganizationDataAccessGrant, 0)
 	modelsList := make([]models.OrganizationDataAccessGrant, 0)
 
-	filter := bson.M{"organization_id": organizationId}
+	filter := bson.M{"organization_id": organizationID}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -72,11 +72,11 @@ func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationId(or
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizationDataAccessGrants) FindManyByTargetOrganizationId(organizationId string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
+func (repository *mongoOrganizationDataAccessGrants) FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
 	entityList := make([]entities.OrganizationDataAccessGrant, 0)
 	modelsList := make([]models.OrganizationDataAccessGrant, 0)
 
-	filter := bson.M{"target_organization_id": organizationId}
+	filter := bson.M{"target_organization_id": organizationID}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -104,7 +104,7 @@ func (repository *mongoOrganizationDataAccessGrants) FindManyByTargetOrganizatio
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizationDataAccessGrants) FindOneById(id string) (entities.OrganizationDataAccessGrant, error) {
+func (repository *mongoOrganizationDataAccessGrants) FindOneByID(id string) (entities.OrganizationDataAccessGrant, error) {
 	var model models.OrganizationDataAccessGrant
 
 	filter := bson.M{"_id": id}
@@ -119,7 +119,7 @@ func (repository *mongoOrganizationDataAccessGrants) FindOneById(id string) (ent
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoOrganizationDataAccessGrants) DeleteOneById(id string) error {
+func (repository *mongoOrganizationDataAccessGrants) DeleteOneByID(id string) error {
 	filter := bson.M{"_id": id}
 
 	if _, err := repository.collection.DeleteOne(context.Background(), filter); err != nil {
@@ -129,8 +129,8 @@ func (repository *mongoOrganizationDataAccessGrants) DeleteOneById(id string) er
 	return nil
 }
 
-func (repository *mongoOrganizationDataAccessGrants) CountByOrganizationIdAndTargetOrganizationId(organizationId, targetOrganizationId string) (int64, error) {
-	filter := bson.M{"organization_id": organizationId, "target_organization_id": targetOrganizationId}
+func (repository *mongoOrganizationDataAccessGrants) CountByOrganizationIDAndTargetOrganizationID(organizationID, targetOrganizationID string) (int64, error) {
+	filter := bson.M{"organization_id": organizationID, "target_organization_id": targetOrganizationID}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 

@@ -74,11 +74,11 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (handler *JoinPlatformInvites) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *JoinPlatformInvites) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -99,7 +99,7 @@ func (handler *JoinPlatformInvites) FindManyByOrganizationId(w http.ResponseWrit
 		return
 	}
 
-	count, invites, err := handler.service.FindManyByOrganizationId(organizationId, int64(limit), int64(offset))
+	count, invites, err := handler.service.FindManyByOrganizationID(organizationID, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

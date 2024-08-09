@@ -7,11 +7,11 @@ import (
 
 type ProductTypes interface {
 	Create(user entities.User, data entities.ProductType) (entities.ProductType, error)
-	FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.ProductType, error)
-	FindOneById(id string) (entities.ProductType, error)
-	UpdateOneById(id string, data entities.ProductType) error
+	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.ProductType, error)
+	FindOneByID(id string) (entities.ProductType, error)
+	UpdateOneByID(id string, data entities.ProductType) error
 	IncreaseTotalInStock(id string, amount int) error
-	DeleteOneById(id string) error
+	DeleteOneByID(id string) error
 }
 
 type productTypesImpl struct {
@@ -29,22 +29,22 @@ func (service *productTypesImpl) Create(user entities.User, data entities.Produc
 	return service.repository.Create(data)
 }
 
-func (service *productTypesImpl) FindManyByOrganizationId(organizationId string, limit, offset int64) (int64, []entities.ProductType, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, limit, offset)
+func (service *productTypesImpl) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.ProductType, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, limit, offset)
 }
 
-func (service *productTypesImpl) FindOneById(id string) (entities.ProductType, error) {
-	return service.repository.FindOneById(id)
+func (service *productTypesImpl) FindOneByID(id string) (entities.ProductType, error) {
+	return service.repository.FindOneByID(id)
 }
 
-func (service *productTypesImpl) UpdateOneById(id string, data entities.ProductType) error {
-	return service.repository.UpdateOneById(id, data)
+func (service *productTypesImpl) UpdateOneByID(id string, data entities.ProductType) error {
+	return service.repository.UpdateOneByID(id, data)
 }
 
 func (service *productTypesImpl) IncreaseTotalInStock(id string, amount int) error {
 	return service.repository.IncreaseTotalInStock(id, amount)
 }
 
-func (service *productTypesImpl) DeleteOneById(id string) error {
-	return service.repository.DeleteOneById(id)
+func (service *productTypesImpl) DeleteOneByID(id string) error {
+	return service.repository.DeleteOneByID(id)
 }

@@ -10,8 +10,8 @@ type Authentication interface {
 	SignUp(data entities.User) (entities.Session, error)
 	OrganizationSignUp(data entities.User) (entities.Session, error)
 	SignIn(email, password string) (entities.Session, error)
-	SignOut(sessionId string) error
-	AuthenticateSession(sessionId string) (entities.User, error)
+	SignOut(sessionID string) error
+	AuthenticateSession(sessionID string) (entities.User, error)
 }
 
 type authenticationImpl struct {
@@ -100,7 +100,7 @@ func (service *authenticationImpl) SignIn(email, password string) (entities.Sess
 	}
 
 	if user.OrganizationID != "" {
-		organization, err := service.organizationsService.FindOneById(user.OrganizationID)
+		organization, err := service.organizationsService.FindOneByID(user.OrganizationID)
 
 		if err != nil {
 			return entities.Session{}, err
@@ -124,25 +124,25 @@ func (service *authenticationImpl) SignIn(email, password string) (entities.Sess
 	return session, nil
 }
 
-func (service *authenticationImpl) SignOut(sessionId string) error {
-	return service.sessionsService.DeleteOneBySessionId(sessionId)
+func (service *authenticationImpl) SignOut(sessionID string) error {
+	return service.sessionsService.DeleteOneBySessionID(sessionID)
 }
 
-func (service *authenticationImpl) AuthenticateSession(sessionId string) (entities.User, error) {
-	session, err := service.sessionsService.FindOneBySessionId(sessionId)
+func (service *authenticationImpl) AuthenticateSession(sessionID string) (entities.User, error) {
+	session, err := service.sessionsService.FindOneBySessionID(sessionID)
 
 	if err != nil {
 		return entities.User{}, err
 	}
 
-	user, err := service.usersService.FindOneById(session.UserID)
+	user, err := service.usersService.FindOneByID(session.UserID)
 
 	if err != nil {
 		return entities.User{}, err
 	}
 
 	if user.OrganizationID != "" {
-		organization, err := service.organizationsService.FindOneById(user.OrganizationID)
+		organization, err := service.organizationsService.FindOneByID(user.OrganizationID)
 
 		if err != nil {
 			return entities.User{}, err

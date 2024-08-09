@@ -9,9 +9,9 @@ import (
 
 type JoinOrganizationInvites interface {
 	Create(user entities.User, data entities.JoinOrganizationInvite) (entities.JoinOrganizationInvite, error)
-	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error)
-	FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error)
-	FindOneById(id string) (entities.JoinOrganizationInvite, error)
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error)
+	FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error)
+	FindOneByID(id string) (entities.JoinOrganizationInvite, error)
 	Accept(id string) error
 	Reject(id string, data entities.JoinOrganizationInvite) error
 }
@@ -34,26 +34,26 @@ func (service *joinOrganizationInvitesImpl) Create(user entities.User, data enti
 	return service.repository.Create(data)
 }
 
-func (service *joinOrganizationInvitesImpl) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
-	return service.repository.FindManyByOrganizationId(organizationId, offset, limit)
+func (service *joinOrganizationInvitesImpl) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
+	return service.repository.FindManyByOrganizationID(organizationID, offset, limit)
 }
 
-func (service *joinOrganizationInvitesImpl) FindManyByUserId(userId string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
-	return service.repository.FindManyByUserId(userId, offset, limit)
+func (service *joinOrganizationInvitesImpl) FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationInvite, error) {
+	return service.repository.FindManyByUserID(userID, offset, limit)
 }
 
-func (service *joinOrganizationInvitesImpl) FindOneById(id string) (entities.JoinOrganizationInvite, error) {
-	return service.repository.FindOneById(id)
+func (service *joinOrganizationInvitesImpl) FindOneByID(id string) (entities.JoinOrganizationInvite, error) {
+	return service.repository.FindOneByID(id)
 }
 
 func (service *joinOrganizationInvitesImpl) Accept(id string) error {
-	invite, err := service.repository.FindOneById(id)
+	invite, err := service.repository.FindOneByID(id)
 
 	if err != nil {
 		return err
 	}
 
-	user, err := service.usersService.FindOneById(invite.UserID)
+	user, err := service.usersService.FindOneByID(invite.UserID)
 
 	if err != nil {
 		return err
@@ -62,14 +62,14 @@ func (service *joinOrganizationInvitesImpl) Accept(id string) error {
 	invite.AcceptedAt = time.Now()
 	invite.Status = utils.AcceptedStatus
 
-	if err = service.repository.UpdateOneById(invite.ID, invite); err != nil {
+	if err = service.repository.UpdateOneByID(invite.ID, invite); err != nil {
 		return err
 	}
 
 	user.OrganizationID = invite.OrganizationID
 	user.PlatformRole = utils.OrgMemberPlatformRole
 
-	if err = service.usersService.UpdateOneById(user.ID, user); err != nil {
+	if err = service.usersService.UpdateOneByID(user.ID, user); err != nil {
 		return err
 	}
 
@@ -77,7 +77,7 @@ func (service *joinOrganizationInvitesImpl) Accept(id string) error {
 }
 
 func (service *joinOrganizationInvitesImpl) Reject(id string, data entities.JoinOrganizationInvite) error {
-	invite, err := service.repository.FindOneById(id)
+	invite, err := service.repository.FindOneByID(id)
 
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (service *joinOrganizationInvitesImpl) Reject(id string, data entities.Join
 	invite.RejectedAt = time.Now()
 	invite.RejectReason = data.RejectReason
 
-	if err = service.repository.UpdateOneById(invite.ID, invite); err != nil {
+	if err = service.repository.UpdateOneByID(invite.ID, invite); err != nil {
 		return err
 	}
 

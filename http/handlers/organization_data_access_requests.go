@@ -27,7 +27,7 @@ func NewOrganizationDataAccessRequests(service services.OrganizationDataAccessRe
 }
 
 func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *http.Request) {
-	targetOrganizationId := chi.URLParam(r, "id")
+	targetOrganizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
 	if err := handler.authorizationService.AuthorizeCreateAccessOrganizationDataRequest(user); err != nil {
@@ -42,7 +42,7 @@ func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *
 		return
 	}
 
-	request, err := handler.service.Create(user, targetOrganizationId)
+	request, err := handler.service.Create(user, targetOrganizationID)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -58,11 +58,11 @@ func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *
 	}
 }
 
-func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -83,7 +83,7 @@ func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationId
 		return
 	}
 
-	count, reqs, err := handler.service.FindManyByRequesterOrganizationId(organizationId, int64(limit), int64(offset))
+	count, reqs, err := handler.service.FindManyByRequesterOrganizationID(organizationID, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -98,11 +98,11 @@ func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationId
 	}
 }
 
-func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -123,7 +123,7 @@ func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationId(w 
 		return
 	}
 
-	count, reqs, err := handler.service.FindManyByTargetOrganizationId(organizationId, int64(limit), int64(offset))
+	count, reqs, err := handler.service.FindManyByTargetOrganizationID(organizationID, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -194,11 +194,6 @@ func (handler *OrganizationDataAccessRequests) Reject(w http.ResponseWriter, r *
 	}
 
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err = req.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

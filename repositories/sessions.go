@@ -11,8 +11,8 @@ import (
 
 type Sessions interface {
 	Generate(data entities.Session) (entities.Session, error)
-	FindOneBySessionId(sessionId string) (entities.Session, error)
-	DeleteOneBySessionId(sessionId string) error
+	FindOneBySessionID(sessionID string) (entities.Session, error)
+	DeleteOneBySessionID(sessionID string) error
 }
 
 type sessionsMongo struct {
@@ -39,10 +39,10 @@ func (repositories *sessionsMongo) Generate(data entities.Session) (entities.Ses
 	return model.ToEntity(), nil
 }
 
-func (repositories *sessionsMongo) FindOneBySessionId(sessionId string) (entities.Session, error) {
+func (repositories *sessionsMongo) FindOneBySessionID(sessionID string) (entities.Session, error) {
 	var model models.Session
 
-	filter := bson.M{"session_id": sessionId}
+	filter := bson.M{"session_id": sessionID}
 	if err := repositories.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		return entities.Session{}, err
 	}
@@ -50,8 +50,8 @@ func (repositories *sessionsMongo) FindOneBySessionId(sessionId string) (entitie
 	return model.ToEntity(), nil
 }
 
-func (repositories *sessionsMongo) DeleteOneBySessionId(sessionId string) error {
-	filter := bson.M{"session_id": sessionId}
+func (repositories *sessionsMongo) DeleteOneBySessionID(sessionID string) error {
+	filter := bson.M{"session_id": sessionID}
 	if err := repositories.collection.FindOneAndDelete(context.Background(), filter).Err(); err != nil {
 		return err
 	}

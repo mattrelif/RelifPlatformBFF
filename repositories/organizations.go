@@ -13,8 +13,8 @@ import (
 type Organizations interface {
 	Create(data entities.Organization) (entities.Organization, error)
 	FindMany(offset, limit int64) (int64, []entities.Organization, error)
-	FindOneById(id string) (entities.Organization, error)
-	UpdateOneById(id string, data entities.Organization) error
+	FindOneByID(id string) (entities.Organization, error)
+	UpdateOneByID(id string, data entities.Organization) error
 }
 
 type mongoOrganizations struct {
@@ -69,7 +69,7 @@ func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []en
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizations) FindOneById(id string) (entities.Organization, error) {
+func (repository *mongoOrganizations) FindOneByID(id string) (entities.Organization, error) {
 	var model models.Organization
 
 	filter := bson.M{
@@ -94,7 +94,7 @@ func (repository *mongoOrganizations) FindOneById(id string) (entities.Organizat
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoOrganizations) UpdateOneById(id string, data entities.Organization) error {
+func (repository *mongoOrganizations) UpdateOneByID(id string, data entities.Organization) error {
 	model := models.NewUpdatedOrganization(data)
 
 	update := bson.M{"$set": &model}

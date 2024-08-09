@@ -12,26 +12,26 @@ import (
 
 type Users interface {
 	CreateUser(data entities.User) (entities.User, error)
-	FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error)
-	FindOneById(id string) (entities.User, error)
-	FindOneCompleteById(id string) (entities.User, error)
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.User, error)
+	FindOneByID(id string) (entities.User, error)
+	FindOneCompleteByID(id string) (entities.User, error)
 	FindOneByEmail(email string) (entities.User, error)
 	CountByEmail(email string) (int64, error)
-	CountById(email string) (int64, error)
-	UpdateOneById(id string, data entities.User) error
+	CountByID(email string) (int64, error)
+	UpdateOneByID(id string, data entities.User) error
 }
 
-type usersMongo struct {
+type mongoUsers struct {
 	collection *mongo.Collection
 }
 
 func NewUsersMongo(database *mongo.Database) Users {
-	return &usersMongo{
+	return &mongoUsers{
 		collection: database.Collection("users"),
 	}
 }
 
-func (repository *usersMongo) CreateUser(data entities.User) (entities.User, error) {
+func (repository *mongoUsers) CreateUser(data entities.User) (entities.User, error) {
 	model := models.NewUser(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), &model); err != nil {
@@ -41,14 +41,14 @@ func (repository *usersMongo) CreateUser(data entities.User) (entities.User, err
 	return model.ToEntity(), nil
 }
 
-func (repository *usersMongo) FindManyByOrganizationId(organizationId string, offset, limit int64) (int64, []entities.User, error) {
+func (repository *mongoUsers) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.User, error) {
 	modelList := make([]models.FindUser, 0)
 	entityList := make([]entities.User, 0)
 
 	filter := bson.M{
 		"$and": bson.A{
 			bson.M{
-				"organization_id": organizationId,
+				"organization_id": organizationID,
 			},
 			bson.M{
 				"status": bson.M{
@@ -111,7 +111,7 @@ func (repository *usersMongo) FindManyByOrganizationId(organizationId string, of
 	return count, entityList, nil
 }
 
-func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
+func (repository *mongoUsers) FindOneByID(id string) (entities.User, error) {
 	var model models.User
 
 	filter := bson.M{
@@ -140,7 +140,7 @@ func (repository *usersMongo) FindOneById(id string) (entities.User, error) {
 	return model.ToEntity(), nil
 }
 
-func (repository *usersMongo) FindOneCompleteById(id string) (entities.User, error) {
+func (repository *mongoUsers) FindOneCompleteByID(id string) (entities.User, error) {
 	var model models.FindUser
 
 	filter := bson.M{
@@ -194,7 +194,7 @@ func (repository *usersMongo) FindOneCompleteById(id string) (entities.User, err
 	return model.ToEntity(), nil
 }
 
-func (repository *usersMongo) FindOneByEmail(email string) (entities.User, error) {
+func (repository *mongoUsers) FindOneByEmail(email string) (entities.User, error) {
 	var model models.User
 
 	filter := bson.M{
@@ -223,7 +223,7 @@ func (repository *usersMongo) FindOneByEmail(email string) (entities.User, error
 	return model.ToEntity(), nil
 }
 
-func (repository *usersMongo) CountByEmail(email string) (int64, error) {
+func (repository *mongoUsers) CountByEmail(email string) (int64, error) {
 	filter := bson.M{
 		"$and": bson.A{
 			bson.M{
@@ -248,7 +248,7 @@ func (repository *usersMongo) CountByEmail(email string) (int64, error) {
 	return count, nil
 }
 
-func (repository *usersMongo) CountById(id string) (int64, error) {
+func (repository *mongoUsers) CountByID(id string) (int64, error) {
 	filter := bson.M{
 		"$and": bson.A{
 			bson.M{
@@ -273,7 +273,7 @@ func (repository *usersMongo) CountById(id string) (int64, error) {
 	return count, nil
 }
 
-func (repository *usersMongo) UpdateOneById(id string, data entities.User) error {
+func (repository *mongoUsers) UpdateOneByID(id string, data entities.User) error {
 	model := models.NewUpdatedUser(data)
 
 	update := bson.M{"$set": &model}

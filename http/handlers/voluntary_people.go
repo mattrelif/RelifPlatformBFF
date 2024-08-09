@@ -75,11 +75,11 @@ func (handler *VoluntaryPeople) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (handler *VoluntaryPeople) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *VoluntaryPeople) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -109,7 +109,7 @@ func (handler *VoluntaryPeople) FindManyByOrganizationId(w http.ResponseWriter, 
 		return
 	}
 
-	count, voluntaries, err := handler.service.FindManyByOrganizationId(organizationId, search, int64(limit), int64(offset))
+	count, voluntaries, err := handler.service.FindManyByOrganizationID(organizationID, search, int64(limit), int64(offset))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,7 +124,7 @@ func (handler *VoluntaryPeople) FindManyByOrganizationId(w http.ResponseWriter, 
 	}
 }
 
-func (handler *VoluntaryPeople) FindOneById(w http.ResponseWriter, r *http.Request) {
+func (handler *VoluntaryPeople) FindOneByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
@@ -139,7 +139,7 @@ func (handler *VoluntaryPeople) FindOneById(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	voluntary, err := handler.service.FindOneById(id)
+	voluntary, err := handler.service.FindOneByID(id)
 
 	if err != nil {
 		switch {
@@ -194,7 +194,7 @@ func (handler *VoluntaryPeople) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
+	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -218,7 +218,7 @@ func (handler *VoluntaryPeople) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.InactivateOneById(id); err != nil {
+	if err := handler.service.InactivateOneByID(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

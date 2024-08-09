@@ -8,6 +8,10 @@ import (
 type Environment struct {
 	Environment string `default:"development"`
 
+	Email struct {
+		Domain string `required:"true"`
+	}
+
 	AWS struct {
 		Region string `default:"us-east-1"`
 	}

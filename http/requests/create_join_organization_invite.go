@@ -7,17 +7,17 @@ import (
 )
 
 type CreateJoinOrganizationInvite struct {
-	UserId string `json:"user_id"`
+	UserID string `json:"user_id"`
 }
 
 func (req *CreateJoinOrganizationInvite) Validate() error {
 	return validation.ValidateStruct(req,
-		validation.Field(&req.UserId, validation.Required, is.MongoID),
+		validation.Field(&req.UserID, validation.Required, is.MongoID),
 	)
 }
 
 func (req *CreateJoinOrganizationInvite) ToEntity() entities.JoinOrganizationInvite {
 	return entities.JoinOrganizationInvite{
-		UserID: req.UserId,
+		UserID: req.UserID,
 	}
 }

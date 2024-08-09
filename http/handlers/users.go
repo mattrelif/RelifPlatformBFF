@@ -29,7 +29,7 @@ func NewUsers(service services.Users, authorizationService services.Authorizatio
 func (handler *Users) FindOne(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	user, err := handler.service.FindOneCompleteById(id)
+	user, err := handler.service.FindOneCompleteByID(id)
 
 	if err != nil {
 		switch {
@@ -49,11 +49,11 @@ func (handler *Users) FindOne(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (handler *Users) FindManyByOrganizationId(w http.ResponseWriter, r *http.Request) {
-	organizationId := chi.URLParam(r, "id")
+func (handler *Users) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationId, user); err != nil {
+	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -79,7 +79,7 @@ func (handler *Users) FindManyByOrganizationId(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	count, users, err := handler.service.FindManyByOrganizationId(organizationId, int64(offset), int64(limit))
+	count, users, err := handler.service.FindManyByOrganizationID(organizationID, int64(offset), int64(limit))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -125,7 +125,7 @@ func (handler *Users) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneById(id, req.ToEntity()); err != nil {
+	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -150,7 +150,7 @@ func (handler *Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.InactivateOneById(id); err != nil {
+	if err := handler.service.InactivateOneByID(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
