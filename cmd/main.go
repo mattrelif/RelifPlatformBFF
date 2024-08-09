@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	logger      *zap.Logger
-	environment *settings.Environment
-	awsConfig   aws.Config
+	logger    *zap.Logger
+	stgs      *settings.Settings
+	awsConfig aws.Config
 )
 
 func init() {
@@ -31,33 +31,34 @@ func init() {
 		panic(err)
 	}
 
-	logger.Info("initializing environment")
-
-	environment, err = settings.NewEnvironment()
-
-	if err != nil {
-		logger.Fatal("could not initialize environment settings", zap.Error(err))
-	}
-
 	logger.Info("initializing AWS configuration")
-
-	awsConfig, err = settings.NewAWSConfig(environment.AWS.Region)
+	awsConfig, err = settings.NewAWSConfig(settings.AWSRegion)
 
 	if err != nil {
 		logger.Fatal("could not initialize AWS config", zap.Error(err))
+	}
+
+	logger.Info("initializing Secrets Manager client")
+	secretsManagerClient := clients.NewSecretsManager(awsConfig)
+
+	logger.Info("initializing settings")
+	stgs, err = settings.NewSettings(secretsManagerClient)
+
+	if err != nil {
+		logger.Fatal("could not initialize settings", zap.Error(err))
 	}
 }
 
 func main() {
 	defer logger.Sync()
 
-	mongo, err := clients.NewMongoClient(environment.Mongo.URI, environment.Mongo.ConnectionTimeout)
+	mongo, err := clients.NewMongoClient(stgs.Mongo.URI, stgs.Mongo.ConnectionTimeout)
 
 	if err != nil {
 		logger.Fatal("could not initialize mongo client", zap.Error(err))
 	}
 
-	database := mongo.Database(environment.Mongo.Database)
+	database := mongo.Database(stgs.Mongo.Database)
 
 	sesClient := clients.NewSESClient(awsConfig)
 
@@ -78,7 +79,7 @@ func main() {
 	voluntaryPeopleRepository := repositories.NewMongoVoluntaryPeople(database)
 	productTypesRepository := repositories.NewMongoProductTypesRepository(database)
 
-	sesEmailService := services.NewSesEmail(sesClient, environment.Email.Domain)
+	sesEmailService := services.NewSesEmail(sesClient, stgs.Email.Domain)
 
 	usersService := services.NewUsers(usersRepository)
 	sessionsService := services.NewSessions(sessionsRepository, utils.GenerateUuid)
@@ -135,7 +136,7 @@ func main() {
 	healthHandler := handlers.NewHealth()
 
 	router := http.NewRouter(
-		environment.Router.Context,
+		stgs,
 		authenticateByCookieMiddleware,
 		healthHandler,
 		authHandler,
@@ -155,10 +156,10 @@ func main() {
 		usersHandler,
 		voluntaryPeopleHandler,
 	)
-	server := http.NewServer(router, environment.Server.Port, environment.Server.ReadTimeout, environment.Server.WriteTimeout)
+	server := http.NewServer(router, stgs.Server.Port, stgs.Server.ReadTimeout, stgs.Server.WriteTimeout)
 
 	go func() {
-		logger.Info("starting server", zap.Int("port", environment.Server.Port))
+		logger.Info("starting server", zap.Int("port", stgs.Server.Port))
 		if err = server.Start(); err != nil {
 			logger.Fatal("could not start server", zap.Error(err))
 		}

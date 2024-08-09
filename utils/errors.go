@@ -3,6 +3,12 @@ package utils
 import "errors"
 
 var (
+	ErrMissingAWSRegion              = errors.New("missing AWS_REGION env variable")
+	ErrMissingEnvironmentEnvVariable = errors.New("missing ENVIRONMENT env variable")
+	ErrMissingSecretNameEnvVariable  = errors.New("missing SECRET_NAME env variable")
+)
+
+var (
 	ErrInvalidCredentials           = errors.New("invalid credentials")
 	ErrUnauthorizedAction           = errors.New("unauthorized action")
 	ErrMemberOfInactiveOrganization = errors.New("member of inactive organization")

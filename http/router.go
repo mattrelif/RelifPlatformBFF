@@ -8,11 +8,10 @@ import (
 	"relif/platform-bff/http/handlers"
 	"relif/platform-bff/http/middlewares"
 	"relif/platform-bff/settings"
-	"strings"
 )
 
 func NewRouter(
-	routerContext string,
+	stgs *settings.Settings,
 	authenticateByCookieMiddleware *middlewares.AuthenticateByCookie,
 	healthHandler *handlers.Health,
 	authHandler *handlers.Auth,
@@ -38,20 +37,18 @@ func NewRouter(
 	router.Use(middleware.Logger)
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 
-	if strings.ToLower(settings.ApplicationEnvironment) == "development" {
-		router.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{"http://localhost:3000"},
-			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowedHeaders:   []string{"*"},
-			ExposedHeaders:   []string{"*"},
-			AllowCredentials: true,
-			MaxAge:           300,
-		}))
-	}
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{stgs.Cors.AllowedOrigin},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"*"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 
-	router.Route(routerContext, func(r chi.Router) {
-		r.Get("/health", healthHandler.HealthCheck)
+	router.Get("/health", healthHandler.HealthCheck)
 
+	router.Route(stgs.Router.Context, func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/sign-up", authHandler.SignUp)
 			r.Post("/org-sign-up", authHandler.OrganizationSignUp)
