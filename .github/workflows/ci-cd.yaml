@@ -23,7 +23,7 @@ jobs:
         run: |
           #!/bin/bash
           
-          LATEST_TAG=$(git describe --tags --abbrev=0 || echo "v.0.0.0")
+          LATEST_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")
           
           IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
           
