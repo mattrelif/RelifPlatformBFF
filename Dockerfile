@@ -17,4 +17,4 @@ WORKDIR /app
 
 COPY --from=builder /app/server ./server
 
-RUN [ "./server" ]
+CMD [ "./server" ]
