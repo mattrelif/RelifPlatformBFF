@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"relif/platform-bff/http/handlers"
 	"relif/platform-bff/http/middlewares"
+	"relif/platform-bff/settings"
+	"strings"
 )
 
 func NewRouter(
-	environment,
 	routerContext string,
 	authenticateByCookieMiddleware *middlewares.AuthenticateByCookie,
 	healthHandler *handlers.Health,
@@ -37,7 +38,7 @@ func NewRouter(
 	router.Use(middleware.Logger)
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 
-	if environment == "development" {
+	if strings.ToLower(settings.ApplicationEnvironment) == "development" {
 		router.Use(cors.Handler(cors.Options{
 			AllowedOrigins:   []string{"http://localhost:3000"},
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

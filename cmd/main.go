@@ -131,7 +131,6 @@ func main() {
 	healthHandler := handlers.NewHealth()
 
 	router := http.NewRouter(
-		environment.Environment,
 		environment.Router.Context,
 		authenticateByCookieMiddleware,
 		healthHandler,
