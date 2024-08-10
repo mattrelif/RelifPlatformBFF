@@ -37,18 +37,18 @@ func NewRouter(
 	router.Use(middleware.Logger)
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 
-	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{stgs.CorsAllowedOrigin},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"*"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
-
 	router.Get("/health", healthHandler.HealthCheck)
 
 	router.Route(stgs.RouterContext, func(r chi.Router) {
+		r.Use(cors.Handler(cors.Options{
+			AllowedOrigins:   []string{stgs.CorsAllowedOrigin},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"*"},
+			ExposedHeaders:   []string{"*"},
+			AllowCredentials: true,
+			MaxAge:           300,
+		}))
+
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/sign-up", authHandler.SignUp)
 			r.Post("/org-sign-up", authHandler.OrganizationSignUp)
