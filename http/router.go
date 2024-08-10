@@ -46,6 +46,7 @@ func NewRouter(
 			AllowedHeaders:   []string{"*"},
 			ExposedHeaders:   []string{"*"},
 			AllowCredentials: true,
+			Debug:            true,
 			MaxAge:           300,
 		}))
 
