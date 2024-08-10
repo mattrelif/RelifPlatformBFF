@@ -17,13 +17,10 @@ type Settings struct {
 
 	RouterContext string `default:"/api/v1" json:"ROUTER_CONTEXT"`
 
-	ServerPort         string         `default:"8080" json:"SERVER_PORT"`
-	ServerWriteTimeout utils.Duration `default:"10s" json:"SERVER_WRITE_TIMEOUT"`
-	ServerReadTimeout  utils.Duration `default:"10s" json:"SERVER_READ_TIMEOUT"`
+	ServerPort string `default:"8080" json:"SERVER_PORT"`
 
-	MongoURI               string         `default:"mongodb://127.0.0.1:27017" json:"MONGO_URI"`
-	MongoDatabase          string         `default:"test" json:"MONGO_DATABASE"`
-	MongoConnectionTimeout utils.Duration `default:"10s" json:"MONGO_CONNECTION_TIMEOUT"`
+	MongoURI      string `default:"mongodb://127.0.0.1:27017" json:"MONGO_URI"`
+	MongoDatabase string `default:"test" json:"MONGO_DATABASE"`
 }
 
 func NewSettings(secretsManagerClient *secretsmanager.Client) (*Settings, error) {

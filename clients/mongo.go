@@ -4,13 +4,13 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"relif/platform-bff/utils"
+	"time"
 )
 
-func NewMongoClient(uri string, connectionTimeout utils.Duration) (*mongo.Client, error) {
+func NewMongoClient(uri string) (*mongo.Client, error) {
 	var client *mongo.Client
 
-	ctx, cancel := context.WithTimeout(context.Background(), connectionTimeout.Duration)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	opts := options.Client().ApplyURI(uri)

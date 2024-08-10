@@ -5,20 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"relif/platform-bff/utils"
+	"time"
 )
 
 type Server struct {
 	server *http.Server
 }
 
-func NewServer(router http.Handler, port string, readTimeout, writeTimeout utils.Duration) *Server {
+func NewServer(router http.Handler, port string) *Server {
 	return &Server{
 		server: &http.Server{
 			Addr:         fmt.Sprintf(":%s", port),
 			Handler:      router,
-			ReadTimeout:  readTimeout.Duration,
-			WriteTimeout: writeTimeout.Duration,
+			ReadTimeout:  time.Second * 10,
+			WriteTimeout: time.Second * 10,
 		},
 	}
 }

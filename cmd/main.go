@@ -52,7 +52,7 @@ func init() {
 func main() {
 	defer logger.Sync()
 
-	mongo, err := clients.NewMongoClient(stgs.MongoURI, stgs.MongoConnectionTimeout)
+	mongo, err := clients.NewMongoClient(stgs.MongoURI)
 
 	if err != nil {
 		logger.Fatal("could not initialize mongo client", zap.Error(err))
@@ -156,7 +156,7 @@ func main() {
 		usersHandler,
 		voluntaryPeopleHandler,
 	)
-	server := http.NewServer(router, stgs.ServerPort, stgs.ServerReadTimeout, stgs.ServerWriteTimeout)
+	server := http.NewServer(router, stgs.ServerPort)
 
 	go func() {
 		logger.Info("starting server", zap.String("port", stgs.ServerPort))
