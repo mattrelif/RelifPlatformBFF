@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -41,7 +42,7 @@ func NewRouter(
 		r.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{stgs.CorsAllowedOrigin},
+			AllowedOrigins:   []string{fmt.Sprintf("http://%s", stgs.CorsAllowedDomain), fmt.Sprintf("https://%s", stgs.CorsAllowedDomain)},
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"*"},
 			ExposedHeaders:   []string{"*"},

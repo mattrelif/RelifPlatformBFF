@@ -11,7 +11,7 @@ import (
 )
 
 type Settings struct {
-	CorsAllowedOrigin string `default:"http://localhost:3000" json:"CORS_ALLOWED_ORIGIN"`
+	CorsAllowedDomain string `default:"http://localhost:3000" json:"CORS_ALLOWED_DOMAIN"`
 
 	EmailDomain string `required:"true" json:"EMAIL_DOMAIN"`
 
