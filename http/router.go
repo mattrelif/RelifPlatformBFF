@@ -33,11 +33,12 @@ func NewRouter(
 ) http.Handler {
 	router := chi.NewRouter()
 
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Logger)
+
 	router.Get("/health", healthHandler.HealthCheck)
 
 	router.Route(stgs.RouterContext, func(r chi.Router) {
-		r.Use(middleware.RequestID)
-		r.Use(middleware.Logger)
 		r.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 		r.Use(cors.Handler(cors.Options{
