@@ -11,16 +11,16 @@ import (
 )
 
 type Settings struct {
-	CorsAllowedDomain string `default:"http://localhost:3000" json:"CORS_ALLOWED_DOMAIN"`
+	CorsAllowedDomain string `default:"localhost:3000" split_words:"true" json:"CORS_ALLOWED_DOMAIN"`
 
-	EmailDomain string `required:"true" json:"EMAIL_DOMAIN"`
+	EmailDomain string `required:"true" split_words:"true" json:"EMAIL_DOMAIN"`
 
-	RouterContext string `default:"/api/v1" json:"ROUTER_CONTEXT"`
+	RouterContext string `default:"/api/v1" split_words:"true" json:"ROUTER_CONTEXT"`
 
-	ServerPort string `default:"8080" json:"SERVER_PORT"`
+	ServerPort string `default:"8080" split_words:"true" json:"SERVER_PORT"`
 
-	MongoURI      string `default:"mongodb://127.0.0.1:27017" json:"MONGO_URI"`
-	MongoDatabase string `default:"test" json:"MONGO_DATABASE"`
+	MongoURI      string `default:"mongodb://127.0.0.1:27017" split_words:"true" json:"MONGO_URI"`
+	MongoDatabase string `default:"test" split_words:"true" json:"MONGO_DATABASE"`
 }
 
 func NewSettings(secretsManagerClient *secretsmanager.Client) (*Settings, error) {
