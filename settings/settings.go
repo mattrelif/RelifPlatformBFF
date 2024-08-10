@@ -8,33 +8,22 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"relif/platform-bff/utils"
 	"strings"
-	"time"
 )
 
 type Settings struct {
-	Cors struct {
-		AllowedOrigin string `default:"http://localhost:3000" json:"CORS_ALLOWED_ORIGIN"`
-	}
+	CorsAllowedOrigin string `default:"http://localhost:3000" json:"CORS_ALLOWED_ORIGIN"`
 
-	Email struct {
-		Domain string `required:"true" json:"EMAIL_DOMAIN"`
-	}
+	EmailDomain string `required:"true" json:"EMAIL_DOMAIN"`
 
-	Router struct {
-		Context string `default:"/api/v1" json:"ROUTER_CONTEXT"`
-	}
+	RouterContext string `default:"/api/v1" json:"ROUTER_CONTEXT"`
 
-	Server struct {
-		Port         int           `default:"8080" json:"SERVER_PORT"`
-		WriteTimeout time.Duration `default:"10s" json:"SERVER_WRITE_TIMEOUT"`
-		ReadTimeout  time.Duration `default:"10s" json:"SERVER_READ_TIMEOUT"`
-	}
+	ServerPort         string         `default:"8080" json:"SERVER_PORT"`
+	ServerWriteTimeout utils.Duration `default:"10s" json:"SERVER_WRITE_TIMEOUT"`
+	ServerReadTimeout  utils.Duration `default:"10s" json:"SERVER_READ_TIMEOUT"`
 
-	Mongo struct {
-		URI               string        `default:"mongodb://127.0.0.1:27017" json:"MONGO_URI"`
-		Database          string        `default:"test" json:"MONGO_DATABASE"`
-		ConnectionTimeout time.Duration `default:"10s" json:"MONGO_CONNECTION_TIMEOUT"`
-	}
+	MongoURI               string         `default:"mongodb://127.0.0.1:27017" json:"MONGO_URI"`
+	MongoDatabase          string         `default:"test" json:"MONGO_DATABASE"`
+	MongoConnectionTimeout utils.Duration `default:"10s" json:"MONGO_CONNECTION_TIMEOUT"`
 }
 
 func NewSettings(secretsManagerClient *secretsmanager.Client) (*Settings, error) {

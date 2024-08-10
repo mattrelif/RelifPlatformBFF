@@ -52,13 +52,13 @@ func init() {
 func main() {
 	defer logger.Sync()
 
-	mongo, err := clients.NewMongoClient(stgs.Mongo.URI, stgs.Mongo.ConnectionTimeout)
+	mongo, err := clients.NewMongoClient(stgs.MongoURI, stgs.MongoConnectionTimeout)
 
 	if err != nil {
 		logger.Fatal("could not initialize mongo client", zap.Error(err))
 	}
 
-	database := mongo.Database(stgs.Mongo.Database)
+	database := mongo.Database(stgs.MongoDatabase)
 
 	sesClient := clients.NewSESClient(awsConfig)
 
@@ -79,7 +79,7 @@ func main() {
 	voluntaryPeopleRepository := repositories.NewMongoVoluntaryPeople(database)
 	productTypesRepository := repositories.NewMongoProductTypesRepository(database)
 
-	sesEmailService := services.NewSesEmail(sesClient, stgs.Email.Domain)
+	sesEmailService := services.NewSesEmail(sesClient, stgs.EmailDomain)
 
 	usersService := services.NewUsers(usersRepository)
 	sessionsService := services.NewSessions(sessionsRepository, utils.GenerateUuid)
@@ -156,10 +156,10 @@ func main() {
 		usersHandler,
 		voluntaryPeopleHandler,
 	)
-	server := http.NewServer(router, stgs.Server.Port, stgs.Server.ReadTimeout, stgs.Server.WriteTimeout)
+	server := http.NewServer(router, stgs.ServerPort, stgs.ServerReadTimeout, stgs.ServerWriteTimeout)
 
 	go func() {
-		logger.Info("starting server", zap.Int("port", stgs.Server.Port))
+		logger.Info("starting server", zap.String("port", stgs.ServerPort))
 		if err = server.Start(); err != nil {
 			logger.Fatal("could not start server", zap.Error(err))
 		}

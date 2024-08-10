@@ -38,7 +38,7 @@ func NewRouter(
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{stgs.Cors.AllowedOrigin},
+		AllowedOrigins:   []string{stgs.CorsAllowedOrigin},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"*"},
@@ -48,7 +48,7 @@ func NewRouter(
 
 	router.Get("/health", healthHandler.HealthCheck)
 
-	router.Route(stgs.Router.Context, func(r chi.Router) {
+	router.Route(stgs.RouterContext, func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/sign-up", authHandler.SignUp)
 			r.Post("/org-sign-up", authHandler.OrganizationSignUp)
