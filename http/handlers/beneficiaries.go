@@ -29,9 +29,10 @@ func NewBeneficiaries(service services.Beneficiaries, authorizationService servi
 func (handler *Beneficiaries) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateBeneficiary
 
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -54,7 +55,7 @@ func (handler *Beneficiaries) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	beneficiary, err := handler.service.Create(user.OrganizationID, req.ToEntity())
+	beneficiary, err := handler.service.Create(organizationID, req.ToEntity())
 
 	if err != nil {
 		switch {
@@ -238,7 +239,7 @@ func (handler *Beneficiaries) FindOneByID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	beneficiary, err := handler.service.FindOneByID(id)
+	beneficiary, err := handler.service.FindOneCompleteByID(id)
 
 	if err != nil {
 		switch {

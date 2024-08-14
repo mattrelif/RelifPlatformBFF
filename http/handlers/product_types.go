@@ -29,9 +29,10 @@ func NewProductTypes(service services.ProductTypes, authorizationService service
 func (handler *ProductTypes) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateProductType
 
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUnauthorizedAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
@@ -61,7 +62,7 @@ func (handler *ProductTypes) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productType, err := handler.service.Create(user, req.ToEntity())
+	productType, err := handler.service.Create(organizationID, req.ToEntity())
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -140,7 +141,7 @@ func (handler *ProductTypes) FindOneByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	productType, err := handler.service.FindOneByID(id)
+	productType, err := handler.service.FindOneCompleteByID(id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

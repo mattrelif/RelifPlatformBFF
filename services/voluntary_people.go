@@ -7,7 +7,7 @@ import (
 )
 
 type VoluntaryPeople interface {
-	Create(user entities.User, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
+	Create(organizationID string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
 	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
 	FindOneByID(id string) (entities.VoluntaryPerson, error)
 	UpdateOneByID(id string, data entities.VoluntaryPerson) error
@@ -24,7 +24,7 @@ func NewVoluntaryPeople(repository repositories.VoluntaryPeople) VoluntaryPeople
 	}
 }
 
-func (service *voluntaryPeopleImpl) Create(user entities.User, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
+func (service *voluntaryPeopleImpl) Create(organizationID string, data entities.VoluntaryPerson) (entities.VoluntaryPerson, error) {
 	exists, err := service.ExistsOneByEmail(data.Email)
 
 	if err != nil {
@@ -35,7 +35,7 @@ func (service *voluntaryPeopleImpl) Create(user entities.User, data entities.Vol
 		return entities.VoluntaryPerson{}, utils.ErrVoluntaryPersonAlreadyExists
 	}
 
-	data.OrganizationID = user.OrganizationID
+	data.OrganizationID = organizationID
 
 	return service.repository.Create(data)
 }

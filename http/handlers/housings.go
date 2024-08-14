@@ -29,9 +29,10 @@ func NewHousings(service services.Housings, authorizationService services.Author
 func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateHousing
 
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -54,7 +55,7 @@ func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	housing, err := handler.service.Create(user, req.ToEntity())
+	housing, err := handler.service.Create(organizationID, req.ToEntity())
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -9,7 +9,8 @@ type ProductType struct {
 	Brand          string
 	Category       string
 	OrganizationID string
-	TotalInStock   int
+	Organization   Organization
+	UnitType       string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

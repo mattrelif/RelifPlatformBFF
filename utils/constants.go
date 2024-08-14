@@ -24,3 +24,8 @@ var (
 	ManagerOrganizationType     = "MANAGER"
 	CoordinatorOrganizationType = "COORDINATOR"
 )
+
+var (
+	HousingLocationType      = "HOUSING"
+	OrganizationLocationType = "ORGANIZATION"
+)

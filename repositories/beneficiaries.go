@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
@@ -15,6 +16,7 @@ type Beneficiaries interface {
 	FindManyByRoomID(roomID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
 	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
 	FindOneByID(id string) (entities.Beneficiary, error)
+	FindOneCompleteByID(id string) (entities.Beneficiary, error)
 	CountByEmail(email string) (int64, error)
 	UpdateOneByID(id string, data entities.Beneficiary) error
 }
@@ -391,6 +393,35 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationID(organizationID, s
 }
 
 func (repository *mongoBeneficiaries) FindOneByID(id string) (entities.Beneficiary, error) {
+	var model models.Beneficiary
+
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{
+				"_id": id,
+			},
+			bson.M{
+				"status": bson.M{
+					"$not": bson.M{
+						"$eq": utils.InactiveStatus,
+					},
+				},
+			},
+		},
+	}
+
+	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.Beneficiary{}, utils.ErrBeneficiaryNotFound
+		}
+
+		return entities.Beneficiary{}, err
+	}
+
+	return model.ToEntity(), nil
+}
+
+func (repository *mongoBeneficiaries) FindOneCompleteByID(id string) (entities.Beneficiary, error) {
 	var model models.FindBeneficiary
 
 	filter := bson.M{

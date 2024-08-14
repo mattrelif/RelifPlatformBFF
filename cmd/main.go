@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	logger    *zap.Logger
-	stgs      *settings.Settings
-	awsConfig aws.Config
+	logger           *zap.Logger
+	settingsInstance *settings.Settings
+	awsConfig        aws.Config
 )
 
 func init() {
@@ -42,7 +42,7 @@ func init() {
 	secretsManagerClient := clients.NewSecretsManager(awsConfig)
 
 	logger.Info("initializing settings")
-	stgs, err = settings.NewSettings(secretsManagerClient)
+	settingsInstance, err = settings.NewSettings(secretsManagerClient)
 
 	if err != nil {
 		logger.Fatal("could not initialize settings", zap.Error(err))
@@ -52,13 +52,13 @@ func init() {
 func main() {
 	defer logger.Sync()
 
-	mongo, err := clients.NewMongoClient(stgs.MongoURI)
+	mongo, err := clients.NewMongoClient(settingsInstance.MongoURI)
 
 	if err != nil {
 		logger.Fatal("could not initialize mongo client", zap.Error(err))
 	}
 
-	database := mongo.Database(stgs.MongoDatabase)
+	database := mongo.Database(settingsInstance.MongoDatabase)
 
 	sesClient := clients.NewSESClient(awsConfig)
 
@@ -78,8 +78,11 @@ func main() {
 	beneficiaryAllocationsRepository := repositories.NewMongoBeneficiaryAllocations(database)
 	voluntaryPeopleRepository := repositories.NewMongoVoluntaryPeople(database)
 	productTypesRepository := repositories.NewMongoProductTypesRepository(database)
+	productTypesAllocationRepository := repositories.NewMongoProductTypeAllocations(database)
+	productsInStoragesRepository := repositories.NewMongoProductsInStorages(database)
+	donationsRepository := repositories.NewDonations(database)
 
-	sesEmailService := services.NewSesEmail(sesClient, stgs.EmailDomain)
+	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain)
 
 	usersService := services.NewUsers(usersRepository)
 	sessionsService := services.NewSessions(sessionsRepository, utils.GenerateUuid)
@@ -98,6 +101,9 @@ func main() {
 	beneficiaryAllocationsService := services.NewBeneficiaryAllocations(beneficiaryAllocationsRepository, beneficiariesService, housingRoomsService, housingsService)
 	voluntaryPeopleService := services.NewVoluntaryPeople(voluntaryPeopleRepository)
 	productTypesService := services.NewProductTypes(productTypesRepository)
+	productsInStoragesService := services.NewProductsInStorages(productsInStoragesRepository)
+	productTypesAllocationService := services.NewProductTypeAllocations(productTypesAllocationRepository, productTypesService, productsInStoragesService)
+	donationsService := services.NewDonations(donationsRepository, productsInStoragesService, beneficiariesService)
 
 	authorizationService := services.NewAuthorization(
 		usersService,
@@ -132,11 +138,13 @@ func main() {
 	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(voluntaryPeopleService, authorizationService)
 	productTypesHandler := handlers.NewProductTypes(productTypesService, authorizationService)
 	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(organizationsDataAccessGrantsService, authorizationService)
+	productTypesAllocationHandler := handlers.NewProductTypeAllocations(productTypesAllocationService, authorizationService)
+	donationsHandler := handlers.NewDonations(donationsService, authorizationService)
 
 	healthHandler := handlers.NewHealth()
 
 	router := http.NewRouter(
-		stgs,
+		settingsInstance,
 		authenticateByCookieMiddleware,
 		healthHandler,
 		authHandler,
@@ -155,11 +163,13 @@ func main() {
 		updateOrganizationTypeRequestsHandler,
 		usersHandler,
 		voluntaryPeopleHandler,
+		productTypesAllocationHandler,
+		donationsHandler,
 	)
-	server := http.NewServer(router, stgs.ServerPort)
+	server := http.NewServer(router, settingsInstance.ServerPort)
 
 	go func() {
-		logger.Info("starting server", zap.String("port", stgs.ServerPort))
+		logger.Info("starting server", zap.String("port", settingsInstance.ServerPort))
 		if err = server.Start(); err != nil {
 			logger.Fatal("could not start server", zap.Error(err))
 		}

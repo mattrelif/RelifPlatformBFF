@@ -13,7 +13,7 @@ type Authorization interface {
 	AuthorizeAccessPrivateOrganizationData(organizationID string, user entities.User) error
 	AuthorizeMutateOrganizationData(organizationID string, user entities.User) error
 	AuthorizeCreateOrganization(user entities.User) error
-	AuthorizeCreateOrganizationResource(user entities.User) error
+	AuthorizeCreateOrganizationResource(user entities.User, organizationID string) error
 	AuthorizeCreateAccessOrganizationDataRequest(user entities.User) error
 	AuthorizeMutateAccessOrganizationDataRequestData(requestID string, user entities.User) error
 	AuthorizeMutateOrganizationDataAccessGrantsData(grantID string, user entities.User) error
@@ -33,6 +33,7 @@ type Authorization interface {
 	AuthorizeMutateVoluntaryPersonData(voluntaryID string, user entities.User) error
 	AuthorizeAccessProductTypeData(typeID string, user entities.User) error
 	AuthorizeMutateProductTypeData(typeID string, user entities.User) error
+	AuthorizeCreateProductTypeResource(productTypeID string, user entities.User) error
 }
 
 type authorizationImpl struct {
@@ -148,8 +149,8 @@ func (service *authorizationImpl) AuthorizeCreateOrganization(user entities.User
 	return nil
 }
 
-func (service *authorizationImpl) AuthorizeCreateOrganizationResource(user entities.User) error {
-	if (user.OrganizationID != "" && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
+func (service *authorizationImpl) AuthorizeCreateOrganizationResource(user entities.User, organizationID string) error {
+	if (user.OrganizationID != organizationID && user.OrganizationID == "" && user.PlatformRole != utils.OrgAdminPlatformRole) && user.PlatformRole != utils.RelifMemberPlatformRole {
 		return utils.ErrUnauthorizedAction
 	}
 
@@ -225,7 +226,7 @@ func (service *authorizationImpl) AuthorizeCreateHousingResource(housingID strin
 		return utils.ErrUnauthorizedAction
 	}
 
-	return service.AuthorizeCreateOrganizationResource(user)
+	return service.AuthorizeCreateOrganizationResource(user, housing.OrganizationID)
 }
 
 func (service *authorizationImpl) AuthorizeMutateJoinOrganizationInviteData(inviteID string, user entities.User) error {
@@ -325,7 +326,7 @@ func (service *authorizationImpl) AuthorizeCreateBeneficiaryResource(beneficiary
 		return utils.ErrUnauthorizedAction
 	}
 
-	return service.AuthorizeCreateOrganizationResource(user)
+	return service.AuthorizeCreateOrganizationResource(user, beneficiary.CurrentOrganizationID)
 }
 
 func (service *authorizationImpl) AuthorizeAccessVoluntaryPersonData(voluntaryID string, user entities.User) error {
@@ -366,4 +367,14 @@ func (service *authorizationImpl) AuthorizeMutateProductTypeData(typeID string, 
 	}
 
 	return service.AuthorizeMutateOrganizationData(productType.OrganizationID, user)
+}
+
+func (service *authorizationImpl) AuthorizeCreateProductTypeResource(productTypeID string, user entities.User) error {
+	productType, err := service.productTypesService.FindOneByID(productTypeID)
+
+	if err != nil {
+		return err
+	}
+
+	return service.AuthorizeCreateOrganizationResource(user, productType.OrganizationID)
 }

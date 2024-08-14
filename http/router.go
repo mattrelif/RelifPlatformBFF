@@ -12,7 +12,7 @@ import (
 )
 
 func NewRouter(
-	stgs *settings.Settings,
+	settingsInstance *settings.Settings,
 	authenticateByCookieMiddleware *middlewares.AuthenticateByCookie,
 	healthHandler *handlers.Health,
 	authHandler *handlers.Auth,
@@ -31,18 +31,20 @@ func NewRouter(
 	updateOrganizationTypeRequestsHandler *handlers.UpdateOrganizationTypeRequests,
 	usersHandler *handlers.Users,
 	voluntaryPeopleHandler *handlers.VoluntaryPeople,
+	productTypeAllocationsHandler *handlers.ProductTypeAllocations,
+	donationsHandler *handlers.Donations,
 ) http.Handler {
 	router := chi.NewRouter()
 
 	router.Get("/health", healthHandler.HealthCheck)
 
-	router.Route(stgs.RouterContext, func(r chi.Router) {
+	router.Route(settingsInstance.RouterContext, func(r chi.Router) {
 		r.Use(middleware.RequestID)
 		r.Use(middleware.Logger)
 		r.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{fmt.Sprintf("http://%s", stgs.CorsAllowedDomain), fmt.Sprintf("https://%s", stgs.CorsAllowedDomain)},
+			AllowedOrigins:   []string{fmt.Sprintf("http://%s", settingsInstance.CorsAllowedDomain), fmt.Sprintf("https://%s", settingsInstance.CorsAllowedDomain)},
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"*"},
 			ExposedHeaders:   []string{"*"},
@@ -167,8 +169,10 @@ func NewRouter(
 
 				r.Post("/{id}/allocate", beneficiaryAllocationsHandler.Allocate)
 				r.Post("/{id}/reallocate", beneficiaryAllocationsHandler.Reallocate)
+				r.Post("/{id}/donations", donationsHandler.Create)
 
 				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryID)
+				r.Get("/{id}/donations", donationsHandler.FindManyByBeneficiaryID)
 			})
 
 			r.Route("/voluntary-people", func(r chi.Router) {
@@ -181,6 +185,9 @@ func NewRouter(
 				r.Get("/{id}", productTypesHandler.FindOneByID)
 				r.Put("/{id}", productTypesHandler.Update)
 				r.Delete("/{id}", productTypesHandler.Delete)
+
+				r.Post("/{id}/allocate", productTypeAllocationsHandler.Allocate)
+				r.Post("/{id}/reallocate", productTypeAllocationsHandler.Reallocate)
 			})
 		})
 	})

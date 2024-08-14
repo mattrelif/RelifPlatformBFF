@@ -8,15 +8,16 @@ import (
 type ProductTypes []ProductType
 
 type ProductType struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name"`
-	Description    string    `json:"description"`
-	Brand          string    `json:"brand"`
-	Category       string    `json:"category"`
-	OrganizationID string    `json:"organization_id"`
-	TotalInStock   int       `json:"total_in_stock"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             string       `json:"id"`
+	Name           string       `json:"name"`
+	Description    string       `json:"description"`
+	Brand          string       `json:"brand"`
+	Category       string       `json:"category"`
+	OrganizationID string       `json:"organization_id"`
+	Organization   Organization `json:"organization"`
+	UnitType       string       `json:"unit_type"`
+	CreatedAt      time.Time    `json:"created_at"`
+	UpdatedAt      time.Time    `json:"updated_at"`
 }
 
 func NewProductType(entity entities.ProductType) ProductType {
@@ -26,7 +27,8 @@ func NewProductType(entity entities.ProductType) ProductType {
 		Description:    entity.Description,
 		Category:       entity.Category,
 		OrganizationID: entity.OrganizationID,
-		TotalInStock:   entity.TotalInStock,
+		Organization:   NewOrganization(entity.Organization),
+		UnitType:       entity.UnitType,
 		CreatedAt:      entity.CreatedAt,
 		UpdatedAt:      entity.UpdatedAt,
 	}

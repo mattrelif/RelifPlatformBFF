@@ -12,6 +12,7 @@ type Beneficiaries interface {
 	FindManyByRoomID(roomID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
 	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
 	FindOneByID(id string) (entities.Beneficiary, error)
+	FindOneCompleteByID(id string) (entities.Beneficiary, error)
 	UpdateOneByID(id string, data entities.Beneficiary) error
 	InactivateOneByID(id string) error
 	ExistsByEmail(email string) (bool, error)
@@ -57,6 +58,10 @@ func (service *beneficiariesImpl) FindManyByOrganizationID(roomID, search string
 
 func (service *beneficiariesImpl) FindOneByID(id string) (entities.Beneficiary, error) {
 	return service.repository.FindOneByID(id)
+}
+
+func (service *beneficiariesImpl) FindOneCompleteByID(id string) (entities.Beneficiary, error) {
+	return service.repository.FindOneCompleteByID(id)
 }
 
 func (service *beneficiariesImpl) UpdateOneByID(id string, data entities.Beneficiary) error {

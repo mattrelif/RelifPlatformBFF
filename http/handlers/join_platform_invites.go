@@ -29,9 +29,10 @@ func NewJoinPlatformInvites(service services.JoinPlatformInvites, authorizationS
 func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateJoinPlatformInvite
 
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}

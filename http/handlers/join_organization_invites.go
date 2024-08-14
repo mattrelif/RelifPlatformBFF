@@ -29,9 +29,10 @@ func NewJoinOrganizationInvites(service services.JoinOrganizationInvites, author
 func (handler *JoinOrganizationInvites) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateJoinOrganizationInvite
 
+	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user); err != nil {
+	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}

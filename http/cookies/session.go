@@ -15,6 +15,6 @@ func NewSessionCookie(sessionID string, expiresAt time.Time) *http.Cookie {
 		HttpOnly: false,
 		Secure:   true,
 		Expires:  expiresAt,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 	}
 }

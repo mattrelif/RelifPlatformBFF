@@ -10,6 +10,7 @@ type CreateProductType struct {
 	Description string `json:"description"`
 	Brand       string `json:"brand"`
 	Category    string `json:"category"`
+	UnitType    string `json:"unit_type"`
 }
 
 func (req *CreateProductType) Validate() error {
@@ -17,6 +18,7 @@ func (req *CreateProductType) Validate() error {
 		validation.Field(&req.Name, validation.Required),
 		validation.Field(&req.Brand, validation.Required),
 		validation.Field(&req.Category, validation.Required),
+		validation.Field(&req.UnitType, validation.Required),
 	)
 }
 
@@ -26,5 +28,6 @@ func (req *CreateProductType) ToEntity() entities.ProductType {
 		Description: req.Description,
 		Brand:       req.Brand,
 		Category:    req.Category,
+		UnitType:    req.UnitType,
 	}
 }
