@@ -3,6 +3,7 @@ package services
 import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/repositories"
+	"relif/platform-bff/utils"
 )
 
 type Donations interface {
@@ -11,16 +12,16 @@ type Donations interface {
 }
 
 type donationsImpl struct {
-	repository                repositories.Donations
-	productsInStoragesService ProductsInStorages
-	beneficiariesService      Beneficiaries
+	repository            repositories.Donations
+	storageRecordsService StorageRecords
+	beneficiariesService  Beneficiaries
 }
 
-func NewDonations(repository repositories.Donations, productsInStoragesService ProductsInStorages, beneficiariesService Beneficiaries) Donations {
+func NewDonations(repository repositories.Donations, storageRecordsService StorageRecords, beneficiariesService Beneficiaries) Donations {
 	return &donationsImpl{
-		repository:                repository,
-		productsInStoragesService: productsInStoragesService,
-		beneficiariesService:      beneficiariesService,
+		repository:            repository,
+		storageRecordsService: storageRecordsService,
+		beneficiariesService:  beneficiariesService,
 	}
 }
 
@@ -31,25 +32,25 @@ func (service *donationsImpl) Create(beneficiaryID string, data entities.Donatio
 		return entities.Donation{}, err
 	}
 
-	ids, err := service.productsInStoragesService.FindManyIDsByLocation(data.From, data.Quantity)
+	record, err := service.storageRecordsService.FindOneByProductTypeIDAndLocation(data.ProductTypeID, data.From)
 
 	if err != nil {
 		return entities.Donation{}, err
 	}
 
-	if err = service.productsInStoragesService.DeleteManyByIDs(ids); err != nil {
-		return entities.Donation{}, err
+	if record.ID != "" {
+		record.Quantity -= data.Quantity
+
+		if err = service.storageRecordsService.UpdateOneByID(record.ID, record); err != nil {
+			return entities.Donation{}, err
+		}
+	} else {
+		return entities.Donation{}, utils.ErrStorageRecordNotFound
 	}
 
 	data.OrganizationID = beneficiary.CurrentOrganizationID
 
-	donation, err := service.repository.Create(data)
-
-	if err != nil {
-		return entities.Donation{}, err
-	}
-
-	return donation, nil
+	return service.repository.Create(data)
 }
 
 func (service *donationsImpl) FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.Donation, error) {

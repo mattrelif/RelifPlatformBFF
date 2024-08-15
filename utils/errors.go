@@ -64,3 +64,7 @@ var (
 var (
 	ErrProductTypeNotFound = errors.New("product type with given data not found")
 )
+
+var (
+	ErrStorageRecordNotFound = errors.New("storage record with given data not found")
+)

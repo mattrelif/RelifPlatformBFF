@@ -12,20 +12,20 @@ type ProductTypeAllocations interface {
 }
 
 type productTypeAllocationsImpl struct {
-	repository                repositories.ProductTypeAllocations
-	productTypesService       ProductTypes
-	productsInStoragesService ProductsInStorages
+	repository            repositories.ProductTypeAllocations
+	productTypesService   ProductTypes
+	storageRecordsService StorageRecords
 }
 
 func NewProductTypeAllocations(
 	repository repositories.ProductTypeAllocations,
 	productTypesService ProductTypes,
-	productsInStoragesService ProductsInStorages,
+	storageRecordsService StorageRecords,
 ) ProductTypeAllocations {
 	return &productTypeAllocationsImpl{
-		repository:                repository,
-		productTypesService:       productTypesService,
-		productsInStoragesService: productsInStoragesService,
+		repository:            repository,
+		productTypesService:   productTypesService,
+		storageRecordsService: storageRecordsService,
 	}
 }
 
@@ -36,18 +36,32 @@ func (service *productTypeAllocationsImpl) CreateEntrance(productTypeID string, 
 		return entities.ProductTypeAllocation{}, err
 	}
 
-	data.OrganizationID = productType.OrganizationID
-	data.Type = utils.EntranceType
+	record, err := service.storageRecordsService.FindOneByProductTypeIDAndLocation(productType.ID, data.To)
 
-	product := entities.ProductInStorage{
-		ProductTypeID:  data.ProductTypeID,
-		Location:       data.To,
-		OrganizationID: data.OrganizationID,
-	}
-
-	if err = service.productsInStoragesService.CreateMany(product, data.Quantity); err != nil {
+	if err != nil {
 		return entities.ProductTypeAllocation{}, err
 	}
+
+	if record.ID != "" {
+		record.Quantity += data.Quantity
+
+		if err = service.storageRecordsService.UpdateOneByID(record.ID, record); err != nil {
+			return entities.ProductTypeAllocation{}, err
+		}
+	} else {
+		record = entities.StorageRecord{
+			ProductTypeID: productType.ID,
+			Quantity:      data.Quantity,
+			Location:      data.To,
+		}
+
+		if err = service.storageRecordsService.Create(record); err != nil {
+			return entities.ProductTypeAllocation{}, err
+		}
+	}
+
+	data.OrganizationID = productType.OrganizationID
+	data.Type = utils.EntranceType
 
 	return service.repository.Create(data)
 }
@@ -59,22 +73,48 @@ func (service *productTypeAllocationsImpl) CreateReallocation(productTypeID stri
 		return entities.ProductTypeAllocation{}, err
 	}
 
-	data.OrganizationID = productType.OrganizationID
-	data.Type = utils.ReallocationType
-
-	ids, err := service.productsInStoragesService.FindManyIDsByLocation(data.From, data.Quantity)
+	fromRecord, err := service.storageRecordsService.FindOneByProductTypeIDAndLocation(productType.ID, data.From)
 
 	if err != nil {
 		return entities.ProductTypeAllocation{}, err
 	}
 
-	product := entities.ProductInStorage{
-		Location: data.To,
+	if fromRecord.ID != "" {
+		fromRecord.Quantity -= data.Quantity
+
+		if err = service.storageRecordsService.UpdateOneByID(fromRecord.ID, fromRecord); err != nil {
+			return entities.ProductTypeAllocation{}, err
+		}
+	} else {
+		return entities.ProductTypeAllocation{}, utils.ErrStorageRecordNotFound
 	}
 
-	if err = service.productsInStoragesService.UpdateManyByIDs(ids, product); err != nil {
+	toRecord, err := service.storageRecordsService.FindOneByProductTypeIDAndLocation(productType.ID, data.To)
+
+	if err != nil {
 		return entities.ProductTypeAllocation{}, err
 	}
+
+	if toRecord.ID != "" {
+		toRecord.Quantity += data.Quantity
+
+		if err = service.storageRecordsService.UpdateOneByID(toRecord.ID, toRecord); err != nil {
+			return entities.ProductTypeAllocation{}, err
+		}
+	} else {
+		toRecord = entities.StorageRecord{
+			ProductTypeID: productType.ID,
+			Quantity:      data.Quantity,
+			Location:      data.To,
+		}
+
+		if err = service.storageRecordsService.Create(toRecord); err != nil {
+			return entities.ProductTypeAllocation{}, err
+		}
+	}
+
+	data.OrganizationID = productType.OrganizationID
+	data.Type = utils.ReallocationType
 
 	return service.repository.Create(data)
 }

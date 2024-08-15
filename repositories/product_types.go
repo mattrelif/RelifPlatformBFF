@@ -75,6 +75,89 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 		bson.D{
 			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
 		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "storage_records"},
+				{"let", bson.D{{"productTypeID", "$_id"}}},
+				{"pipeline", bson.A{
+					bson.D{
+						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
+					},
+					bson.D{
+						{"$facet", bson.D{
+							{"organizationRecords", bson.A{
+								bson.D{
+									{"$match", bson.M{"location.type": utils.OrganizationLocationType}},
+								},
+								bson.D{
+									{"$lookup", bson.D{
+										{"from", "organizations"},
+										{"localField", "location.id"},
+										{"foreignField", "_id"},
+										{"as", "organization"},
+									}},
+								},
+								bson.D{
+									{"$unwind", "$organization"},
+								},
+								bson.D{
+									{"$addFields", bson.D{
+										{"location.name", "$organization.name"},
+									}},
+								},
+								bson.D{
+									{"$project", bson.M{
+										"organization": 0,
+									}},
+								},
+							}},
+							{"housingRecords", bson.A{
+								bson.D{
+									{"$match", bson.M{"location.type": utils.HousingLocationType}},
+								},
+								bson.D{
+									{"$lookup", bson.D{
+										{"from", "housings"},
+										{"localField", "location.id"},
+										{"foreignField", "_id"},
+										{"as", "housing"},
+									}},
+								},
+								bson.D{
+									{"$unwind", "$housing"},
+								},
+								bson.D{
+									{"$addFields", bson.D{
+										{"location.name", "$housing.name"},
+									}},
+								},
+								bson.D{
+									{"$project", bson.M{
+										"housing": 0,
+									}},
+								},
+							}},
+						}},
+					},
+					bson.D{
+						{"$project", bson.D{
+							{"records", bson.D{
+								{"$concatArrays", bson.A{"$organizationRecords", "$housingRecords"}},
+							}},
+						}},
+					},
+					bson.D{
+						{"$unwind", "$records"},
+					},
+					bson.D{
+						{"$replaceRoot", bson.D{
+							{"newRoot", "$records"}},
+						},
+					},
+				}},
+				{"as", "storage_records"},
+			}},
+		},
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
@@ -130,6 +213,89 @@ func (repository *mongoProductTypes) FindManyByOrganizationID(organizationID str
 		},
 		bson.D{
 			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "storage_records"},
+				{"let", bson.D{{"productTypeID", "$_id"}}},
+				{"pipeline", bson.A{
+					bson.D{
+						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
+					},
+					bson.D{
+						{"$facet", bson.D{
+							{"organizationRecords", bson.A{
+								bson.D{
+									{"$match", bson.M{"location.type": utils.OrganizationLocationType}},
+								},
+								bson.D{
+									{"$lookup", bson.D{
+										{"from", "organizations"},
+										{"localField", "location.id"},
+										{"foreignField", "_id"},
+										{"as", "organization"},
+									}},
+								},
+								bson.D{
+									{"$unwind", "$organization"},
+								},
+								bson.D{
+									{"$addFields", bson.D{
+										{"location.name", "$organization.name"},
+									}},
+								},
+								bson.D{
+									{"$project", bson.M{
+										"organization": 0,
+									}},
+								},
+							}},
+							{"housingRecords", bson.A{
+								bson.D{
+									{"$match", bson.M{"location.type": utils.HousingLocationType}},
+								},
+								bson.D{
+									{"$lookup", bson.D{
+										{"from", "housings"},
+										{"localField", "location.id"},
+										{"foreignField", "_id"},
+										{"as", "housing"},
+									}},
+								},
+								bson.D{
+									{"$unwind", "$housing"},
+								},
+								bson.D{
+									{"$addFields", bson.D{
+										{"location.name", "$housing.name"},
+									}},
+								},
+								bson.D{
+									{"$project", bson.M{
+										"housing": 0,
+									}},
+								},
+							}},
+						}},
+					},
+					bson.D{
+						{"$project", bson.D{
+							{"records", bson.D{
+								{"$concatArrays", bson.A{"$organizationRecords", "$housingRecords"}},
+							}},
+						}},
+					},
+					bson.D{
+						{"$unwind", "$records"},
+					},
+					bson.D{
+						{"$replaceRoot", bson.D{
+							{"newRoot", "$records"}},
+						},
+					},
+				}},
+				{"as", "storage_records"},
+			}},
 		},
 	}
 

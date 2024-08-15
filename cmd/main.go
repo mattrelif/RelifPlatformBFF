@@ -79,7 +79,7 @@ func main() {
 	voluntaryPeopleRepository := repositories.NewMongoVoluntaryPeople(database)
 	productTypesRepository := repositories.NewMongoProductTypesRepository(database)
 	productTypesAllocationRepository := repositories.NewMongoProductTypeAllocations(database)
-	productsInStoragesRepository := repositories.NewMongoProductsInStorages(database)
+	storageRecordsRepository := repositories.NewMongoStorageRecords(database)
 	donationsRepository := repositories.NewDonations(database)
 
 	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain)
@@ -101,9 +101,9 @@ func main() {
 	beneficiaryAllocationsService := services.NewBeneficiaryAllocations(beneficiaryAllocationsRepository, beneficiariesService, housingRoomsService, housingsService)
 	voluntaryPeopleService := services.NewVoluntaryPeople(voluntaryPeopleRepository)
 	productTypesService := services.NewProductTypes(productTypesRepository)
-	productsInStoragesService := services.NewProductsInStorages(productsInStoragesRepository)
-	productTypesAllocationService := services.NewProductTypeAllocations(productTypesAllocationRepository, productTypesService, productsInStoragesService)
-	donationsService := services.NewDonations(donationsRepository, productsInStoragesService, beneficiariesService)
+	storageRecordsService := services.NewStorageRecords(storageRecordsRepository)
+	productTypesAllocationService := services.NewProductTypeAllocations(productTypesAllocationRepository, productTypesService, storageRecordsService)
+	donationsService := services.NewDonations(donationsRepository, storageRecordsService, beneficiariesService)
 
 	authorizationService := services.NewAuthorization(
 		usersService,
