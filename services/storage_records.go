@@ -3,11 +3,14 @@ package services
 import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/repositories"
+	"relif/platform-bff/utils"
 )
 
 type StorageRecords interface {
 	Create(data entities.StorageRecord) error
 	FindOneByProductTypeIDAndLocation(productTypeID string, location entities.Location) (entities.StorageRecord, error)
+	FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.StorageRecord, error)
+	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.StorageRecord, error)
 	UpdateOneByID(id string, data entities.StorageRecord) error
 }
 
@@ -31,4 +34,22 @@ func (service *storageRecordsImpl) FindOneByProductTypeIDAndLocation(productType
 
 func (service *storageRecordsImpl) UpdateOneByID(id string, data entities.StorageRecord) error {
 	return service.repository.UpdateOneByID(id, data)
+}
+
+func (service *storageRecordsImpl) FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.StorageRecord, error) {
+	location := entities.Location{
+		ID:   housingID,
+		Type: utils.HousingLocationType,
+	}
+
+	return service.repository.FindManyByLocation(location, offset, limit)
+}
+
+func (service *storageRecordsImpl) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.StorageRecord, error) {
+	location := entities.Location{
+		ID:   organizationID,
+		Type: utils.HousingLocationType,
+	}
+
+	return service.repository.FindManyByLocation(location, offset, limit)
 }

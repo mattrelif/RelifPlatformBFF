@@ -33,6 +33,7 @@ func NewRouter(
 	voluntaryPeopleHandler *handlers.VoluntaryPeople,
 	productTypeAllocationsHandler *handlers.ProductTypeAllocations,
 	donationsHandler *handlers.Donations,
+	storageRecordsHandler *handlers.StorageRecords,
 ) http.Handler {
 	router := chi.NewRouter()
 
@@ -100,6 +101,7 @@ func NewRouter(
 				r.Get("/{id}/voluntary-people", voluntaryPeopleHandler.FindManyByOrganizationID)
 				r.Get("/{id}/product-types", productTypesHandler.FindManyByOrganizationID)
 				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByOrganizationID)
+				r.Get("/{id}/storage-records", storageRecordsHandler.FindManyByOrganizationID)
 
 				r.Put("/{id}", organizationsHandler.UpdateOne)
 				r.Put("/{id}", organizationsHandler.ReactivateOne)
@@ -149,6 +151,7 @@ func NewRouter(
 				r.Get("/{id}/rooms", housingRoomsHandler.FindManyByHousingID)
 				r.Get("/{id}/beneficiaries", beneficiariesHandler.FindManyByHousingID)
 				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByHousingID)
+				r.Get("/{id}/storage-records", storageRecordsHandler.FindManyByHousingID)
 
 				r.Post("/{id}/rooms", housingRoomsHandler.Create)
 			})

@@ -7,17 +7,17 @@ import (
 )
 
 type FindProductType struct {
-	ID             string              `bson:"_id,omitempty"`
-	Name           string              `bson:"name,omitempty"`
-	Description    string              `bson:"description,omitempty"`
-	Brand          string              `bson:"brand,omitempty"`
-	Category       string              `bson:"category,omitempty"`
-	OrganizationID string              `bson:"organization_id,omitempty"`
-	Organization   Organization        `bson:"organization,omitempty"`
-	UnitType       string              `bson:"unit_type,omitempty"`
-	StorageRecords []FindStorageRecord `bson:"storage_records,omitempty"`
-	CreatedAt      time.Time           `bson:"created_at,omitempty"`
-	UpdatedAt      time.Time           `bson:"updated_at,omitempty"`
+	ID             string                           `bson:"_id,omitempty"`
+	Name           string                           `bson:"name,omitempty"`
+	Description    string                           `bson:"description,omitempty"`
+	Brand          string                           `bson:"brand,omitempty"`
+	Category       string                           `bson:"category,omitempty"`
+	OrganizationID string                           `bson:"organization_id,omitempty"`
+	Organization   Organization                     `bson:"organization,omitempty"`
+	UnitType       string                           `bson:"unit_type,omitempty"`
+	StorageRecords []FindByProductTypeStorageRecord `bson:"storage_records,omitempty"`
+	CreatedAt      time.Time                        `bson:"created_at,omitempty"`
+	UpdatedAt      time.Time                        `bson:"updated_at,omitempty"`
 }
 
 func (productType *FindProductType) ToEntity() entities.ProductType {

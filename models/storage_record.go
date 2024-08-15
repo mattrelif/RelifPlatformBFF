@@ -2,13 +2,31 @@ package models
 
 import "relif/platform-bff/entities"
 
-type FindStorageRecord struct {
+type FindByLocationStorageRecord struct {
+	ID            string      `bson:"_id,omitempty"`
+	ProductTypeID string      `bson:"product_type_id,omitempty"`
+	ProductType   ProductType `bson:"product_type,omitempty"`
+	Quantity      int         `bson:"quantity,omitempty"`
+}
+
+func (record *FindByLocationStorageRecord) ToEntity() entities.StorageRecord {
+	return entities.StorageRecord{
+		ID:            record.ID,
+		ProductTypeID: record.ProductTypeID,
+		ProductType:   record.ProductType.ToEntity(),
+		Quantity:      record.Quantity,
+	}
+}
+
+type FindByProductTypeStorageRecord struct {
+	ID       string       `bson:"_id,omitempty"`
 	Location FindLocation `bson:"location,omitempty"`
 	Quantity int          `bson:"quantity,omitempty"`
 }
 
-func (record *FindStorageRecord) ToEntity() entities.StorageRecord {
+func (record *FindByProductTypeStorageRecord) ToEntity() entities.StorageRecord {
 	return entities.StorageRecord{
+		ID:       record.ID,
 		Location: record.Location.ToEntity(),
 		Quantity: record.Quantity,
 	}

@@ -81,7 +81,7 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 				{"let", bson.D{{"productTypeID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
-						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
+						{"$match", bson.M{"$expr": bson.M{"$eq": bson.A{"$product_type_id", "$$productTypeID"}}}},
 					},
 					bson.D{
 						{"$facet", bson.D{
@@ -220,7 +220,7 @@ func (repository *mongoProductTypes) FindManyByOrganizationID(organizationID str
 				{"let", bson.D{{"productTypeID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
-						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
+						{"$match", bson.M{"$expr": bson.M{"$eq": bson.A{"$product_type_id", "$$productTypeID"}}}},
 					},
 					bson.D{
 						{"$facet", bson.D{

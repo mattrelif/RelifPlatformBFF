@@ -140,6 +140,7 @@ func main() {
 	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(organizationsDataAccessGrantsService, authorizationService)
 	productTypesAllocationHandler := handlers.NewProductTypeAllocations(productTypesAllocationService, authorizationService)
 	donationsHandler := handlers.NewDonations(donationsService, authorizationService)
+	storageRecordsHandler := handlers.NewStorageRecords(storageRecordsService, authorizationService)
 
 	healthHandler := handlers.NewHealth()
 
@@ -165,6 +166,7 @@ func main() {
 		voluntaryPeopleHandler,
 		productTypesAllocationHandler,
 		donationsHandler,
+		storageRecordsHandler,
 	)
 	server := http.NewServer(router, settingsInstance.ServerPort)
 
