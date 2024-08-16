@@ -29,6 +29,7 @@ require (
 	github.com/aws/smithy-go v1.20.3 // indirect
 	github.com/dimiro1/health v0.0.0-20231118160444-e388c68d7d7e // indirect
 	github.com/go-chi/cors v1.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect

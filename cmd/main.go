@@ -85,10 +85,11 @@ func main() {
 	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain)
 
 	usersService := services.NewUsers(usersRepository)
-	sessionsService := services.NewSessions(sessionsRepository, utils.GenerateUuid)
+	sessionsService := services.NewSessions(sessionsRepository)
 	organizationsService := services.NewOrganizations(organizationsRepository, usersService)
 	passwordService := services.NewPassword(sesEmailService, usersService, passwordChangeRequestsRepository, utils.BcryptHash, utils.GenerateUuid)
-	authService := services.NewAuth(usersService, sessionsService, organizationsService, utils.BcryptHash, utils.BcryptCompare)
+	tokensService := services.NewTokens([]byte(settingsInstance.TokenSecret))
+	authenticationService := services.NewAuthentication(usersService, sessionsService, organizationsService, tokensService, utils.BcryptHash, utils.BcryptCompare)
 	joinOrganizationRequestsService := services.NewJoinOrganizationRequests(usersService, joinOrganizationRequestsRepository)
 	joinOrganizationInvitesService := services.NewJoinOrganizationInvites(usersService, joinOrganizationInvitesRepository)
 	updateOrganizationTypeRequestsService := services.NewUpdateOrganizationTypeRequests(organizationsService, updateOrganizationTypeRequestsRepository)
@@ -120,9 +121,9 @@ func main() {
 		productTypesService,
 	)
 
-	authenticateByCookieMiddleware := middlewares.NewAuthenticateByCookie(authService)
+	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticationService)
 
-	authHandler := handlers.NewAuth(authService)
+	authenticationHandler := handlers.NewAuthentication(authenticationService)
 	passwordHandler := handlers.NewPassword(passwordService)
 	usersHandler := handlers.NewUsers(usersService, authorizationService)
 	organizationsHandler := handlers.NewOrganizations(organizationsService, authorizationService)
@@ -148,7 +149,7 @@ func main() {
 		settingsInstance,
 		authenticateByCookieMiddleware,
 		healthHandler,
-		authHandler,
+		authenticationHandler,
 		beneficiariesHandler,
 		beneficiaryAllocationsHandler,
 		housingsHandler,

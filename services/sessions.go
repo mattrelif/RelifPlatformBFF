@@ -3,46 +3,50 @@ package services
 import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/repositories"
-	"relif/platform-bff/utils"
 )
 
 type Sessions interface {
 	Generate(userID string) (entities.Session, error)
-	FindOneBySessionID(sessionID string) (entities.Session, error)
-	DeleteOneBySessionID(sessionID string) error
+	FindOneByIDAndUserID(sessionID, userID string) (entities.Session, error)
+	DeleteOneByID(sessionID string) error
 }
 
 type sessionsImpl struct {
-	repository    repositories.Sessions
-	uuidGenerator utils.UuidGenerator
+	repository repositories.Sessions
 }
 
-func NewSessions(repository repositories.Sessions, uuidGenerator utils.UuidGenerator) Sessions {
+func NewSessions(repository repositories.Sessions) Sessions {
 	return &sessionsImpl{
-		repository:    repository,
-		uuidGenerator: uuidGenerator,
+		repository: repository,
 	}
 }
 
 func (service *sessionsImpl) Generate(userID string) (entities.Session, error) {
-	session := entities.Session{
-		UserID:    userID,
-		SessionID: service.uuidGenerator(),
-	}
-
-	session, err := service.repository.Generate(session)
+	session, err := service.repository.FindOneByUserID(userID)
 
 	if err != nil {
 		return entities.Session{}, err
 	}
 
+	if session.ID == "" {
+		data := entities.Session{
+			UserID: userID,
+		}
+
+		session, err = service.repository.Generate(data)
+
+		if err != nil {
+			return entities.Session{}, err
+		}
+	}
+
 	return session, nil
 }
 
-func (service *sessionsImpl) FindOneBySessionID(sessionID string) (entities.Session, error) {
-	return service.repository.FindOneBySessionID(sessionID)
+func (service *sessionsImpl) FindOneByIDAndUserID(sessionID, userID string) (entities.Session, error) {
+	return service.repository.FindOneByIDAndUserID(sessionID, userID)
 }
 
-func (service *sessionsImpl) DeleteOneBySessionID(sessionID string) error {
-	return service.repository.DeleteOneBySessionID(sessionID)
+func (service *sessionsImpl) DeleteOneByID(sessionID string) error {
+	return service.repository.DeleteOneByID(sessionID)
 }

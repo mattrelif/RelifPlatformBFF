@@ -5,7 +5,7 @@ import (
 )
 
 type Session struct {
+	ID        string
 	UserID    string
-	SessionID string
 	ExpiresAt time.Time
 }

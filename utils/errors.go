@@ -68,3 +68,7 @@ var (
 var (
 	ErrStorageRecordNotFound = errors.New("storage record with given data not found")
 )
+
+var (
+	ErrInvalidToken = errors.New("invalid token")
+)

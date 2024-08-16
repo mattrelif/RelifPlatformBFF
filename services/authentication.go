@@ -7,25 +7,27 @@ import (
 )
 
 type Authentication interface {
-	SignUp(data entities.User) (entities.Session, error)
-	OrganizationSignUp(data entities.User) (entities.Session, error)
-	SignIn(email, password string) (entities.Session, error)
+	SignUp(data entities.User) (string, error)
+	OrganizationSignUp(data entities.User) (string, error)
+	SignIn(email, password string) (string, error)
 	SignOut(sessionID string) error
-	AuthenticateSession(sessionID string) (entities.User, error)
+	AuthenticateToken(token string) (entities.User, entities.Session, error)
 }
 
 type authenticationImpl struct {
 	usersService         Users
 	sessionsService      Sessions
 	organizationsService Organizations
+	tokensService        Tokens
 	passwordHashFn       utils.PasswordHashFn
 	passwordCompareFn    utils.PasswordCompareFn
 }
 
-func NewAuth(
+func NewAuthentication(
 	usersService Users,
 	sessionsService Sessions,
 	organizationsService Organizations,
+	tokensService Tokens,
 	passwordHashFn utils.PasswordHashFn,
 	passwordCompareFn utils.PasswordCompareFn,
 ) Authentication {
@@ -33,16 +35,17 @@ func NewAuth(
 		usersService:         usersService,
 		sessionsService:      sessionsService,
 		organizationsService: organizationsService,
+		tokensService:        tokensService,
 		passwordHashFn:       passwordHashFn,
 		passwordCompareFn:    passwordCompareFn,
 	}
 }
 
-func (service *authenticationImpl) SignUp(data entities.User) (entities.Session, error) {
+func (service *authenticationImpl) SignUp(data entities.User) (string, error) {
 	hashed, err := service.passwordHashFn(data.Password)
 
 	if err != nil {
-		return entities.Session{}, err
+		return "", err
 	}
 
 	data.Password = hashed
@@ -51,23 +54,29 @@ func (service *authenticationImpl) SignUp(data entities.User) (entities.Session,
 	user, err := service.usersService.Create(data)
 
 	if err != nil {
-		return entities.Session{}, err
+		return "", err
 	}
 
 	session, err := service.sessionsService.Generate(user.ID)
 
 	if err != nil {
-		return entities.Session{}, err
+		return "", err
 	}
 
-	return session, nil
+	token, err := service.tokensService.SignToken(user, session)
+
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
-func (service *authenticationImpl) OrganizationSignUp(data entities.User) (entities.Session, error) {
+func (service *authenticationImpl) OrganizationSignUp(data entities.User) (string, error) {
 	hashed, err := service.passwordHashFn(data.Password)
 
 	if err != nil {
-		return entities.Session{}, err
+		return "", err
 	}
 
 	data.Password = hashed
@@ -76,82 +85,104 @@ func (service *authenticationImpl) OrganizationSignUp(data entities.User) (entit
 	user, err := service.usersService.Create(data)
 
 	if err != nil {
-		return entities.Session{}, err
+		return "", err
 	}
 
 	session, err := service.sessionsService.Generate(user.ID)
 
 	if err != nil {
-		return entities.Session{}, err
+		return "", err
 	}
 
-	return session, nil
+	token, err := service.tokensService.SignToken(user, session)
+
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
-func (service *authenticationImpl) SignIn(email, password string) (entities.Session, error) {
+func (service *authenticationImpl) SignIn(email, password string) (string, error) {
 	user, err := service.usersService.FindOneByEmail(email)
 
 	if err != nil {
 		if errors.Is(err, utils.ErrUserNotFound) {
-			return entities.Session{}, utils.ErrInvalidCredentials
+			return "", utils.ErrInvalidCredentials
 		}
 
-		return entities.Session{}, err
+		return "", err
 	}
 
 	if user.OrganizationID != "" {
-		organization, err := service.organizationsService.FindOneByID(user.OrganizationID)
+		var organization entities.Organization
+
+		organization, err = service.organizationsService.FindOneByID(user.OrganizationID)
 
 		if err != nil {
-			return entities.Session{}, err
+			return "", err
 		}
 
 		if organization.Status == utils.InactiveStatus {
-			return entities.Session{}, utils.ErrMemberOfInactiveOrganization
+			return "", utils.ErrMemberOfInactiveOrganization
 		}
 	}
 
 	if err = service.passwordCompareFn(password, user.Password); err != nil {
-		return entities.Session{}, utils.ErrInvalidCredentials
+		return "", utils.ErrInvalidCredentials
 	}
 
 	session, err := service.sessionsService.Generate(user.ID)
 
 	if err != nil {
-		return entities.Session{}, err
+		return "", err
 	}
 
-	return session, nil
+	token, err := service.tokensService.SignToken(user, session)
+
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
 func (service *authenticationImpl) SignOut(sessionID string) error {
-	return service.sessionsService.DeleteOneBySessionID(sessionID)
+	return service.sessionsService.DeleteOneByID(sessionID)
 }
 
-func (service *authenticationImpl) AuthenticateSession(sessionID string) (entities.User, error) {
-	session, err := service.sessionsService.FindOneBySessionID(sessionID)
+func (service *authenticationImpl) AuthenticateToken(token string) (entities.User, entities.Session, error) {
+	sessionID, userID, err := service.tokensService.ParseToken(token)
 
 	if err != nil {
-		return entities.User{}, err
+		return entities.User{}, entities.Session{}, err
+	}
+
+	session, err := service.sessionsService.FindOneByIDAndUserID(sessionID, userID)
+
+	if err != nil {
+		return entities.User{}, entities.Session{}, err
 	}
 
 	user, err := service.usersService.FindOneByID(session.UserID)
 
 	if err != nil {
-		return entities.User{}, err
+		return entities.User{}, entities.Session{}, err
 	}
 
 	if user.OrganizationID != "" {
-		organization, err := service.organizationsService.FindOneByID(user.OrganizationID)
+		var organization entities.Organization
+
+		organization, err = service.organizationsService.FindOneByID(user.OrganizationID)
 
 		if err != nil {
-			return entities.User{}, err
+			return entities.User{}, entities.Session{}, err
 		}
 
 		if organization.Status == utils.InactiveStatus {
-			return entities.User{}, utils.ErrMemberOfInactiveOrganization
+			return entities.User{}, entities.Session{}, utils.ErrMemberOfInactiveOrganization
 		}
 	}
 
-	return user, nil
+	return user, session, nil
 }

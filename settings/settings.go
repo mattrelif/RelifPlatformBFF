@@ -19,6 +19,8 @@ type Settings struct {
 
 	ServerPort string `default:"8080" split_words:"true" json:"SERVER_PORT"`
 
+	TokenSecret string `required:"true" split_words:"true" json:"TOKEN_SECRET"`
+
 	MongoURI      string `default:"mongodb://127.0.0.1:27017" split_words:"true" json:"MONGO_URI"`
 	MongoDatabase string `default:"test" split_words:"true" json:"MONGO_DATABASE"`
 }

@@ -13,9 +13,9 @@ import (
 
 func NewRouter(
 	settingsInstance *settings.Settings,
-	authenticateByCookieMiddleware *middlewares.AuthenticateByCookie,
+	authenticateByTokenMiddleware *middlewares.AuthenticateByToken,
 	healthHandler *handlers.Health,
-	authHandler *handlers.Auth,
+	authenticationHandler *handlers.Authentication,
 	beneficiariesHandler *handlers.Beneficiaries,
 	beneficiaryAllocationsHandler *handlers.BeneficiaryAllocations,
 	housingsHandler *handlers.Housings,
@@ -54,11 +54,11 @@ func NewRouter(
 		}))
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/sign-up", authHandler.SignUp)
-			r.Post("/org-sign-up", authHandler.OrganizationSignUp)
-			r.Post("/sign-in", authHandler.SignIn)
-			r.With(authenticateByCookieMiddleware.Handle).Get("/me", authHandler.Me)
-			r.With(authenticateByCookieMiddleware.Handle).Delete("/sign-out", authHandler.SignOut)
+			r.Post("/sign-up", authenticationHandler.SignUp)
+			r.Post("/org-sign-up", authenticationHandler.OrganizationSignUp)
+			r.Post("/sign-in", authenticationHandler.SignIn)
+			r.With(authenticateByTokenMiddleware.Handle).Get("/me", authenticationHandler.Me)
+			r.With(authenticateByTokenMiddleware.Handle).Delete("/sign-out", authenticationHandler.SignOut)
 		})
 
 		r.Route("/password", func(r chi.Router) {
@@ -67,12 +67,12 @@ func NewRouter(
 		})
 
 		r.Route("/join-platform-invites", func(r chi.Router) {
-			r.With(authenticateByCookieMiddleware.Handle).Post("/", joinPlatformInvitesHandler.Create)
+			r.With(authenticateByTokenMiddleware.Handle).Post("/", joinPlatformInvitesHandler.Create)
 			r.Delete("/{code}/consume", joinPlatformInvitesHandler.Consume)
 		})
 
 		r.Group(func(r chi.Router) {
-			r.Use(authenticateByCookieMiddleware.Handle)
+			r.Use(authenticateByTokenMiddleware.Handle)
 
 			r.Route("/users", func(r chi.Router) {
 				r.Get("/{id}", usersHandler.FindOne)
