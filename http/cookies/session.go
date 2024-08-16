@@ -13,7 +13,7 @@ func NewSessionCookie(sessionID string, expiresAt time.Time) *http.Cookie {
 		Value:    sessionID,
 		Path:     "/api/v1",
 		HttpOnly: false,
-		Secure:   true,
+		Secure:   false,
 		Expires:  expiresAt,
 		SameSite: http.SameSiteNoneMode,
 	}

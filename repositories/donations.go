@@ -71,85 +71,60 @@ func (repository *mongoDonations) FindManyByBeneficiaryID(beneficiaryID string, 
 			{"$unwind", bson.D{{"path", "$beneficiary"}, {"preserveNullAndEmptyArrays", true}}},
 		},
 		bson.D{
-			{"$facet", bson.D{
-				{"organizationDonations", bson.A{
-					bson.D{
-						{"$match", bson.M{"location.type": utils.OrganizationLocationType}},
-					},
-					bson.D{
-						{"$lookup", bson.D{
-							{"from", "organizations"},
-							{"localField", "location.id"},
-							{"foreignField", "_id"},
-							{"as", "organization"},
+			{"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "location.id"},
+				{"foreignField", "_id"},
+				{"as", "organization"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "location.id"},
+				{"foreignField", "_id"},
+				{"as", "housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
+				{"location.name", bson.D{
+					{"$switch", bson.D{
+						{"branches", bson.A{
+							bson.D{
+								{"case", bson.M{"$eq": bson.M{"$location.type": utils.OrganizationLocationType}}},
+								{"then", "$organization.name"},
+							},
+							bson.D{
+								{"case", bson.M{"$eq": bson.M{"$location.type": utils.HousingLocationType}}},
+								{"then", "$housing.name"},
+							},
 						}},
-					},
-					bson.D{
-						{"$unwind", "$organization"},
-					},
-					bson.D{
-						{"$addFields", bson.D{
-							{"location.name", "$organization.name"},
-						}},
-					},
-					bson.D{
-						{"$project", bson.M{
-							"organization": 0,
-						}},
-					},
-				}},
-				{"housingDonations", bson.A{
-					bson.D{
-						{"$match", bson.M{"location.type": utils.HousingLocationType}},
-					},
-					bson.D{
-						{"$lookup", bson.D{
-							{"from", "housings"},
-							{"localField", "location.id"},
-							{"foreignField", "_id"},
-							{"as", "housing"},
-						}},
-					},
-					bson.D{
-						{"$unwind", "$housing"},
-					},
-					bson.D{
-						{"$addFields", bson.D{
-							{"location.name", "$housing.name"},
-						}},
-					},
-					bson.D{
-						{"$project", bson.M{
-							"housing": 0,
-						}},
-					},
+					}},
 				}},
 			}},
 		},
 		bson.D{
-			{"$project", bson.D{
-				{"donations", bson.D{
-					{"$concatArrays", bson.A{"$organizationDonations", "$housingDonations"}},
-				}},
+			{"$project", bson.M{
+				"housing":      0,
+				"organization": 0,
 			}},
-		},
-		bson.D{
-			{"$unwind", "$donations"},
-		},
-		bson.D{
-			{"$replaceRoot", bson.D{
-				{"newRoot", "$donations"}},
-			},
 		},
 	}
 
-	cursor, err := repository.collection.Aggregate(context.TODO(), pipeline)
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err
 	}
 
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(context.Background())
 
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
