@@ -49,13 +49,7 @@ func (service *productTypeAllocationsImpl) CreateEntrance(productTypeID string, 
 			return entities.ProductTypeAllocation{}, err
 		}
 	} else {
-		record = entities.StorageRecord{
-			ProductTypeID: productType.ID,
-			Quantity:      data.Quantity,
-			Location:      data.To,
-		}
-
-		if err = service.storageRecordsService.Create(record); err != nil {
+		if err = service.storageRecordsService.Create(entities.StorageRecord{ProductTypeID: productType.ID, Quantity: data.Quantity, Location: data.To}); err != nil {
 			return entities.ProductTypeAllocation{}, err
 		}
 	}
@@ -80,7 +74,7 @@ func (service *productTypeAllocationsImpl) CreateReallocation(productTypeID stri
 	}
 
 	if fromRecord.ID != "" {
-		fromRecord.Quantity -= data.Quantity
+		fromRecord.Quantity = fromRecord.Quantity - data.Quantity
 
 		if err = service.storageRecordsService.UpdateOneByID(fromRecord.ID, fromRecord); err != nil {
 			return entities.ProductTypeAllocation{}, err
@@ -96,19 +90,13 @@ func (service *productTypeAllocationsImpl) CreateReallocation(productTypeID stri
 	}
 
 	if toRecord.ID != "" {
-		toRecord.Quantity += data.Quantity
+		toRecord.Quantity = toRecord.Quantity + data.Quantity
 
 		if err = service.storageRecordsService.UpdateOneByID(toRecord.ID, toRecord); err != nil {
 			return entities.ProductTypeAllocation{}, err
 		}
 	} else {
-		toRecord = entities.StorageRecord{
-			ProductTypeID: productType.ID,
-			Quantity:      data.Quantity,
-			Location:      data.To,
-		}
-
-		if err = service.storageRecordsService.Create(toRecord); err != nil {
+		if err = service.storageRecordsService.Create(entities.StorageRecord{ProductTypeID: productType.ID, Quantity: data.Quantity, Location: data.To}); err != nil {
 			return entities.ProductTypeAllocation{}, err
 		}
 	}

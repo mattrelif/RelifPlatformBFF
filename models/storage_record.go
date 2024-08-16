@@ -36,7 +36,7 @@ type StorageRecord struct {
 	ID            string   `bson:"_id,omitempty"`
 	Location      Location `bson:"location,omitempty"`
 	ProductTypeID string   `bson:"product_type_id,omitempty"`
-	Quantity      int      `bson:"quantity,omitempty"`
+	Quantity      int      `bson:"quantity"`
 }
 
 func (record *StorageRecord) ToEntity() entities.StorageRecord {

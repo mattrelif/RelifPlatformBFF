@@ -124,7 +124,7 @@ func (repository *mongoStorageRecords) UpdateOneByID(id string, data entities.St
 	model := models.NewUpdatedStorageRecord(data)
 
 	update := bson.M{
-		"$set": model,
+		"$set": &model,
 	}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {

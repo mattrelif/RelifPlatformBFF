@@ -39,7 +39,7 @@ func (service *donationsImpl) Create(beneficiaryID string, data entities.Donatio
 	}
 
 	if record.ID != "" {
-		record.Quantity -= data.Quantity
+		record.Quantity = record.Quantity - data.Quantity
 
 		if err = service.storageRecordsService.UpdateOneByID(record.ID, record); err != nil {
 			return entities.Donation{}, err
@@ -49,6 +49,7 @@ func (service *donationsImpl) Create(beneficiaryID string, data entities.Donatio
 	}
 
 	data.OrganizationID = beneficiary.CurrentOrganizationID
+	data.BeneficiaryID = beneficiary.ID
 
 	return service.repository.Create(data)
 }
