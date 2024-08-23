@@ -9,40 +9,47 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	updateOrganizationTypeRequestsUseCase "relif/platform-bff/usecases/update_organization_type_requets"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type UpdateOrganizationTypeRequests struct {
-	service              services.UpdateOrganizationTypeRequests
-	authorizationService services.Authorization
+	createUseCase                            updateOrganizationTypeRequestsUseCase.Create
+	findManyPaginatedUseCase                 updateOrganizationTypeRequestsUseCase.FindManyPaginated
+	findManyByOrganizationIDPaginatedUseCase updateOrganizationTypeRequestsUseCase.FindManyByOrganizationIDPaginated
+	acceptUseCase                            updateOrganizationTypeRequestsUseCase.Accept
+	rejectUseCase                            updateOrganizationTypeRequestsUseCase.Reject
 }
 
-func NewUpdateOrganizationTypeRequests(service services.UpdateOrganizationTypeRequests, authorizationService services.Authorization) *UpdateOrganizationTypeRequests {
+func NewUpdateOrganizationTypeRequests(
+	createUseCase updateOrganizationTypeRequestsUseCase.Create,
+	findManyPaginatedUseCase updateOrganizationTypeRequestsUseCase.FindManyPaginated,
+	findManyByOrganizationIDPaginatedUseCase updateOrganizationTypeRequestsUseCase.FindManyByOrganizationIDPaginated,
+	acceptUseCase updateOrganizationTypeRequestsUseCase.Accept,
+	rejectUseCase updateOrganizationTypeRequestsUseCase.Reject,
+) *UpdateOrganizationTypeRequests {
 	return &UpdateOrganizationTypeRequests{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase:                            createUseCase,
+		findManyPaginatedUseCase:                 findManyPaginatedUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		acceptUseCase:                            acceptUseCase,
+		rejectUseCase:                            rejectUseCase,
 	}
 }
 
 func (handler *UpdateOrganizationTypeRequests) Create(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateUpdateOrganizationTypeRequest(user); err != nil {
+	request, err := handler.createUseCase.Execute(user)
+
+	if err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	request, err := handler.service.Create(user)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -58,11 +65,6 @@ func (handler *UpdateOrganizationTypeRequests) Create(w http.ResponseWriter, r *
 func (handler *UpdateOrganizationTypeRequests) FindMany(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -79,10 +81,15 @@ func (handler *UpdateOrganizationTypeRequests) FindMany(w http.ResponseWriter, r
 		return
 	}
 
-	count, reqs, err := handler.service.FindMany(int64(offset), int64(limit))
+	count, reqs, err := handler.findManyPaginatedUseCase.Execute(user, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -98,11 +105,6 @@ func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationID(w http.R
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -119,10 +121,15 @@ func (handler *UpdateOrganizationTypeRequests) FindManyByOrganizationID(w http.R
 		return
 	}
 
-	count, reqs, err := handler.service.FindManyByOrganizationID(organizationID, int64(offset), int64(limit))
+	count, reqs, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -138,13 +145,10 @@ func (handler *UpdateOrganizationTypeRequests) Accept(w http.ResponseWriter, r *
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
-	if err := handler.service.Accept(id, user.ID); err != nil {
+	if err := handler.acceptUseCase.Execute(user, id); err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrUpdateOrganizationTypeRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -159,22 +163,17 @@ func (handler *UpdateOrganizationTypeRequests) Accept(w http.ResponseWriter, r *
 func (handler *UpdateOrganizationTypeRequests) Reject(w http.ResponseWriter, r *http.Request) {
 	var req requests.RejectUpdateOrganizationTypeRequest
 
+	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizePrivateActions(user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
-	id := chi.URLParam(r, "id")
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -186,8 +185,10 @@ func (handler *UpdateOrganizationTypeRequests) Reject(w http.ResponseWriter, r *
 		return
 	}
 
-	if err = handler.service.Reject(id, user.ID, req.ToEntity()); err != nil {
+	if err = handler.rejectUseCase.Execute(user, id, req.RejectReason); err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrUpdateOrganizationTypeRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:

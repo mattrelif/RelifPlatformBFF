@@ -9,20 +9,32 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	productTypesUseCases "relif/platform-bff/usecases/product_types"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type ProductTypes struct {
-	service              services.ProductTypes
-	authorizationService services.Authorization
+	createUseCase                            productTypesUseCases.Create
+	findManyByOrganizationIDPaginatedUseCase productTypesUseCases.FindManyByOrganizationIDPaginated
+	findOneCompleteByIDUseCase               productTypesUseCases.FindOneCompleteByID
+	updateOneByIDUseCase                     productTypesUseCases.UpdateOneByID
+	deleteOneByIDUseCase                     productTypesUseCases.DeleteOneByID
 }
 
-func NewProductTypes(service services.ProductTypes, authorizationService services.Authorization) *ProductTypes {
+func NewProductTypes(
+	createUseCase productTypesUseCases.Create,
+	findManyByOrganizationIDPaginatedUseCase productTypesUseCases.FindManyByOrganizationIDPaginated,
+	findOneCompleteByIDUseCase productTypesUseCases.FindOneCompleteByID,
+	updateOneByIDUseCase productTypesUseCases.UpdateOneByID,
+	deleteOneByIDUseCase productTypesUseCases.DeleteOneByID,
+) *ProductTypes {
 	return &ProductTypes{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase:                            createUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		findOneCompleteByIDUseCase:               findOneCompleteByIDUseCase,
+		updateOneByIDUseCase:                     updateOneByIDUseCase,
+		deleteOneByIDUseCase:                     deleteOneByIDUseCase,
 	}
 }
 
@@ -32,25 +44,14 @@ func (handler *ProductTypes) Create(w http.ResponseWriter, r *http.Request) {
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrOrganizationNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -62,10 +63,18 @@ func (handler *ProductTypes) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productType, err := handler.service.Create(organizationID, req.ToEntity())
+	data := req.ToEntity()
+	productType, err := handler.createUseCase.Execute(user, organizationID, data)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -81,18 +90,6 @@ func (handler *ProductTypes) Create(w http.ResponseWriter, r *http.Request) {
 func (handler *ProductTypes) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
-
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrOrganizationNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -110,10 +107,17 @@ func (handler *ProductTypes) FindManyByOrganizationID(w http.ResponseWriter, r *
 		return
 	}
 
-	count, productTypes, err := handler.service.FindManyByOrganizationID(organizationID, int64(limit), int64(offset))
+	count, productTypes, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -129,22 +133,17 @@ func (handler *ProductTypes) FindOneByID(w http.ResponseWriter, r *http.Request)
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessProductTypeData(id, user); err != nil {
+	productType, err := handler.findOneCompleteByIDUseCase.Execute(user, id)
+
+	if err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrProductTypeNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	productType, err := handler.service.FindOneCompleteByID(id)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -162,25 +161,14 @@ func (handler *ProductTypes) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateProductTypeData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrProductTypeNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -192,8 +180,16 @@ func (handler *ProductTypes) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	data := req.ToEntity()
+	if err = handler.updateOneByIDUseCase.Execute(user, id, data); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrProductTypeNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -204,20 +200,15 @@ func (handler *ProductTypes) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateProductTypeData(id, user); err != nil {
+	if err := handler.deleteOneByIDUseCase.Execute(user, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrProductTypeNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	if err := handler.service.DeleteOneByID(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

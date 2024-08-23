@@ -13,10 +13,9 @@ import (
 type UpdateOrganizationTypeRequests interface {
 	Create(data entities.UpdateOrganizationTypeRequest) (entities.UpdateOrganizationTypeRequest, error)
 	FindOneByID(id string) (entities.UpdateOrganizationTypeRequest, error)
-	FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
-	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
+	FindManyPaginated(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
+	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error)
 	UpdateOneByID(id string, data entities.UpdateOrganizationTypeRequest) error
-	CountPendingByOrganizationID(organizationID string) (int64, error)
 }
 
 type mongoUpdateOrganizationTypeRequests struct {
@@ -54,7 +53,7 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindOneByID(id string) (e
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoUpdateOrganizationTypeRequests) FindMany(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
+func (repository *mongoUpdateOrganizationTypeRequests) FindManyPaginated(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
 	modelList := make([]models.FindUpdateOrganizationTypeRequest, 0)
 	entityList := make([]entities.UpdateOrganizationTypeRequest, 0)
 
@@ -133,7 +132,7 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindMany(offset, limit in
 	return count, entityList, nil
 }
 
-func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
+func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
 	modelList := make([]models.FindUpdateOrganizationTypeRequest, 0)
 	entityList := make([]entities.UpdateOrganizationTypeRequest, 0)
 
@@ -211,16 +210,4 @@ func (repository *mongoUpdateOrganizationTypeRequests) UpdateOneByID(id string, 
 	}
 
 	return nil
-}
-
-func (repository *mongoUpdateOrganizationTypeRequests) CountPendingByOrganizationID(organizationID string) (int64, error) {
-	filter := bson.M{"organization_id": organizationID, "status": utils.PendingStatus}
-
-	count, err := repository.collection.CountDocuments(context.Background(), filter)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
 }

@@ -30,7 +30,6 @@ func (req *OrganizationSignUp) Validate() error {
 			if preferences, ok := value.(UserPreferences); ok {
 				return preferences.Validate()
 			}
-
 			return nil
 		})),
 	)
@@ -45,9 +44,6 @@ func (req *OrganizationSignUp) ToEntity() entities.User {
 		Phones:         req.Phones,
 		Role:           req.Role,
 		OrganizationID: req.OrganizationID,
-		Preferences: entities.UserPreferences{
-			Language: req.Preferences.Language,
-			Timezone: req.Preferences.Timezone,
-		},
+		Preferences:    req.Preferences.ToEntity(),
 	}
 }

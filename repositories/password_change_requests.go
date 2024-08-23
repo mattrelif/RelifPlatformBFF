@@ -11,7 +11,8 @@ import (
 
 type PasswordChangeRequests interface {
 	Create(data entities.PasswordChangeRequest) error
-	FindOneAndDeleteByCode(code string) (entities.PasswordChangeRequest, error)
+	FindOneByCode(code string) (entities.PasswordChangeRequest, error)
+	DeleteByCode(code string) error
 }
 
 type mongoPasswordChangeRequests struct {
@@ -37,13 +38,22 @@ func (rep *mongoPasswordChangeRequests) Create(data entities.PasswordChangeReque
 	return nil
 }
 
-func (rep *mongoPasswordChangeRequests) FindOneAndDeleteByCode(code string) (entities.PasswordChangeRequest, error) {
+func (rep *mongoPasswordChangeRequests) FindOneByCode(code string) (entities.PasswordChangeRequest, error) {
 	var model models.PasswordChangeRequest
 
 	filter := bson.M{"code": code}
-	if err := rep.collection.FindOneAndDelete(context.Background(), filter).Decode(&model); err != nil {
+	if err := rep.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		return entities.PasswordChangeRequest{}, err
 	}
 
 	return model.ToEntity(), nil
+}
+
+func (rep *mongoPasswordChangeRequests) DeleteByCode(code string) error {
+	filter := bson.M{"code": code}
+	if _, err := rep.collection.DeleteOne(context.Background(), filter); err != nil {
+		return err
+	}
+
+	return nil
 }

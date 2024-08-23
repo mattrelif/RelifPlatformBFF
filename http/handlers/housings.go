@@ -9,41 +9,48 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	housingsUseCases "relif/platform-bff/usecases/housings"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type Housings struct {
-	service              services.Housings
-	authorizationService services.Authorization
+	createUseCase                            housingsUseCases.Create
+	findManyByOrganizationIDPaginatedUseCase housingsUseCases.FindManyByOrganizationIDPaginated
+	findOneCompleteByIDUseCase               housingsUseCases.FindOneCompleteByID
+	updateOneByIDUseCase                     housingsUseCases.UpdateOneByID
+	deleteOneByIDUseCase                     housingsUseCases.DeleteOneByID
 }
 
-func NewHousings(service services.Housings, authorizationService services.Authorization) *Housings {
+func NewHousings(
+	createUseCase housingsUseCases.Create,
+	findManyByOrganizationIDPaginatedUseCase housingsUseCases.FindManyByOrganizationIDPaginated,
+	findOneCompleteByIDUseCase housingsUseCases.FindOneCompleteByID,
+	updateOneByIDUseCase housingsUseCases.UpdateOneByID,
+	deleteOneByIDUseCase housingsUseCases.DeleteOneByID,
+) *Housings {
 	return &Housings{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase:                            createUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		findOneCompleteByIDUseCase:               findOneCompleteByIDUseCase,
+		updateOneByIDUseCase:                     updateOneByIDUseCase,
+		deleteOneByIDUseCase:                     deleteOneByIDUseCase,
 	}
 }
 
 func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateHousing
 
-	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -55,10 +62,16 @@ func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	housing, err := handler.service.Create(organizationID, req.ToEntity())
+	data := req.ToEntity()
+	housing, err := handler.createUseCase.Execute(user, data)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -74,16 +87,6 @@ func (handler *Housings) Create(w http.ResponseWriter, r *http.Request) {
 func (handler *Housings) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
-
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
 
 	search := r.URL.Query().Get("search")
 
@@ -103,10 +106,15 @@ func (handler *Housings) FindManyByOrganizationID(w http.ResponseWriter, r *http
 		return
 	}
 
-	count, housings, err := handler.service.FindManyByOrganizationID(organizationID, search, int64(limit), int64(offset))
+	count, housings, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, search, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -122,22 +130,12 @@ func (handler *Housings) FindOneByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrHousingNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
-	housing, err := handler.service.FindOneCompleteByID(id)
+	housing, err := handler.findOneCompleteByIDUseCase.Execute(user, id)
 
 	if err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrHousingNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -160,25 +158,14 @@ func (handler *Housings) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateHousingData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrHousingNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -190,8 +177,17 @@ func (handler *Housings) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	data := req.ToEntity()
+
+	if err = handler.updateOneByIDUseCase.Execute(user, id, data); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -202,20 +198,15 @@ func (handler *Housings) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateHousingData(id, user); err != nil {
+	if err := handler.deleteOneByIDUseCase.Execute(user, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrHousingNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	if err := handler.service.InactivateOneByID(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

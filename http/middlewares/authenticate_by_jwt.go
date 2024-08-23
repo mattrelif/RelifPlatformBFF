@@ -4,18 +4,18 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"relif/platform-bff/services"
+	authenticationUseCases "relif/platform-bff/usecases/authentication"
 	"relif/platform-bff/utils"
 	"strings"
 )
 
 type AuthenticateByToken struct {
-	authenticationService services.Authentication
+	authenticateTokenUseCase authenticationUseCases.AuthenticateToken
 }
 
-func NewAuthenticateByToken(authenticationService services.Authentication) *AuthenticateByToken {
+func NewAuthenticateByToken(authenticateTokenUseCase authenticationUseCases.AuthenticateToken) *AuthenticateByToken {
 	return &AuthenticateByToken{
-		authenticationService: authenticationService,
+		authenticateTokenUseCase: authenticateTokenUseCase,
 	}
 }
 
@@ -28,7 +28,7 @@ func (middleware *AuthenticateByToken) Handle(next http.Handler) http.Handler {
 			return
 		}
 
-		user, session, err := middleware.authenticationService.AuthenticateToken(token)
+		user, session, err := middleware.authenticateTokenUseCase.Execute(token)
 
 		if err != nil {
 			switch {
@@ -36,6 +36,8 @@ func (middleware *AuthenticateByToken) Handle(next http.Handler) http.Handler {
 				http.Error(w, err.Error(), http.StatusGone)
 			case errors.Is(err, utils.ErrUserNotFound):
 				http.Error(w, err.Error(), http.StatusNotFound)
+			case errors.Is(err, utils.ErrInactiveUser):
+				http.Error(w, err.Error(), http.StatusForbidden)
 			default:
 				http.Error(w, err.Error(), http.StatusBadRequest)
 			}

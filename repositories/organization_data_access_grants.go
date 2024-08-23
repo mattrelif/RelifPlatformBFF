@@ -13,11 +13,10 @@ import (
 
 type OrganizationDataAccessGrants interface {
 	Create(data entities.OrganizationDataAccessGrant) error
-	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
-	FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error)
+	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessGrant, error)
+	FindManyByTargetOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessGrant, error)
 	FindOneByID(id string) (entities.OrganizationDataAccessGrant, error)
 	DeleteOneByID(id string) error
-	CountByOrganizationIDAndTargetOrganizationID(organizationID, targetOrganizationID string) (int64, error)
 }
 
 type mongoOrganizationDataAccessGrants struct {
@@ -40,7 +39,7 @@ func (repository *mongoOrganizationDataAccessGrants) Create(data entities.Organi
 	return nil
 }
 
-func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
+func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessGrant, error) {
 	entityList := make([]entities.OrganizationDataAccessGrant, 0)
 	modelsList := make([]models.OrganizationDataAccessGrant, 0)
 
@@ -72,7 +71,7 @@ func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationID(or
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizationDataAccessGrants) FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessGrant, error) {
+func (repository *mongoOrganizationDataAccessGrants) FindManyByTargetOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessGrant, error) {
 	entityList := make([]entities.OrganizationDataAccessGrant, 0)
 	modelsList := make([]models.OrganizationDataAccessGrant, 0)
 
@@ -127,16 +126,4 @@ func (repository *mongoOrganizationDataAccessGrants) DeleteOneByID(id string) er
 	}
 
 	return nil
-}
-
-func (repository *mongoOrganizationDataAccessGrants) CountByOrganizationIDAndTargetOrganizationID(organizationID, targetOrganizationID string) (int64, error) {
-	filter := bson.M{"organization_id": organizationID, "target_organization_id": targetOrganizationID}
-
-	count, err := repository.collection.CountDocuments(context.Background(), filter)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
 }

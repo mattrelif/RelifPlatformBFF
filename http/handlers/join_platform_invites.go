@@ -9,20 +9,26 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	joinPlatformInvitesUseCases "relif/platform-bff/usecases/join_platform_invites"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type JoinPlatformInvites struct {
-	service              services.JoinPlatformInvites
-	authorizationService services.Authorization
+	createUseCase                            joinPlatformInvitesUseCases.Create
+	findManyByOrganizationIDPaginatedUseCase joinPlatformInvitesUseCases.FindManyByOrganizationIDPaginated
+	consumeByCodeUseCase                     joinPlatformInvitesUseCases.ConsumeByCode
 }
 
-func NewJoinPlatformInvites(service services.JoinPlatformInvites, authorizationService services.Authorization) *JoinPlatformInvites {
+func NewJoinPlatformInvites(
+	createUseCase joinPlatformInvitesUseCases.Create,
+	findManyByOrganizationIDPaginatedUseCase joinPlatformInvitesUseCases.FindManyByOrganizationIDPaginated,
+	consumeByCodeUseCase joinPlatformInvitesUseCases.ConsumeByCode,
+) *JoinPlatformInvites {
 	return &JoinPlatformInvites{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase:                            createUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		consumeByCodeUseCase:                     consumeByCodeUseCase,
 	}
 }
 
@@ -32,18 +38,14 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -55,7 +57,8 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	invite, err := handler.service.Create(req.ToEntity(), user)
+	data := req.ToEntity()
+	invite, err := handler.createUseCase.Execute(user, organizationID, data)
 
 	if err != nil {
 		switch {
@@ -79,11 +82,6 @@ func (handler *JoinPlatformInvites) FindManyByOrganizationID(w http.ResponseWrit
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -100,10 +98,17 @@ func (handler *JoinPlatformInvites) FindManyByOrganizationID(w http.ResponseWrit
 		return
 	}
 
-	count, invites, err := handler.service.FindManyByOrganizationID(organizationID, int64(limit), int64(offset))
+	count, invites, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(limit), int64(offset))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -118,7 +123,7 @@ func (handler *JoinPlatformInvites) FindManyByOrganizationID(w http.ResponseWrit
 func (handler *JoinPlatformInvites) Consume(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 
-	invite, err := handler.service.ConsumeByCode(code)
+	invite, err := handler.consumeByCodeUseCase.Execute(code)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

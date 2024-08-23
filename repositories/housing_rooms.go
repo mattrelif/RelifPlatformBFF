@@ -8,17 +8,15 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
 	"relif/platform-bff/utils"
-	"time"
 )
 
 type HousingRooms interface {
 	CreateMany(data []entities.HousingRoom, housingID string) ([]entities.HousingRoom, error)
-	FindManyByHousingID(housingID string, limit, offset int64) (int64, []entities.HousingRoom, error)
+	FindManyByHousingIDPaginated(housingID string, offset, limit int64) (int64, []entities.HousingRoom, error)
 	FindOneByID(id string) (entities.HousingRoom, error)
 	FindOneCompleteByID(id string) (entities.HousingRoom, error)
 	UpdateOneByID(id string, data entities.HousingRoom) error
-	IncreaseAvailableVacanciesByID(id string) error
-	DecreaseAvailableVacanciesByID(id string) error
+	DeleteOneByID(id string) error
 }
 
 type mongoHousingRooms struct {
@@ -50,21 +48,12 @@ func (repository *mongoHousingRooms) CreateMany(data []entities.HousingRoom, hou
 	return entityList, nil
 }
 
-func (repository *mongoHousingRooms) FindManyByHousingID(housingID string, limit, offset int64) (int64, []entities.HousingRoom, error) {
+func (repository *mongoHousingRooms) FindManyByHousingIDPaginated(housingID string, offset, limit int64) (int64, []entities.HousingRoom, error) {
 	modelList := make([]models.FindHousingRoom, 0)
 	entityList := make([]entities.HousingRoom, 0)
 
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"housing_id": housingID,
-			},
-			bson.M{
-				"status": bson.M{
-					"$ne": utils.InactiveStatus,
-				},
-			},
-		},
+		"housing_id": housingID,
 	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
@@ -89,19 +78,8 @@ func (repository *mongoHousingRooms) FindManyByHousingID(housingID string, limit
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "beneficiaries"},
-				{"let", bson.D{{"roomID", "$_id"}}},
-				{"pipeline", bson.A{
-					bson.D{
-						{"$match", bson.D{
-							{"$expr", bson.D{
-								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomID"}}},
-									bson.D{{"$ne", bson.A{"status", utils.InactiveStatus}}},
-								}},
-							}},
-						}},
-					},
-				}},
+				{"localField", "_id"},
+				{"foreignField", "current_room_id"},
 				{"as", "beneficiaries"},
 			}},
 		},
@@ -142,16 +120,7 @@ func (repository *mongoHousingRooms) FindOneByID(id string) (entities.HousingRoo
 	var model models.HousingRoom
 
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$ne": utils.InactiveStatus,
-				},
-			},
-		},
+		"_id": id,
 	}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
@@ -169,16 +138,7 @@ func (repository *mongoHousingRooms) FindOneCompleteByID(id string) (entities.Ho
 	var model models.FindHousingRoom
 
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$ne": utils.InactiveStatus,
-				},
-			},
-		},
+		"_id": id,
 	}
 
 	pipeline := mongo.Pipeline{
@@ -188,19 +148,8 @@ func (repository *mongoHousingRooms) FindOneCompleteByID(id string) (entities.Ho
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "beneficiaries"},
-				{"let", bson.D{{"roomID", "$_id"}}},
-				{"pipeline", bson.A{
-					bson.D{
-						{"$match", bson.D{
-							{"$expr", bson.D{
-								{"$and", bson.A{
-									bson.D{{"$eq", bson.A{"$current_room_id", "$$roomID"}}},
-									bson.D{{"$ne", bson.A{"status", utils.InactiveStatus}}},
-								}},
-							}},
-						}},
-					},
-				}},
+				{"localField", "_id"},
+				{"foreignField", "current_room_id"},
 				{"as", "beneficiaries"},
 			}},
 		},
@@ -249,28 +198,10 @@ func (repository *mongoHousingRooms) UpdateOneByID(id string, data entities.Hous
 	return nil
 }
 
-func (repository *mongoHousingRooms) IncreaseAvailableVacanciesByID(id string) error {
-	model := models.HousingRoom{
-		UpdatedAt: time.Now(),
-	}
+func (repository *mongoHousingRooms) DeleteOneByID(id string) error {
+	filter := bson.M{"_id": id}
 
-	update := bson.M{"$set": &model, "$inc": bson.M{"available_vacancies": 1}}
-
-	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (repository *mongoHousingRooms) DecreaseAvailableVacanciesByID(id string) error {
-	model := models.HousingRoom{
-		UpdatedAt: time.Now(),
-	}
-
-	update := bson.M{"$set": &model, "$inc": bson.M{"available_vacancies": -1}}
-
-	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
+	if _, err := repository.collection.DeleteOne(context.Background(), filter); err != nil {
 		return err
 	}
 

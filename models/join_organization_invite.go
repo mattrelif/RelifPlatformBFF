@@ -68,7 +68,7 @@ func (invite *JoinOrganizationInvite) ToEntity() entities.JoinOrganizationInvite
 }
 
 func NewJoinOrganizationInvite(entity entities.JoinOrganizationInvite) JoinOrganizationInvite {
-	expiresAt := time.Now().Add(time.Hour * 4)
+	expiresAt := time.Now().Add(time.Hour * 24)
 
 	return JoinOrganizationInvite{
 		ID:             primitive.NewObjectID().Hex(),

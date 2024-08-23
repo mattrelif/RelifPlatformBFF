@@ -12,6 +12,25 @@ import (
 	"relif/platform-bff/repositories"
 	"relif/platform-bff/services"
 	"relif/platform-bff/settings"
+	authenticationUseCases "relif/platform-bff/usecases/authentication"
+	beneficiariesUseCases "relif/platform-bff/usecases/beneficiaries"
+	beneficiaryAllocationsUseCases "relif/platform-bff/usecases/beneficiary_allocations"
+	donationsUseCases "relif/platform-bff/usecases/donations"
+	housingRoomsUseCases "relif/platform-bff/usecases/housing_rooms"
+	housingsUseCases "relif/platform-bff/usecases/housings"
+	joinOrganizationInvitesUseCases "relif/platform-bff/usecases/join_organization_invites"
+	joinOrganizationRequestsUseCases "relif/platform-bff/usecases/join_organization_requests"
+	joinPlatformInvitesUseCases "relif/platform-bff/usecases/join_platform_invites"
+	organizationDataAccessGrantsUseCases "relif/platform-bff/usecases/organization_data_access_grants"
+	organizationDataAccessRequestsUseCases "relif/platform-bff/usecases/organization_data_access_requests"
+	organizationsUseCases "relif/platform-bff/usecases/organizations"
+	passwordRecoveryUseCases "relif/platform-bff/usecases/password_recovery"
+	productTypeAllocationsUseCases "relif/platform-bff/usecases/product_type_alloctions"
+	productTypesUseCases "relif/platform-bff/usecases/product_types"
+	storageRecordsUseCases "relif/platform-bff/usecases/storage_records"
+	updateOrganizationTypeRequestsUseCases "relif/platform-bff/usecases/update_organization_type_requets"
+	usersUseCases "relif/platform-bff/usecases/users"
+	voluntaryPeopleUseCases "relif/platform-bff/usecases/voluntary_people"
 	"relif/platform-bff/utils"
 	"syscall"
 )
@@ -62,6 +81,7 @@ func main() {
 
 	sesClient := clients.NewSESClient(awsConfig)
 
+	/** Repositories **/
 	sessionsRepository := repositories.NewSessionsMongo(database)
 	usersRepository := repositories.NewUsersMongo(database)
 	passwordChangeRequestsRepository := repositories.NewMongoPasswordChangeRequests(database)
@@ -82,66 +102,138 @@ func main() {
 	storageRecordsRepository := repositories.NewMongoStorageRecords(database)
 	donationsRepository := repositories.NewDonations(database)
 
-	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain)
-
-	usersService := services.NewUsers(usersRepository)
-	sessionsService := services.NewSessions(sessionsRepository)
-	organizationsService := services.NewOrganizations(organizationsRepository, usersService)
-	passwordService := services.NewPassword(sesEmailService, usersService, passwordChangeRequestsRepository, utils.BcryptHash, utils.GenerateUuid)
+	/** Services **/
+	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain, settingsInstance.FrontendDomain)
 	tokensService := services.NewTokens([]byte(settingsInstance.TokenSecret))
-	authenticationService := services.NewAuthentication(usersService, sessionsService, organizationsService, tokensService, utils.BcryptHash, utils.BcryptCompare)
-	joinOrganizationRequestsService := services.NewJoinOrganizationRequests(usersService, joinOrganizationRequestsRepository)
-	joinOrganizationInvitesService := services.NewJoinOrganizationInvites(usersService, joinOrganizationInvitesRepository)
-	updateOrganizationTypeRequestsService := services.NewUpdateOrganizationTypeRequests(organizationsService, updateOrganizationTypeRequestsRepository)
-	organizationsDataAccessGrantsService := services.NewOrganizationDataAccessGrants(organizationDataAccessGrantsRepository)
-	housingsService := services.NewHousings(housingsRepository)
-	organizationDataAccessService := services.NewOrganizationDataAccessRequests(organizationDataAccessRepository, organizationsService, organizationsDataAccessGrantsService)
-	joinPlatformInvitesService := services.NewJoinPlatformInvites(joinPlatformInvitesRepository, sesEmailService, usersService, utils.GenerateUuid)
-	housingRoomsService := services.NewHousingRooms(housingRoomsRepository)
-	beneficiariesService := services.NewBeneficiaries(beneficiariesRepository)
-	beneficiaryAllocationsService := services.NewBeneficiaryAllocations(beneficiaryAllocationsRepository, beneficiariesService, housingRoomsService, housingsService)
-	voluntaryPeopleService := services.NewVoluntaryPeople(voluntaryPeopleRepository)
-	productTypesService := services.NewProductTypes(productTypesRepository)
-	storageRecordsService := services.NewStorageRecords(storageRecordsRepository)
-	productTypesAllocationService := services.NewProductTypeAllocations(productTypesAllocationRepository, productTypesService, storageRecordsService)
-	donationsService := services.NewDonations(donationsRepository, storageRecordsService, beneficiariesService)
 
-	authorizationService := services.NewAuthorization(
-		usersService,
-		organizationsService,
-		housingsService,
-		housingRoomsService,
-		beneficiariesService,
-		organizationDataAccessService,
-		organizationsDataAccessGrantsService,
-		joinOrganizationInvitesService,
-		updateOrganizationTypeRequestsService,
-		joinOrganizationRequestsService,
-		voluntaryPeopleService,
-		productTypesService,
-	)
+	/** Use Cases **/
+	authenticateTokenUseCase := authenticationUseCases.NewAuthenticateToken(usersRepository, sessionsRepository, tokensService)
 
-	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticationService)
+	createUserUseCase := usersUseCases.NewCreate(usersRepository)
 
-	authenticationHandler := handlers.NewAuthentication(authenticationService)
-	passwordHandler := handlers.NewPassword(passwordService)
-	usersHandler := handlers.NewUsers(usersService, authorizationService)
-	organizationsHandler := handlers.NewOrganizations(organizationsService, authorizationService)
-	joinOrganizationRequestsHandler := handlers.NewJoinOrganizationRequests(joinOrganizationRequestsService, authorizationService)
-	joinOrganizationInvitesHandler := handlers.NewJoinOrganizationInvites(joinOrganizationInvitesService, authorizationService)
-	housingsHandler := handlers.NewHousings(housingsService, authorizationService)
-	updateOrganizationTypeRequestsHandler := handlers.NewUpdateOrganizationTypeRequests(updateOrganizationTypeRequestsService, authorizationService)
-	organizationsDataAccessRequestsHandler := handlers.NewOrganizationDataAccessRequests(organizationDataAccessService, authorizationService)
-	joinPlatformInvitesHandler := handlers.NewJoinPlatformInvites(joinPlatformInvitesService, authorizationService)
-	beneficiariesHandler := handlers.NewBeneficiaries(beneficiariesService, authorizationService)
-	housingRoomsHandler := handlers.NewHousingRooms(housingRoomsService, authorizationService)
-	beneficiaryAllocationsHandler := handlers.NewBeneficiaryAllocations(beneficiaryAllocationsService, authorizationService)
-	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(voluntaryPeopleService, authorizationService)
-	productTypesHandler := handlers.NewProductTypes(productTypesService, authorizationService)
-	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(organizationsDataAccessGrantsService, authorizationService)
-	productTypesAllocationHandler := handlers.NewProductTypeAllocations(productTypesAllocationService, authorizationService)
-	donationsHandler := handlers.NewDonations(donationsService, authorizationService)
-	storageRecordsHandler := handlers.NewStorageRecords(storageRecordsService, authorizationService)
+	signUpUseCase := authenticationUseCases.NewSignUp(usersRepository, sessionsRepository, tokensService, createUserUseCase, utils.BcryptHash)
+	organizationSignUpUseCase := authenticationUseCases.NewOrganizationSignUp(usersRepository, sessionsRepository, organizationsRepository, tokensService, createUserUseCase, utils.BcryptHash)
+	signInUseCase := authenticationUseCases.NewSignIn(usersRepository, sessionsRepository, tokensService, utils.BcryptCompare)
+	signOutUseCase := authenticationUseCases.NewSignOut(sessionsRepository)
+
+	requestPasswordChangeUseCase := passwordRecoveryUseCases.NewRequestChange(usersRepository, passwordChangeRequestsRepository, sesEmailService, utils.GenerateUuid)
+	changePasswordUseCase := passwordRecoveryUseCases.NewChange(usersRepository, passwordChangeRequestsRepository, sesEmailService, utils.BcryptHash)
+
+	findOneUserCompleteUseCase := usersUseCases.NewFindOneCompleteByID(usersRepository)
+	findManyUsersByOrganizationIDUseCase := usersUseCases.NewFindManyByOrganizationIDPaginated(usersRepository, organizationsRepository)
+	updateOneUserByIDUseCase := usersUseCases.NewUpdateOneByID(usersRepository)
+	inactivateOneUserByIDUseCase := usersUseCases.NewInactivateOneByID(usersRepository)
+	reactivateOneUseByIDUseCase := usersUseCases.NewReactivateOneByID(usersRepository)
+
+	createOrganizationUseCase := organizationsUseCases.NewCreate(organizationsRepository, usersRepository)
+	findManyOrganizationsUseCase := organizationsUseCases.NewFindManyPaginated(organizationsRepository)
+	findOneOrganizationByIDUseCase := organizationsUseCases.NewFindOneByID(organizationsRepository)
+	updateOneOrganizationByIDUseCase := organizationsUseCases.NewUpdateOneByID(organizationsRepository)
+	inactivateOneOrganizationByIDUseCase := organizationsUseCases.NewInactivateOneByID(organizationsRepository)
+	reactivateOneOrganizationByIDUseCase := organizationsUseCases.NewReactivateOneByID(organizationsRepository)
+
+	createJoinOrganizationRequestUseCase := joinOrganizationRequestsUseCases.NewCreate(joinOrganizationRequestsRepository, organizationsRepository)
+	findManyJoinOrganizationRequestsByOrganizationIDUseCase := joinOrganizationRequestsUseCases.NewFindManyByOrganizationIDPaginated(joinOrganizationRequestsRepository, organizationsRepository)
+	findManyJoinOrganizationRequestsByUserIDUseCase := joinOrganizationRequestsUseCases.NewFindManyByUserIDPaginated(joinOrganizationRequestsRepository, usersRepository)
+	acceptJoinOrganizationRequestUseCase := joinOrganizationRequestsUseCases.NewAccept(joinOrganizationRequestsRepository, usersRepository, organizationsRepository)
+	rejectJoinOrganizationRequestUseCase := joinOrganizationRequestsUseCases.NewReject(joinOrganizationRequestsRepository, organizationsRepository)
+
+	createJoinOrganizationInviteUseCase := joinOrganizationInvitesUseCases.NewCreate(joinOrganizationInvitesRepository, organizationsRepository)
+	findManyJoinOrganizationInvitesByOrganizationIDUseCase := joinOrganizationInvitesUseCases.NewFindManyByOrganizationIDPaginated(joinOrganizationInvitesRepository, organizationsRepository)
+	findManyJoinOrganizationInvitesByUserIDUseCase := joinOrganizationInvitesUseCases.NewFindManyByUserIDPaginated(joinOrganizationInvitesRepository, usersRepository)
+	acceptJoinOrganizationInviteUseCase := joinOrganizationInvitesUseCases.NewAccept(joinOrganizationInvitesRepository, usersRepository)
+	rejectJoinOrganizationInviteUseCase := joinOrganizationInvitesUseCases.NewReject(joinOrganizationInvitesRepository, usersRepository)
+
+	createHousingUseCase := housingsUseCases.NewCreate(housingsRepository)
+	findManyHousingsByOrganizationIDUseCase := housingsUseCases.NewFindManyByOrganizationIDPaginated(housingsRepository, organizationsRepository)
+	findOneHousingCompleteByIDUseCase := housingsUseCases.NewFindOneCompleteByID(housingsRepository, organizationsRepository)
+	updateOneHousingByIDUseCase := housingsUseCases.NewUpdateOneByID(housingsRepository, organizationsRepository)
+	deleteOneHousingByIDUseCase := housingsUseCases.NewDeleteOneByID(housingsRepository, organizationsRepository)
+
+	createUpdateOrganizationTypeRequestUseCase := updateOrganizationTypeRequestsUseCases.NewCreate(updateOrganizationTypeRequestsRepository, organizationsRepository)
+	findManyUpdateOrganizationTypeRequestsUseCase := updateOrganizationTypeRequestsUseCases.NewFindManyPaginated(updateOrganizationTypeRequestsRepository)
+	findManyUpdateOrganizationTypeRequestsByOrganizationIDUseCase := updateOrganizationTypeRequestsUseCases.NewFindManyByOrganizationIDPaginated(updateOrganizationTypeRequestsRepository, organizationsRepository)
+	acceptUpdateOrganizationTypeRequestUseCase := updateOrganizationTypeRequestsUseCases.NewAccept(updateOrganizationTypeRequestsRepository, organizationsRepository)
+	rejectUpdateOrganizationTypeRequestUseCase := updateOrganizationTypeRequestsUseCases.NewReject(updateOrganizationTypeRequestsRepository)
+
+	createOrganizationDataAccessRequestsUseCase := organizationDataAccessRequestsUseCases.NewCreate(organizationDataAccessRepository, organizationsRepository)
+	findManyOrganizationDataAccessRequestsByTargetUseCase := organizationDataAccessRequestsUseCases.NewFindManyByTargetOrganizationIDPaginated(organizationDataAccessRepository, organizationsRepository)
+	findManyOrganizationDataAccessRequestsByRequesterUseCase := organizationDataAccessRequestsUseCases.NewFindManyByRequesterOrganizationIDPaginated(organizationDataAccessRepository, organizationsRepository)
+	acceptOrganizationDataAccessRequestsUseCase := organizationDataAccessRequestsUseCases.NewAccept(organizationDataAccessRepository, organizationDataAccessGrantsRepository, organizationsRepository)
+	rejectOrganizationDataAccessRequestsUseCase := organizationDataAccessRequestsUseCases.NewReject(organizationDataAccessRepository)
+
+	createJoinPlatformInviteUseCase := joinPlatformInvitesUseCases.NewCreate(joinPlatformInvitesRepository, organizationsRepository, usersRepository, sesEmailService, utils.GenerateUuid)
+	findManyJoinPlatformInvitesByOrganizationIDUseCase := joinPlatformInvitesUseCases.NewFindManyByOrganizationIDPaginated(joinPlatformInvitesRepository, organizationsRepository)
+	consumeJoinPlatformInviteByCodeUseCase := joinPlatformInvitesUseCases.NewConsumeByCode(joinPlatformInvitesRepository)
+
+	createBeneficiaryUseCase := beneficiariesUseCases.NewCreate(beneficiariesRepository, organizationsRepository)
+	findManyBeneficiariesByOrganizationIDUseCase := beneficiariesUseCases.NewFindManyByOrganizationIDPaginated(beneficiariesRepository, organizationsRepository)
+	findManyBeneficiariesByHousingIDUseCase := beneficiariesUseCases.NewFindManyByHousingIDPaginated(beneficiariesRepository, housingsRepository, organizationsRepository)
+	findManyBeneficiariesByHousingRoomIDUseCase := beneficiariesUseCases.NewFindManyByHousingRoomIDPaginated(beneficiariesRepository, housingRoomsRepository, housingsRepository, organizationsRepository)
+	findOneBeneficiaryCompleteByIDUseCase := beneficiariesUseCases.NewFindOneCompleteByID(beneficiariesRepository)
+	updateBeneficiaryByIDUseCase := beneficiariesUseCases.NewUpdateOneByID(beneficiariesRepository, organizationsRepository)
+	deleteBeneficiaryByIDUseCase := beneficiariesUseCases.NewDeleteOneByID(beneficiariesRepository, organizationsRepository)
+
+	createHousingRoomUseCase := housingRoomsUseCases.NewCreateHousingRoom(housingRoomsRepository, housingsRepository, organizationsRepository)
+	findOneHousingRoomCompleteByIDUseCase := housingRoomsUseCases.NewFindOneCompleteByID(housingRoomsRepository, organizationsRepository)
+	findManyHousingRoomsByHousingIDUseCase := housingRoomsUseCases.NewFindManyByHousingIDPaginated(housingRoomsRepository, housingsRepository, organizationsRepository)
+	updateHousingRoomByIDUseCase := housingRoomsUseCases.NewUpdateOneByID(housingRoomsRepository, housingsRepository, organizationsRepository)
+	deleteHousingRoomByIDUseCase := housingRoomsUseCases.NewDeleteOneByID(housingRoomsRepository, housingsRepository, organizationsRepository)
+
+	createEntranceBeneficiaryAllocationUseCase := beneficiaryAllocationsUseCases.NewCreateEntrance(beneficiaryAllocationsRepository, beneficiariesRepository, organizationsRepository, housingsRepository, housingRoomsRepository)
+	createReallocationBeneficiaryAllocationUseCase := beneficiaryAllocationsUseCases.NewCreateReallocation(beneficiaryAllocationsRepository, beneficiariesRepository, organizationsRepository, housingsRepository, housingRoomsRepository)
+	findManyBeneficiaryAllocationsByBeneficiaryIDUseCase := beneficiaryAllocationsUseCases.NewFindManyByBeneficiaryIDPaginated(beneficiaryAllocationsRepository, beneficiariesRepository, organizationsRepository)
+	findManyBeneficiaryAllocationsByHousingIDUseCase := beneficiaryAllocationsUseCases.NewFindManyByHousingIDPaginated(beneficiaryAllocationsRepository, housingsRepository, organizationsRepository)
+	findManyBeneficiaryAllocationsByHousingRoomIDUseCase := beneficiaryAllocationsUseCases.NewFindManyByHousingRoomIDPaginated(beneficiaryAllocationsRepository, housingsRepository, housingRoomsRepository, organizationsRepository)
+
+	createVoluntaryPersonUseCase := voluntaryPeopleUseCases.NewCreate(voluntaryPeopleRepository, organizationsRepository)
+	findManyVoluntaryPeopleByOrganizationIDUseCase := voluntaryPeopleUseCases.NewFindManyByOrganizationIDPaginated(voluntaryPeopleRepository, organizationsRepository)
+	findOneVoluntaryPersonCompleteByIDUseCase := voluntaryPeopleUseCases.NewFindOneByID(voluntaryPeopleRepository, organizationsRepository)
+	updateOneVoluntaryPersonByIDUseCase := voluntaryPeopleUseCases.NewUpdateOneByID(voluntaryPeopleRepository, organizationsRepository)
+	deleteOneVoluntaryPersonByIDUseCase := voluntaryPeopleUseCases.NewDeleteOneByID(voluntaryPeopleRepository, organizationsRepository)
+
+	createProductTypeUseCase := productTypesUseCases.NewCreate(organizationsRepository, productTypesRepository)
+	findManyProductTypesByOrganizationIDUseCase := productTypesUseCases.NewFindManyByOrganizationIDPaginated(productTypesRepository, organizationsRepository)
+	findOneProductTypeByIDUseCase := productTypesUseCases.NewFindOneCompleteByID(productTypesRepository)
+	updateProductTypeByIDUseCase := productTypesUseCases.NewUpdateOneByID(productTypesRepository, organizationsRepository)
+	deleteProductTypeByIDUseCase := productTypesUseCases.NewDeleteOneByID(productTypesRepository, organizationsRepository)
+
+	findManyGrantsByOrganizationIDUseCase := organizationDataAccessGrantsUseCases.NewFindManyByOrganizationIDPaginated(organizationDataAccessGrantsRepository, organizationsRepository)
+	findManyGrantsByTargetOrganizationIDUseCase := organizationDataAccessGrantsUseCases.NewFindManyByTargetOrganizationIDPaginated(organizationDataAccessGrantsRepository, organizationsRepository)
+	deleteGrantByIDUseCase := organizationDataAccessGrantsUseCases.NewDeleteOneByIDImpl(organizationDataAccessGrantsRepository, organizationsRepository)
+
+	createProductTypeAllocationEntranceUseCase := productTypeAllocationsUseCases.NewCreateEntrance(productTypesAllocationRepository, productTypesRepository, organizationsRepository, storageRecordsRepository)
+	createProductTypeAllocationReallocationUseCase := productTypeAllocationsUseCases.NewCreateReallocation(productTypesAllocationRepository, productTypesRepository, organizationsRepository, storageRecordsRepository)
+
+	createDonationUseCase := donationsUseCases.NewCreate(donationsRepository, beneficiariesRepository, storageRecordsRepository, organizationsRepository, productTypesRepository)
+	findManyDonationsByBeneficiaryIDUseCase := donationsUseCases.NewFindManyByBeneficiaryIDPaginated(donationsRepository, beneficiariesRepository, organizationsRepository)
+
+	findManyStorageRecordsByOrganizationIDUseCase := storageRecordsUseCases.NewFindManyByOrganizationIDPaginated(storageRecordsRepository, organizationsRepository)
+	findManyStorageRecordsByHousingIDUseCase := storageRecordsUseCases.NewFindManyByHousingIDPaginated(storageRecordsRepository, organizationsRepository, housingsRepository)
+
+	/** Middlewares **/
+	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticateTokenUseCase)
+
+	/** Handlers **/
+	authenticationHandler := handlers.NewAuthentication(signUpUseCase, organizationSignUpUseCase, signInUseCase, signOutUseCase)
+	passwordRecoveryHandler := handlers.NewPassword(requestPasswordChangeUseCase, changePasswordUseCase)
+	usersHandler := handlers.NewUsers(findOneUserCompleteUseCase, findManyUsersByOrganizationIDUseCase, updateOneUserByIDUseCase, inactivateOneUserByIDUseCase, reactivateOneUseByIDUseCase)
+	organizationsHandler := handlers.NewOrganizations(createOrganizationUseCase, findManyOrganizationsUseCase, findOneOrganizationByIDUseCase, updateOneOrganizationByIDUseCase, inactivateOneOrganizationByIDUseCase, reactivateOneOrganizationByIDUseCase)
+	joinOrganizationRequestsHandler := handlers.NewJoinOrganizationRequests(createJoinOrganizationRequestUseCase, findManyJoinOrganizationRequestsByOrganizationIDUseCase, findManyJoinOrganizationRequestsByUserIDUseCase, acceptJoinOrganizationRequestUseCase, rejectJoinOrganizationRequestUseCase)
+	joinOrganizationInvitesHandler := handlers.NewJoinOrganizationInvites(createJoinOrganizationInviteUseCase, findManyJoinOrganizationInvitesByOrganizationIDUseCase, findManyJoinOrganizationInvitesByUserIDUseCase, acceptJoinOrganizationInviteUseCase, rejectJoinOrganizationInviteUseCase)
+	housingsHandler := handlers.NewHousings(createHousingUseCase, findManyHousingsByOrganizationIDUseCase, findOneHousingCompleteByIDUseCase, updateOneHousingByIDUseCase, deleteOneHousingByIDUseCase)
+	updateOrganizationTypeRequestsHandler := handlers.NewUpdateOrganizationTypeRequests(createUpdateOrganizationTypeRequestUseCase, findManyUpdateOrganizationTypeRequestsUseCase, findManyUpdateOrganizationTypeRequestsByOrganizationIDUseCase, acceptUpdateOrganizationTypeRequestUseCase, rejectUpdateOrganizationTypeRequestUseCase)
+	organizationsDataAccessRequestsHandler := handlers.NewOrganizationDataAccessRequests(createOrganizationDataAccessRequestsUseCase, findManyOrganizationDataAccessRequestsByTargetUseCase, findManyOrganizationDataAccessRequestsByRequesterUseCase, acceptOrganizationDataAccessRequestsUseCase, rejectOrganizationDataAccessRequestsUseCase)
+	joinPlatformInvitesHandler := handlers.NewJoinPlatformInvites(createJoinPlatformInviteUseCase, findManyJoinPlatformInvitesByOrganizationIDUseCase, consumeJoinPlatformInviteByCodeUseCase)
+	beneficiariesHandler := handlers.NewBeneficiaries(createBeneficiaryUseCase, findManyBeneficiariesByOrganizationIDUseCase, findManyBeneficiariesByHousingIDUseCase, findManyBeneficiariesByHousingRoomIDUseCase, findOneBeneficiaryCompleteByIDUseCase, updateBeneficiaryByIDUseCase, deleteBeneficiaryByIDUseCase)
+	housingRoomsHandler := handlers.NewHousingRooms(createHousingRoomUseCase, findOneHousingRoomCompleteByIDUseCase, findManyHousingRoomsByHousingIDUseCase, updateHousingRoomByIDUseCase, deleteHousingRoomByIDUseCase)
+	beneficiaryAllocationsHandler := handlers.NewBeneficiaryAllocations(createEntranceBeneficiaryAllocationUseCase, createReallocationBeneficiaryAllocationUseCase, findManyBeneficiaryAllocationsByBeneficiaryIDUseCase, findManyBeneficiaryAllocationsByHousingIDUseCase, findManyBeneficiaryAllocationsByHousingRoomIDUseCase)
+	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(createVoluntaryPersonUseCase, findManyVoluntaryPeopleByOrganizationIDUseCase, findOneVoluntaryPersonCompleteByIDUseCase, updateOneVoluntaryPersonByIDUseCase, deleteOneVoluntaryPersonByIDUseCase)
+	productTypesHandler := handlers.NewProductTypes(createProductTypeUseCase, findManyProductTypesByOrganizationIDUseCase, findOneProductTypeByIDUseCase, updateProductTypeByIDUseCase, deleteProductTypeByIDUseCase)
+	organizationsDataAccessGrantsHandler := handlers.NewOrganizationDataAccessGrants(findManyGrantsByOrganizationIDUseCase, findManyGrantsByTargetOrganizationIDUseCase, deleteGrantByIDUseCase)
+	productTypesAllocationHandler := handlers.NewProductTypeAllocations(createProductTypeAllocationEntranceUseCase, createProductTypeAllocationReallocationUseCase)
+	donationsHandler := handlers.NewDonations(createDonationUseCase, findManyDonationsByBeneficiaryIDUseCase)
+	storageRecordsHandler := handlers.NewStorageRecords(findManyStorageRecordsByOrganizationIDUseCase, findManyStorageRecordsByHousingIDUseCase)
 
 	healthHandler := handlers.NewHealth()
 
@@ -160,7 +252,7 @@ func main() {
 		organizationsHandler,
 		organizationsDataAccessGrantsHandler,
 		organizationsDataAccessRequestsHandler,
-		passwordHandler,
+		passwordRecoveryHandler,
 		productTypesHandler,
 		updateOrganizationTypeRequestsHandler,
 		usersHandler,

@@ -9,20 +9,32 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	beneficiaryAllocationsUseCases "relif/platform-bff/usecases/beneficiary_allocations"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type BeneficiaryAllocations struct {
-	service              services.BeneficiaryAllocations
-	authorizationService services.Authorization
+	createEntranceUseCase                   beneficiaryAllocationsUseCases.CreateEntrance
+	createReallocationUseCase               beneficiaryAllocationsUseCases.CreateReallocation
+	findManyByBeneficiaryIDPaginatedUseCase beneficiaryAllocationsUseCases.FindManyByBeneficiaryIDPaginated
+	findManyByHousingIDPaginatedUseCase     beneficiaryAllocationsUseCases.FindManyByHousingIDPaginated
+	findManyByHousingRoomIDPaginatedUseCase beneficiaryAllocationsUseCases.FindManyByHousingRoomIDPaginated
 }
 
-func NewBeneficiaryAllocations(service services.BeneficiaryAllocations, authorizationService services.Authorization) *BeneficiaryAllocations {
+func NewBeneficiaryAllocations(
+	createEntranceUseCase beneficiaryAllocationsUseCases.CreateEntrance,
+	createReallocationUseCase beneficiaryAllocationsUseCases.CreateReallocation,
+	findManyByBeneficiaryIDPaginatedUseCase beneficiaryAllocationsUseCases.FindManyByBeneficiaryIDPaginated,
+	findManyByHousingIDPaginatedUseCase beneficiaryAllocationsUseCases.FindManyByHousingIDPaginated,
+	findManyByHousingRoomIDPaginatedUseCase beneficiaryAllocationsUseCases.FindManyByHousingRoomIDPaginated,
+) *BeneficiaryAllocations {
 	return &BeneficiaryAllocations{
-		service:              service,
-		authorizationService: authorizationService,
+		createEntranceUseCase:                   createEntranceUseCase,
+		createReallocationUseCase:               createReallocationUseCase,
+		findManyByBeneficiaryIDPaginatedUseCase: findManyByBeneficiaryIDPaginatedUseCase,
+		findManyByHousingIDPaginatedUseCase:     findManyByHousingIDPaginatedUseCase,
+		findManyByHousingRoomIDPaginatedUseCase: findManyByHousingRoomIDPaginatedUseCase,
 	}
 }
 
@@ -32,25 +44,14 @@ func (handler *BeneficiaryAllocations) Allocate(w http.ResponseWriter, r *http.R
 	user := r.Context().Value("user").(entities.User)
 	beneficiaryID := chi.URLParam(r, "id")
 
-	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrBeneficiaryNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -62,10 +63,18 @@ func (handler *BeneficiaryAllocations) Allocate(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	allocation, err := handler.service.Allocate(user, beneficiaryID, req.ToEntity())
+	data := req.ToEntity()
+	allocation, err := handler.createEntranceUseCase.Execute(user, beneficiaryID, data)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -84,25 +93,14 @@ func (handler *BeneficiaryAllocations) Reallocate(w http.ResponseWriter, r *http
 	user := r.Context().Value("user").(entities.User)
 	beneficiaryID := chi.URLParam(r, "id")
 
-	if err := handler.authorizationService.AuthorizeCreateBeneficiaryResource(beneficiaryID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrBeneficiaryNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -114,10 +112,18 @@ func (handler *BeneficiaryAllocations) Reallocate(w http.ResponseWriter, r *http
 		return
 	}
 
-	allocation, err := handler.service.Reallocate(user, beneficiaryID, req.ToEntity())
+	data := req.ToEntity()
+	allocation, err := handler.createReallocationUseCase.Execute(user, beneficiaryID, data)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -134,18 +140,6 @@ func (handler *BeneficiaryAllocations) FindManyByBeneficiaryID(w http.ResponseWr
 	beneficiaryID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessBeneficiaryData(beneficiaryID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrBeneficiaryNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -162,10 +156,17 @@ func (handler *BeneficiaryAllocations) FindManyByBeneficiaryID(w http.ResponseWr
 		return
 	}
 
-	count, allocations, err := handler.service.FindManyByBeneficiaryID(beneficiaryID, int64(offset), int64(limit))
+	count, allocations, err := handler.findManyByBeneficiaryIDPaginatedUseCase.Execute(user, beneficiaryID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -181,18 +182,6 @@ func (handler *BeneficiaryAllocations) FindManyByHousingID(w http.ResponseWriter
 	housingID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingData(housingID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrHousingNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -209,10 +198,17 @@ func (handler *BeneficiaryAllocations) FindManyByHousingID(w http.ResponseWriter
 		return
 	}
 
-	count, allocations, err := handler.service.FindManyByHousingID(housingID, int64(offset), int64(limit))
+	count, allocations, err := handler.findManyByHousingIDPaginatedUseCase.Execute(user, housingID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -228,18 +224,6 @@ func (handler *BeneficiaryAllocations) FindManyByRoomID(w http.ResponseWriter, r
 	roomID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrHousingRoomNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -256,10 +240,17 @@ func (handler *BeneficiaryAllocations) FindManyByRoomID(w http.ResponseWriter, r
 		return
 	}
 
-	count, allocations, err := handler.service.FindManyByRoomID(roomID, int64(offset), int64(limit))
+	count, allocations, err := handler.findManyByHousingRoomIDPaginatedUseCase.Execute(user, roomID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

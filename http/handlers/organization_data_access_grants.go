@@ -7,31 +7,32 @@ import (
 	"net/http"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	organizationDataAccessGrantsUseCases "relif/platform-bff/usecases/organization_data_access_grants"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type OrganizationDataAccessGrants struct {
-	service              services.OrganizationDataAccessGrants
-	authorizationService services.Authorization
+	findManyByOrganizationIDPaginatedUseCase       organizationDataAccessGrantsUseCases.FindManyByOrganizationIDPaginated
+	findManyByTargetOrganizationIDPaginatedUseCase organizationDataAccessGrantsUseCases.FindManyByTargetOrganizationIDPaginated
+	deleteOneByIDUseCase                           organizationDataAccessGrantsUseCases.DeleteOneByID
 }
 
-func NewOrganizationDataAccessGrants(service services.OrganizationDataAccessGrants, authorizationService services.Authorization) *OrganizationDataAccessGrants {
+func NewOrganizationDataAccessGrants(
+	findManyByOrganizationIDPaginatedUseCase organizationDataAccessGrantsUseCases.FindManyByOrganizationIDPaginated,
+	findManyByTargetOrganizationIDPaginatedUseCase organizationDataAccessGrantsUseCases.FindManyByTargetOrganizationIDPaginated,
+	deleteOneByIDUseCase organizationDataAccessGrantsUseCases.DeleteOneByID,
+) *OrganizationDataAccessGrants {
 	return &OrganizationDataAccessGrants{
-		service:              service,
-		authorizationService: authorizationService,
+		findManyByOrganizationIDPaginatedUseCase:       findManyByOrganizationIDPaginatedUseCase,
+		findManyByTargetOrganizationIDPaginatedUseCase: findManyByTargetOrganizationIDPaginatedUseCase,
+		deleteOneByIDUseCase:                           deleteOneByIDUseCase,
 	}
 }
 
 func (handler *OrganizationDataAccessGrants) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
-
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -49,10 +50,15 @@ func (handler *OrganizationDataAccessGrants) FindManyByOrganizationID(w http.Res
 		return
 	}
 
-	count, grants, err := handler.service.FindManyByOrganizationID(organizationID, int64(limit), int64(offset))
+	count, grants, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -68,11 +74,6 @@ func (handler *OrganizationDataAccessGrants) FindManyByTargetOrganizationID(w ht
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -89,10 +90,15 @@ func (handler *OrganizationDataAccessGrants) FindManyByTargetOrganizationID(w ht
 		return
 	}
 
-	count, grants, err := handler.service.FindManyByTargetOrganizationID(organizationID, int64(limit), int64(offset))
+	count, grants, err := handler.findManyByTargetOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -108,20 +114,15 @@ func (handler *OrganizationDataAccessGrants) Delete(w http.ResponseWriter, r *ht
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateOrganizationDataAccessGrantsData(id, user); err != nil {
+	if err := handler.deleteOneByIDUseCase.Execute(user, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrOrganizationDataAccessGrantNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	if err := handler.service.DeleteOneByID(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

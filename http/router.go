@@ -26,7 +26,7 @@ func NewRouter(
 	organizationsHandler *handlers.Organizations,
 	organizationDataAccessGrantHandler *handlers.OrganizationDataAccessGrants,
 	organizationDataAccessRequestsHandler *handlers.OrganizationDataAccessRequests,
-	passwordHandler *handlers.Password,
+	passwordRecoveryHandler *handlers.PasswordRecovery,
 	productTypesHandler *handlers.ProductTypes,
 	updateOrganizationTypeRequestsHandler *handlers.UpdateOrganizationTypeRequests,
 	usersHandler *handlers.Users,
@@ -45,7 +45,7 @@ func NewRouter(
 		r.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{fmt.Sprintf("http://%s", settingsInstance.CorsAllowedDomain), fmt.Sprintf("https://%s", settingsInstance.CorsAllowedDomain)},
+			AllowedOrigins:   []string{fmt.Sprintf("http://%s", settingsInstance.FrontendDomain), fmt.Sprintf("https://%s", settingsInstance.FrontendDomain)},
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"*"},
 			ExposedHeaders:   []string{"*"},
@@ -62,8 +62,8 @@ func NewRouter(
 		})
 
 		r.Route("/password", func(r chi.Router) {
-			r.Post("/request-change", passwordHandler.RequestChange)
-			r.Put("/{code}", passwordHandler.Update)
+			r.Post("/request-change", passwordRecoveryHandler.RequestChange)
+			r.Put("/{code}", passwordRecoveryHandler.Update)
 		})
 
 		r.Route("/join-platform-invites", func(r chi.Router) {
@@ -77,7 +77,7 @@ func NewRouter(
 			r.Route("/users", func(r chi.Router) {
 				r.Get("/{id}", usersHandler.FindOne)
 				r.Put("/{id}", usersHandler.UpdateOne)
-				r.Delete("/{id}", usersHandler.DeleteOne)
+				r.Delete("/{id}", usersHandler.InactivateOne)
 
 				r.Get("/{id}/join-organization-requests", joinOrganizationRequestsHandler.FindManyByUserID)
 				r.Get("/{id}/join-organization-invites", joinOrganizationInvitesHandler.FindManyByUserID)

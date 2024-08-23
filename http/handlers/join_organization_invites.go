@@ -9,20 +9,32 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	joinOrganizationInvitesUseCases "relif/platform-bff/usecases/join_organization_invites"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type JoinOrganizationInvites struct {
-	service              services.JoinOrganizationInvites
-	authorizationService services.Authorization
+	createUseCase                            joinOrganizationInvitesUseCases.Create
+	findManyByOrganizationIDPaginatedUseCase joinOrganizationInvitesUseCases.FindManyByOrganizationIDPaginated
+	findManyByUserIDPaginatedUseCase         joinOrganizationInvitesUseCases.FindManyByUserIDPaginated
+	acceptUseCase                            joinOrganizationInvitesUseCases.Accept
+	rejectUseCase                            joinOrganizationInvitesUseCases.Reject
 }
 
-func NewJoinOrganizationInvites(service services.JoinOrganizationInvites, authorizationService services.Authorization) *JoinOrganizationInvites {
+func NewJoinOrganizationInvites(
+	createUseCase joinOrganizationInvitesUseCases.Create,
+	findManyByOrganizationIDPaginatedUseCase joinOrganizationInvitesUseCases.FindManyByOrganizationIDPaginated,
+	findManyByUserIDPaginatedUseCase joinOrganizationInvitesUseCases.FindManyByUserIDPaginated,
+	acceptUseCase joinOrganizationInvitesUseCases.Accept,
+	rejectUseCase joinOrganizationInvitesUseCases.Reject,
+) *JoinOrganizationInvites {
 	return &JoinOrganizationInvites{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase:                            createUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		findManyByUserIDPaginatedUseCase:         findManyByUserIDPaginatedUseCase,
+		acceptUseCase:                            acceptUseCase,
+		rejectUseCase:                            rejectUseCase,
 	}
 }
 
@@ -32,18 +44,14 @@ func (handler *JoinOrganizationInvites) Create(w http.ResponseWriter, r *http.Re
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -55,10 +63,18 @@ func (handler *JoinOrganizationInvites) Create(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	invite, err := handler.service.Create(user, req.ToEntity())
+	data := req.ToEntity()
+	invite, err := handler.createUseCase.Execute(user, organizationID, data)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -74,11 +90,6 @@ func (handler *JoinOrganizationInvites) FindManyByOrganizationID(w http.Response
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -95,10 +106,17 @@ func (handler *JoinOrganizationInvites) FindManyByOrganizationID(w http.Response
 		return
 	}
 
-	count, joinRequests, err := handler.service.FindManyByOrganizationID(organizationID, int64(offset), int64(limit))
+	count, joinRequests, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -114,11 +132,6 @@ func (handler *JoinOrganizationInvites) FindManyByUserID(w http.ResponseWriter, 
 	userID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessUserResource(userID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -135,10 +148,17 @@ func (handler *JoinOrganizationInvites) FindManyByUserID(w http.ResponseWriter, 
 		return
 	}
 
-	count, joinRequests, err := handler.service.FindManyByUserID(userID, int64(offset), int64(limit))
+	count, joinRequests, err := handler.findManyByUserIDPaginatedUseCase.Execute(user, userID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrUserNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -154,20 +174,10 @@ func (handler *JoinOrganizationInvites) Accept(w http.ResponseWriter, r *http.Re
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateJoinOrganizationInviteData(id, user); err != nil {
+	if err := handler.acceptUseCase.Execute(user, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrJoinOrganizationInviteNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
-	if err := handler.service.Accept(id); err != nil {
-		switch {
 		case errors.Is(err, utils.ErrJoinOrganizationInviteNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -185,25 +195,14 @@ func (handler *JoinOrganizationInvites) Reject(w http.ResponseWriter, r *http.Re
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateJoinOrganizationInviteData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrJoinOrganizationInviteNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -215,8 +214,10 @@ func (handler *JoinOrganizationInvites) Reject(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err = handler.service.Reject(id, req.ToEntity()); err != nil {
+	if err = handler.rejectUseCase.Execute(user, id, req.RejectReason); err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrJoinOrganizationInviteNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:

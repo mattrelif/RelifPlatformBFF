@@ -13,10 +13,11 @@ import (
 
 type VoluntaryPeople interface {
 	Create(data entities.VoluntaryPerson) (entities.VoluntaryPerson, error)
-	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error)
+	FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.VoluntaryPerson, error)
 	FindOneByID(id string) (entities.VoluntaryPerson, error)
 	CountByEmail(email string) (int64, error)
 	UpdateOneByID(id string, data entities.VoluntaryPerson) error
+	DeleteOneByID(id string) error
 }
 
 type mongoVoluntaryPeople struct {
@@ -39,7 +40,7 @@ func (repository *mongoVoluntaryPeople) Create(data entities.VoluntaryPerson) (e
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoVoluntaryPeople) FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.VoluntaryPerson, error) {
+func (repository *mongoVoluntaryPeople) FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.VoluntaryPerson, error) {
 	var filter bson.M
 
 	entityList := make([]entities.VoluntaryPerson, 0)
@@ -52,13 +53,6 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationID(organizationID,
 					"organization_id": organizationID,
 				},
 				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-				bson.M{
 					"full_name": bson.D{
 						{"$regex", search},
 						{"$options", "i"},
@@ -68,18 +62,7 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationID(organizationID,
 		}
 	} else {
 		filter = bson.M{
-			"$and": bson.A{
-				bson.M{
-					"organization_id": organizationID,
-				},
-				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-			},
+			"organization_id": organizationID,
 		}
 	}
 
@@ -113,18 +96,7 @@ func (repository *mongoVoluntaryPeople) FindOneByID(id string) (entities.Volunta
 	var model models.VoluntaryPerson
 
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
+		"_id": id,
 	}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
@@ -140,18 +112,7 @@ func (repository *mongoVoluntaryPeople) FindOneByID(id string) (entities.Volunta
 
 func (repository *mongoVoluntaryPeople) CountByEmail(email string) (int64, error) {
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"email": email,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
+		"email": email,
 	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
@@ -169,6 +130,16 @@ func (repository *mongoVoluntaryPeople) UpdateOneByID(id string, data entities.V
 	update := bson.M{"$set": &model}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository *mongoVoluntaryPeople) DeleteOneByID(id string) error {
+	filter := bson.M{"_id": id}
+
+	if _, err := repository.collection.DeleteOne(context.Background(), filter); err != nil {
 		return err
 	}
 

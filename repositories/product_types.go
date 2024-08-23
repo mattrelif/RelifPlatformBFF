@@ -12,7 +12,7 @@ import (
 
 type ProductTypes interface {
 	Create(data entities.ProductType) (entities.ProductType, error)
-	FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.ProductType, error)
+	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.ProductType, error)
 	FindOneByID(id string) (entities.ProductType, error)
 	FindOneCompleteByID(id string) (entities.ProductType, error)
 	UpdateOneByID(id string, data entities.ProductType) error
@@ -81,7 +81,7 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 				{"let", bson.D{{"productTypeID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
-						{"$match", bson.M{"$expr": bson.M{"$eq": bson.A{"$product_type_id", "$$productTypeID"}}}},
+						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
 					},
 					bson.D{
 						{"$facet", bson.D{
@@ -179,7 +179,7 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoProductTypes) FindManyByOrganizationID(organizationID string, limit, offset int64) (int64, []entities.ProductType, error) {
+func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.ProductType, error) {
 	modelList := make([]models.FindProductType, 0)
 	entityList := make([]entities.ProductType, 0)
 
@@ -220,7 +220,7 @@ func (repository *mongoProductTypes) FindManyByOrganizationID(organizationID str
 				{"let", bson.D{{"productTypeID", "$_id"}}},
 				{"pipeline", bson.A{
 					bson.D{
-						{"$match", bson.M{"$expr": bson.M{"$eq": bson.A{"$product_type_id", "$$productTypeID"}}}},
+						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
 					},
 					bson.D{
 						{"$facet", bson.D{

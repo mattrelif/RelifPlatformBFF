@@ -12,8 +12,8 @@ import (
 
 type OrganizationDataAccessRequests interface {
 	Create(data entities.OrganizationDataAccessRequest) (entities.OrganizationDataAccessRequest, error)
-	FindManyByRequesterOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
-	FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error)
+	FindManyByRequesterOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessRequest, error)
+	FindManyByTargetOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessRequest, error)
 	FindOneByID(id string) (entities.OrganizationDataAccessRequest, error)
 	UpdateOneByID(id string, data entities.OrganizationDataAccessRequest) error
 }
@@ -38,7 +38,7 @@ func (repository *mongoOrganizationDataAccessRequests) Create(data entities.Orga
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
+func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessRequest, error) {
 	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
@@ -116,7 +116,7 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 	return count, entityList, nil
 }
 
-func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizationID(organizationID string, limit, offset int64) (int64, []entities.OrganizationDataAccessRequest, error) {
+func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessRequest, error) {
 	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 

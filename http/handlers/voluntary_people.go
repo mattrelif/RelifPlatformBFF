@@ -9,20 +9,32 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	voluntaryPeopleUseCases "relif/platform-bff/usecases/voluntary_people"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type VoluntaryPeople struct {
-	service              services.VoluntaryPeople
-	authorizationService services.Authorization
+	createUseCase                            voluntaryPeopleUseCases.Create
+	findManyByOrganizationIDPaginatedUseCase voluntaryPeopleUseCases.FindManyByOrganizationIDPaginated
+	findOneByIDUseCase                       voluntaryPeopleUseCases.FindOneByID
+	updateOneByIDUseCase                     voluntaryPeopleUseCases.UpdateOneByID
+	deleteOneByIDUseCase                     voluntaryPeopleUseCases.DeleteOneByID
 }
 
-func NewVoluntaryPeople(service services.VoluntaryPeople, authorizationService services.Authorization) *VoluntaryPeople {
+func NewVoluntaryPeople(
+	createUseCase voluntaryPeopleUseCases.Create,
+	findManyByOrganizationIDPaginatedUseCase voluntaryPeopleUseCases.FindManyByOrganizationIDPaginated,
+	findOneByIDUseCase voluntaryPeopleUseCases.FindOneByID,
+	updateOneByIDUseCase voluntaryPeopleUseCases.UpdateOneByID,
+	deleteOneByIDUseCase voluntaryPeopleUseCases.DeleteOneByID,
+) *VoluntaryPeople {
 	return &VoluntaryPeople{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase:                            createUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		findOneByIDUseCase:                       findOneByIDUseCase,
+		updateOneByIDUseCase:                     updateOneByIDUseCase,
+		deleteOneByIDUseCase:                     deleteOneByIDUseCase,
 	}
 }
 
@@ -32,18 +44,14 @@ func (handler *VoluntaryPeople) Create(w http.ResponseWriter, r *http.Request) {
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -55,7 +63,8 @@ func (handler *VoluntaryPeople) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	voluntary, err := handler.service.Create(organizationID, req.ToEntity())
+	data := req.ToEntity()
+	voluntary, err := handler.createUseCase.Execute(user, organizationID, data)
 
 	if err != nil {
 		switch {
@@ -80,18 +89,6 @@ func (handler *VoluntaryPeople) FindManyByOrganizationID(w http.ResponseWriter, 
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrOrganizationNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	search := r.URL.Query().Get("search")
 
 	offsetParam := r.URL.Query().Get("offset")
@@ -110,10 +107,17 @@ func (handler *VoluntaryPeople) FindManyByOrganizationID(w http.ResponseWriter, 
 		return
 	}
 
-	count, voluntaries, err := handler.service.FindManyByOrganizationID(organizationID, search, int64(limit), int64(offset))
+	count, voluntaries, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, search, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -129,27 +133,17 @@ func (handler *VoluntaryPeople) FindOneByID(w http.ResponseWriter, r *http.Reque
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessVoluntaryPersonData(id, user); err != nil {
+	voluntary, err := handler.findOneByIDUseCase.Execute(user, id)
+
+	if err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	}
-
-	voluntary, err := handler.service.FindOneByID(id)
-
-	if err != nil {
-		switch {
-		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
 	}
 
 	res := responses.NewVoluntaryPerson(voluntary)
@@ -166,24 +160,14 @@ func (handler *VoluntaryPeople) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateVoluntaryPersonData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -195,9 +179,16 @@ func (handler *VoluntaryPeople) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	data := req.ToEntity()
+	if err = handler.updateOneByIDUseCase.Execute(user, id, data); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -207,20 +198,15 @@ func (handler *VoluntaryPeople) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateVoluntaryPersonData(id, user); err != nil {
+	if err := handler.deleteOneByIDUseCase.Execute(user, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrVoluntaryPersonNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	if err := handler.service.InactivateOneByID(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

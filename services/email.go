@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
@@ -10,60 +11,47 @@ import (
 )
 
 type Email interface {
-	SendPasswordResetEmail(requestID string, user entities.User) error
+	SendPasswordResetEmail(request entities.PasswordChangeRequest, user entities.User) error
 	SendPasswordChangedEmail(user entities.User) error
-	SendPlatformInviteEmail(inviter entities.User, invitedEmail, code string) error
+	SendPlatformInviteEmail(inviter entities.User, invite entities.JoinPlatformInvite) error
 }
 
 type emailSes struct {
-	client *ses.Client
-	domain string
+	client         *ses.Client
+	emailDomain    string
+	frontendDomain string
 }
 
-func NewSesEmail(client *ses.Client, domain string) Email {
+func NewSesEmail(client *ses.Client, emailDomain, frontendDomain string) Email {
 	return &emailSes{
-		client: client,
-		domain: domain,
+		client:         client,
+		emailDomain:    emailDomain,
+		frontendDomain: frontendDomain,
 	}
 }
 
-func (service *emailSes) SendPasswordResetEmail(requestID string, user entities.User) error {
-	var greetingLanguageMap = map[string]string{
-		"pt": "",
-		"en": "",
-		"es": "",
+func (service *emailSes) SendPasswordResetEmail(request entities.PasswordChangeRequest, user entities.User) error {
+	templateData := map[string]string{
+		"first_name": user.FirstName,
+		"reset_link": fmt.Sprintf(`"http://%s/recover-password?code=%s"`, service.frontendDomain, request.Code),
 	}
 
-	var subjectLanguageMap = map[string]string{
-		"pt": "",
-		"en": "",
-		"es": "",
-	}
+	templateDataJson, err := json.Marshal(templateData)
 
-	var textLanguageMap = map[string]string{
-		"pt": "",
-		"en": "",
-		"es": "",
+	if err != nil {
+		return err
 	}
 
 	input := &ses.SendTemplatedEmailInput{
-		Source: aws.String(service.domain),
+		Source: aws.String(service.emailDomain),
 		Destination: &types.Destination{
 			ToAddresses: []string{user.Email},
 		},
-		Template: aws.String("PasswordResetEmail"),
-		TemplateData: aws.String(
-			fmt.Sprintf(`{"greeting": "%s", "subject": "%s", "text": "%s", "token": "%s", "first_name": "%s"}`,
-				greetingLanguageMap[user.Preferences.Language],
-				subjectLanguageMap[user.Preferences.Language],
-				textLanguageMap[user.Preferences.Language],
-				requestID,
-				user.FirstName,
-			)),
+		Template:     aws.String("PasswordResetTemplate"),
+		TemplateData: aws.String(string(templateDataJson)),
 	}
 
-	_, err := service.client.SendTemplatedEmail(context.Background(), input)
-	if err != nil {
+	if _, err = service.client.SendTemplatedEmail(context.Background(), input); err != nil {
 		return err
 	}
 
@@ -71,62 +59,54 @@ func (service *emailSes) SendPasswordResetEmail(requestID string, user entities.
 }
 
 func (service *emailSes) SendPasswordChangedEmail(user entities.User) error {
-	var greetingLanguageMap = map[string]string{
-		"pt": "",
-		"en": "",
-		"es": "",
+	templateData := map[string]string{
+		"first_name": user.FirstName,
 	}
 
-	var subjectLanguageMap = map[string]string{
-		"pt": "",
-		"en": "",
-		"es": "",
-	}
+	templateDataJson, err := json.Marshal(templateData)
 
-	var textLanguageMap = map[string]string{
-		"pt": "",
-		"en": "",
-		"es": "",
+	if err != nil {
+		return err
 	}
 
 	input := &ses.SendTemplatedEmailInput{
-		Source: aws.String(service.domain),
+		Source: aws.String(service.emailDomain),
 		Destination: &types.Destination{
 			ToAddresses: []string{user.Email},
 		},
-		Template: aws.String("PasswordChangedEmail"),
-		TemplateData: aws.String(
-			fmt.Sprintf(`{"greeting": "%s", "subject": "%s", "text": "%s", "first_name": "%s"}`,
-				greetingLanguageMap[user.Preferences.Language],
-				subjectLanguageMap[user.Preferences.Language],
-				textLanguageMap[user.Preferences.Language],
-				user.FirstName,
-			)),
+		Template:     aws.String("PasswordChangeConfirmationTemplate"),
+		TemplateData: aws.String(string(templateDataJson)),
 	}
 
-	_, err := service.client.SendTemplatedEmail(context.Background(), input)
-	if err != nil {
+	if _, err = service.client.SendTemplatedEmail(context.Background(), input); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (service *emailSes) SendPlatformInviteEmail(inviter entities.User, invitedEmail, code string) error {
-	input := &ses.SendTemplatedEmailInput{
-		Source: aws.String(service.domain),
-		Destination: &types.Destination{
-			ToAddresses: []string{invitedEmail},
-		},
-		Template: aws.String("PlatformInviteEmail"),
-		TemplateData: aws.String(
-			fmt.Sprintf(`{"invite_link": "%s"}`,
-				fmt.Sprintf(""),
-			)),
+func (service *emailSes) SendPlatformInviteEmail(inviter entities.User, invite entities.JoinPlatformInvite) error {
+	templateData := map[string]string{
+		"inviter_name":      inviter.FirstName,
+		"registration_link": fmt.Sprintf("http://%s/join?code=%s", service.frontendDomain, invite.Code),
 	}
 
-	_, err := service.client.SendTemplatedEmail(context.Background(), input)
+	templateDataJson, err := json.Marshal(templateData)
+
 	if err != nil {
+		return err
+	}
+
+	input := &ses.SendTemplatedEmailInput{
+		Source: aws.String(service.emailDomain),
+		Destination: &types.Destination{
+			ToAddresses: []string{invite.InvitedEmail},
+		},
+		Template:     aws.String("PlatformInvitationTemplate"),
+		TemplateData: aws.String(string(templateDataJson)),
+	}
+
+	if _, err = service.client.SendTemplatedEmail(context.Background(), input); err != nil {
 		return err
 	}
 

@@ -1,0 +1,75 @@
+package join_platform_invites
+
+import (
+	"relif/platform-bff/entities"
+	"relif/platform-bff/guards"
+	"relif/platform-bff/repositories"
+	"relif/platform-bff/services"
+	"relif/platform-bff/utils"
+)
+
+type Create interface {
+	Execute(actor entities.User, organizationID string, data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error)
+}
+
+type createImpl struct {
+	joinPlatformInvitesRepository repositories.JoinPlatformInvites
+	organizationsRepository       repositories.Organizations
+	usersRepository               repositories.Users
+	emailService                  services.Email
+	uuidGeneratorFunction         utils.UuidGenerator
+}
+
+func NewCreate(
+	joinPlatformInvitesRepository repositories.JoinPlatformInvites,
+	organizationsRepository repositories.Organizations,
+	usersRepository repositories.Users,
+	emailService services.Email,
+	uuidGeneratorFunction utils.UuidGenerator,
+) Create {
+	return &createImpl{
+		joinPlatformInvitesRepository: joinPlatformInvitesRepository,
+		organizationsRepository:       organizationsRepository,
+		usersRepository:               usersRepository,
+		emailService:                  emailService,
+		uuidGeneratorFunction:         uuidGeneratorFunction,
+	}
+}
+
+func (uc *createImpl) Execute(actor entities.User, organizationID string, data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error) {
+	organization, err := uc.organizationsRepository.FindOneByID(organizationID)
+
+	if err != nil {
+		return entities.JoinPlatformInvite{}, err
+	}
+
+	if err = guards.IsOrganizationAdmin(actor, organization); err != nil {
+		return entities.JoinPlatformInvite{}, err
+	}
+
+	count, err := uc.usersRepository.CountByEmail(data.InvitedEmail)
+
+	if err != nil {
+		return entities.JoinPlatformInvite{}, err
+	}
+
+	if count > 0 {
+		return entities.JoinPlatformInvite{}, utils.ErrUserAlreadyExists
+	}
+
+	data.OrganizationID = organization.ID
+	data.InviterID = actor.ID
+	data.Code = uc.uuidGeneratorFunction()
+
+	invite, err := uc.joinPlatformInvitesRepository.Create(data)
+
+	if err != nil {
+		return entities.JoinPlatformInvite{}, err
+	}
+
+	if err = uc.emailService.SendPlatformInviteEmail(actor, invite); err != nil {
+		return entities.JoinPlatformInvite{}, err
+	}
+
+	return invite, nil
+}

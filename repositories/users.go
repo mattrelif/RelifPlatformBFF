@@ -11,11 +11,12 @@ import (
 )
 
 type Users interface {
-	CreateUser(data entities.User) (entities.User, error)
-	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.User, error)
+	Create(data entities.User) (entities.User, error)
+	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.User, error)
 	FindOneByID(id string) (entities.User, error)
-	FindOneCompleteByID(id string) (entities.User, error)
+	FindOneAndLookupByID(id string) (entities.User, error)
 	FindOneByEmail(email string) (entities.User, error)
+	FindOneAndLookupByEmail(email string) (entities.User, error)
 	CountByEmail(email string) (int64, error)
 	CountByID(email string) (int64, error)
 	UpdateOneByID(id string, data entities.User) error
@@ -31,7 +32,7 @@ func NewUsersMongo(database *mongo.Database) Users {
 	}
 }
 
-func (repository *mongoUsers) CreateUser(data entities.User) (entities.User, error) {
+func (repository *mongoUsers) Create(data entities.User) (entities.User, error) {
 	model := models.NewUser(data)
 
 	if _, err := repository.collection.InsertOne(context.Background(), &model); err != nil {
@@ -41,24 +42,11 @@ func (repository *mongoUsers) CreateUser(data entities.User) (entities.User, err
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoUsers) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.User, error) {
+func (repository *mongoUsers) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.User, error) {
 	modelList := make([]models.FindUser, 0)
 	entityList := make([]entities.User, 0)
 
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"organization_id": organizationID,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
-	}
+	filter := bson.M{"organization_id": organizationID}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -114,20 +102,7 @@ func (repository *mongoUsers) FindManyByOrganizationID(organizationID string, of
 func (repository *mongoUsers) FindOneByID(id string) (entities.User, error) {
 	var model models.User
 
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
-	}
+	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -140,23 +115,10 @@ func (repository *mongoUsers) FindOneByID(id string) (entities.User, error) {
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoUsers) FindOneCompleteByID(id string) (entities.User, error) {
+func (repository *mongoUsers) FindOneAndLookupByID(id string) (entities.User, error) {
 	var model models.FindUser
 
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
-	}
+	filter := bson.M{"_id": id}
 
 	pipeline := mongo.Pipeline{
 		bson.D{
@@ -197,20 +159,7 @@ func (repository *mongoUsers) FindOneCompleteByID(id string) (entities.User, err
 func (repository *mongoUsers) FindOneByEmail(email string) (entities.User, error) {
 	var model models.User
 
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"email": email,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
-	}
+	filter := bson.M{"email": email}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -223,21 +172,49 @@ func (repository *mongoUsers) FindOneByEmail(email string) (entities.User, error
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoUsers) CountByEmail(email string) (int64, error) {
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"email": email,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
+func (repository *mongoUsers) FindOneAndLookupByEmail(email string) (entities.User, error) {
+	var model models.FindUser
+
+	filter := bson.M{"email": email}
+
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "organization_id"},
+				{"foreignField", "_id"},
+				{"as", "organization"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
 		},
 	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
+
+	if err != nil {
+		return entities.User{}, err
+	}
+
+	defer cursor.Close(context.Background())
+
+	if cursor.Next(context.Background()) {
+		if err = cursor.Decode(&model); err != nil {
+			return entities.User{}, err
+		}
+	} else {
+		return entities.User{}, utils.ErrUserNotFound
+	}
+
+	return model.ToEntity(), nil
+}
+
+func (repository *mongoUsers) CountByEmail(email string) (int64, error) {
+	filter := bson.M{"email": email}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
@@ -249,20 +226,7 @@ func (repository *mongoUsers) CountByEmail(email string) (int64, error) {
 }
 
 func (repository *mongoUsers) CountByID(id string) (int64, error) {
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
-	}
+	filter := bson.M{"_id": id}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 

@@ -7,12 +7,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
-	"relif/platform-bff/utils"
 )
 
 type Organizations interface {
 	Create(data entities.Organization) (entities.Organization, error)
-	FindMany(offset, limit int64) (int64, []entities.Organization, error)
+	FindManyPaginated(offset, limit int64) (int64, []entities.Organization, error)
 	FindOneByID(id string) (entities.Organization, error)
 	UpdateOneByID(id string, data entities.Organization) error
 }
@@ -37,13 +36,11 @@ func (repository *mongoOrganizations) Create(data entities.Organization) (entiti
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []entities.Organization, error) {
+func (repository *mongoOrganizations) FindManyPaginated(offset, limit int64) (int64, []entities.Organization, error) {
 	modelList := make([]models.Organization, 0)
 	entityList := make([]entities.Organization, 0)
 
-	filter := bson.M{"status": bson.M{"$not": bson.M{"$eq": utils.InactiveStatus}}}
-
-	count, err := repository.collection.CountDocuments(context.Background(), filter)
+	count, err := repository.collection.CountDocuments(context.Background(), bson.M{})
 
 	if err != nil {
 		return 0, nil, err
@@ -72,20 +69,7 @@ func (repository *mongoOrganizations) FindMany(offset, limit int64) (int64, []en
 func (repository *mongoOrganizations) FindOneByID(id string) (entities.Organization, error) {
 	var model models.Organization
 
-	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
-	}
+	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
 		return entities.Organization{}, err

@@ -11,7 +11,7 @@ import (
 )
 
 type Settings struct {
-	CorsAllowedDomain string `default:"localhost:3000" split_words:"true" json:"CORS_ALLOWED_DOMAIN"`
+	FrontendDomain string `default:"localhost:3000" split_words:"true" json:"FRONTEND_DOMAIN"`
 
 	EmailDomain string `required:"true" split_words:"true" json:"EMAIL_DOMAIN"`
 

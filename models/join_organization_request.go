@@ -70,7 +70,7 @@ func (request *JoinOrganizationRequest) ToEntity() entities.JoinOrganizationRequ
 }
 
 func NewJoinOrganizationRequest(entity entities.JoinOrganizationRequest) JoinOrganizationRequest {
-	expiresAt := time.Now().Add(4 * time.Hour)
+	expiresAt := time.Now().Add(24 * time.Hour)
 
 	return JoinOrganizationRequest{
 		ID:             primitive.NewObjectID().Hex(),

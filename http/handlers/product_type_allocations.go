@@ -9,19 +9,22 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	productTypeAllocationsUseCases "relif/platform-bff/usecases/product_type_alloctions"
 	"relif/platform-bff/utils"
 )
 
 type ProductTypeAllocations struct {
-	service              services.ProductTypeAllocations
-	authorizationService services.Authorization
+	createEntranceUseCase     productTypeAllocationsUseCases.CreateEntrance
+	createReallocationUseCase productTypeAllocationsUseCases.CreateReallocation
 }
 
-func NewProductTypeAllocations(service services.ProductTypeAllocations, authorizationService services.Authorization) *ProductTypeAllocations {
+func NewProductTypeAllocations(
+	createEntranceUseCase productTypeAllocationsUseCases.CreateEntrance,
+	createReallocationUseCase productTypeAllocationsUseCases.CreateReallocation,
+) *ProductTypeAllocations {
 	return &ProductTypeAllocations{
-		service:              service,
-		authorizationService: authorizationService,
+		createEntranceUseCase:     createEntranceUseCase,
+		createReallocationUseCase: createReallocationUseCase,
 	}
 }
 
@@ -30,18 +33,6 @@ func (handler *ProductTypeAllocations) Allocate(w http.ResponseWriter, r *http.R
 
 	productTypeID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
-
-	if err := handler.authorizationService.AuthorizeCreateProductTypeResource(productTypeID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrProductTypeNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
 
 	body, err := io.ReadAll(r.Body)
 
@@ -62,10 +53,13 @@ func (handler *ProductTypeAllocations) Allocate(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	allocation, err := handler.service.CreateEntrance(productTypeID, req.ToEntity())
+	data := req.ToEntity()
+	allocation, err := handler.createEntranceUseCase.Execute(user, productTypeID, data)
 
 	if err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrProductTypeNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -76,7 +70,8 @@ func (handler *ProductTypeAllocations) Allocate(w http.ResponseWriter, r *http.R
 
 	res := responses.NewProductTypeAllocation(allocation)
 
-	if err = json.NewEncoder(w).Encode(res); err != nil {
+	w.WriteHeader(http.StatusCreated)
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -88,18 +83,6 @@ func (handler *ProductTypeAllocations) Reallocate(w http.ResponseWriter, r *http
 	productTypeID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateProductTypeResource(productTypeID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrProductTypeNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
@@ -119,10 +102,13 @@ func (handler *ProductTypeAllocations) Reallocate(w http.ResponseWriter, r *http
 		return
 	}
 
-	allocation, err := handler.service.CreateReallocation(productTypeID, req.ToEntity())
+	data := req.ToEntity()
+	allocation, err := handler.createReallocationUseCase.Execute(user, productTypeID, data)
 
 	if err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrProductTypeNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -133,7 +119,8 @@ func (handler *ProductTypeAllocations) Reallocate(w http.ResponseWriter, r *http
 
 	res := responses.NewProductTypeAllocation(allocation)
 
-	if err = json.NewEncoder(w).Encode(res); err != nil {
+	w.WriteHeader(http.StatusCreated)
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

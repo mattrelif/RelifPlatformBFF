@@ -12,8 +12,8 @@ import (
 
 type JoinOrganizationRequests interface {
 	Create(data entities.JoinOrganizationRequest) (entities.JoinOrganizationRequest, error)
-	FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
-	FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
+	FindManyByUserIDPaginated(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error)
 	FindOneByID(id string) (entities.JoinOrganizationRequest, error)
 	UpdateOneByID(id string, data entities.JoinOrganizationRequest) error
 }
@@ -38,7 +38,7 @@ func (repository *mongoJoinOrganizationRequests) Create(data entities.JoinOrgani
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationID(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
+func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
 	modelList := make([]models.FindJoinOrganizationRequest, 0)
 	entityList := make([]entities.JoinOrganizationRequest, 0)
 
@@ -116,7 +116,7 @@ func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationID(organi
 	return count, entityList, nil
 }
 
-func (repository *mongoJoinOrganizationRequests) FindManyByUserID(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
+func (repository *mongoJoinOrganizationRequests) FindManyByUserIDPaginated(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
 	modelList := make([]models.FindJoinOrganizationRequest, 0)
 	entityList := make([]entities.JoinOrganizationRequest, 0)
 

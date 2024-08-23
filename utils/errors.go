@@ -10,8 +10,9 @@ var (
 
 var (
 	ErrInvalidCredentials           = errors.New("invalid credentials")
-	ErrUnauthorizedAction           = errors.New("unauthorized action")
+	ErrForbiddenAction              = errors.New("forbidden action")
 	ErrMemberOfInactiveOrganization = errors.New("member of inactive organization")
+	ErrInactiveUser                 = errors.New("inactive user")
 )
 
 var (

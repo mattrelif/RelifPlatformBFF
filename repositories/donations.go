@@ -11,7 +11,7 @@ import (
 
 type Donations interface {
 	Create(data entities.Donation) (entities.Donation, error)
-	FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.Donation, error)
+	FindManyByBeneficiaryIDPaginated(beneficiaryID string, offset, limit int64) (int64, []entities.Donation, error)
 }
 
 type mongoDonations struct {
@@ -34,7 +34,7 @@ func (repository *mongoDonations) Create(data entities.Donation) (entities.Donat
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoDonations) FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.Donation, error) {
+func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID string, offset, limit int64) (int64, []entities.Donation, error) {
 	modelList := make([]models.FindDonation, 0)
 	entityList := make([]entities.Donation, 0)
 

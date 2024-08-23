@@ -7,38 +7,29 @@ import (
 	"net/http"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	storageRecordsUseCases "relif/platform-bff/usecases/storage_records"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type StorageRecords struct {
-	service              services.StorageRecords
-	authorizationService services.Authorization
+	findManyByOrganizationIDPaginatedUseCase storageRecordsUseCases.FindManyByOrganizationIDPaginated
+	findManyByHousingIDPaginatedUseCase      storageRecordsUseCases.FindManyByHousingIDPaginated
 }
 
-func NewStorageRecords(service services.StorageRecords, authorizationService services.Authorization) *StorageRecords {
+func NewStorageRecords(
+	findManyByOrganizationIDPaginatedUseCase storageRecordsUseCases.FindManyByOrganizationIDPaginated,
+	findManyByHousingIDPaginatedUseCase storageRecordsUseCases.FindManyByHousingIDPaginated,
+) *StorageRecords {
 	return &StorageRecords{
-		service:              service,
-		authorizationService: authorizationService,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		findManyByHousingIDPaginatedUseCase:      findManyByHousingIDPaginatedUseCase,
 	}
 }
 
 func (handler *StorageRecords) FindManyByOrganizationID(w http.ResponseWriter, r *http.Request) {
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
-
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrOrganizationNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
 
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
@@ -56,10 +47,17 @@ func (handler *StorageRecords) FindManyByOrganizationID(w http.ResponseWriter, r
 		return
 	}
 
-	count, records, err := handler.service.FindManyByOrganizationID(organizationID, int64(offset), int64(limit))
+	count, records, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -75,18 +73,6 @@ func (handler *StorageRecords) FindManyByHousingID(w http.ResponseWriter, r *htt
 	housingID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingData(housingID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrHousingNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -103,10 +89,17 @@ func (handler *StorageRecords) FindManyByHousingID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	count, records, err := handler.service.FindManyByHousingID(housingID, int64(offset), int64(limit))
+	count, records, err := handler.findManyByHousingIDPaginatedUseCase.Execute(user, housingID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

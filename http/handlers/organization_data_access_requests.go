@@ -9,20 +9,32 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	organizationDataAccessRequestsUseCases "relif/platform-bff/usecases/organization_data_access_requests"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type OrganizationDataAccessRequests struct {
-	service              services.OrganizationDataAccessRequests
-	authorizationService services.Authorization
+	createUseCase                                     organizationDataAccessRequestsUseCases.Create
+	findManyByRequesterOrganizationIDPaginatedUseCase organizationDataAccessRequestsUseCases.FindManyByRequesterOrganizationIDPaginated
+	findManyByTargetOrganizationIDPaginatedUseCase    organizationDataAccessRequestsUseCases.FindManyByTargetOrganizationIDPaginated
+	acceptUseCase                                     organizationDataAccessRequestsUseCases.Accept
+	rejectUseCase                                     organizationDataAccessRequestsUseCases.Reject
 }
 
-func NewOrganizationDataAccessRequests(service services.OrganizationDataAccessRequests, authorizationService services.Authorization) *OrganizationDataAccessRequests {
+func NewOrganizationDataAccessRequests(
+	createUseCase organizationDataAccessRequestsUseCases.Create,
+	findManyByRequesterOrganizationIDPaginatedUseCase organizationDataAccessRequestsUseCases.FindManyByRequesterOrganizationIDPaginated,
+	findManyByTargetOrganizationIDPaginatedUseCase organizationDataAccessRequestsUseCases.FindManyByTargetOrganizationIDPaginated,
+	acceptUseCase organizationDataAccessRequestsUseCases.Accept,
+	rejectUseCase organizationDataAccessRequestsUseCases.Reject,
+) *OrganizationDataAccessRequests {
 	return &OrganizationDataAccessRequests{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase: createUseCase,
+		findManyByRequesterOrganizationIDPaginatedUseCase: findManyByRequesterOrganizationIDPaginatedUseCase,
+		findManyByTargetOrganizationIDPaginatedUseCase:    findManyByTargetOrganizationIDPaginatedUseCase,
+		acceptUseCase: acceptUseCase,
+		rejectUseCase: rejectUseCase,
 	}
 }
 
@@ -30,22 +42,17 @@ func (handler *OrganizationDataAccessRequests) Create(w http.ResponseWriter, r *
 	targetOrganizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateAccessOrganizationDataRequest(user); err != nil {
+	request, err := handler.createUseCase.Execute(user, targetOrganizationID)
+
+	if err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrOrganizationNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	request, err := handler.service.Create(user, targetOrganizationID)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -62,11 +69,6 @@ func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationID
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -83,16 +85,21 @@ func (handler *OrganizationDataAccessRequests) FindManyByRequesterOrganizationID
 		return
 	}
 
-	count, reqs, err := handler.service.FindManyByRequesterOrganizationID(organizationID, int64(limit), int64(offset))
+	count, reqs, err := handler.findManyByRequesterOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
 	res := responses.FindMany[responses.OrganizationDataAccessRequests]{Data: responses.NewNewOrganizationDataAccessRequests(reqs), Count: count}
 
-	if err = json.NewEncoder(w).Encode(res); err != nil {
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -102,11 +109,6 @@ func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationID(w 
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessPrivateOrganizationData(organizationID, user); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -123,16 +125,21 @@ func (handler *OrganizationDataAccessRequests) FindManyByTargetOrganizationID(w 
 		return
 	}
 
-	count, reqs, err := handler.service.FindManyByTargetOrganizationID(organizationID, int64(limit), int64(offset))
+	count, reqs, err := handler.findManyByTargetOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
 	res := responses.FindMany[responses.OrganizationDataAccessRequests]{Data: responses.NewNewOrganizationDataAccessRequests(reqs), Count: count}
 
-	if err = json.NewEncoder(w).Encode(res); err != nil {
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -142,20 +149,10 @@ func (handler *OrganizationDataAccessRequests) Accept(w http.ResponseWriter, r *
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateAccessOrganizationDataRequestData(id, user); err != nil {
+	if err := handler.acceptUseCase.Execute(user, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
-	if err := handler.service.Accept(id, user); err != nil {
-		switch {
 		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -173,33 +170,24 @@ func (handler *OrganizationDataAccessRequests) Reject(w http.ResponseWriter, r *
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateAccessOrganizationDataRequestData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	defer r.Body.Close()
+
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err = handler.service.Reject(id, user, req.ToEntity()); err != nil {
+	if err = handler.rejectUseCase.Execute(user, id, req.RejectReason); err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrOrganizationDataAccessRequestNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:

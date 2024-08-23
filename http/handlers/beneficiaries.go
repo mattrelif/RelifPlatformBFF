@@ -9,20 +9,39 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+
+	beneficiariesUseCases "relif/platform-bff/usecases/beneficiaries"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type Beneficiaries struct {
-	service              services.Beneficiaries
-	authorizationService services.Authorization
+	createUseCase                            beneficiariesUseCases.Create
+	findManyByOrganizationIDPaginatedUseCase beneficiariesUseCases.FindManyByOrganizationIDPaginated
+	findManyByHousingIDPaginatedUseCase      beneficiariesUseCases.FindManyByHousingIDPaginated
+	findManyByHousingRoomIDPaginatedUseCase  beneficiariesUseCases.FindManyByHousingRoomIDPaginated
+	findOneCompleteByIDUseCase               beneficiariesUseCases.FindOneCompleteByID
+	updateOneByIDUseCase                     beneficiariesUseCases.UpdateOneByID
+	deleteOneByIDUseCase                     beneficiariesUseCases.DeleteOneByID
 }
 
-func NewBeneficiaries(service services.Beneficiaries, authorizationService services.Authorization) *Beneficiaries {
+func NewBeneficiaries(
+	createUseCase beneficiariesUseCases.Create,
+	findManyByOrganizationIDPaginatedUseCase beneficiariesUseCases.FindManyByOrganizationIDPaginated,
+	findManyByHousingIDPaginatedUseCase beneficiariesUseCases.FindManyByHousingIDPaginated,
+	findManyByHousingRoomIDPaginatedUseCase beneficiariesUseCases.FindManyByHousingRoomIDPaginated,
+	findOneCompleteByIDUseCase beneficiariesUseCases.FindOneCompleteByID,
+	updateOneByIDUseCase beneficiariesUseCases.UpdateOneByID,
+	deleteOneByIDUseCase beneficiariesUseCases.DeleteOneByID,
+) *Beneficiaries {
 	return &Beneficiaries{
-		service:              service,
-		authorizationService: authorizationService,
+		createUseCase:                            createUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		findManyByHousingIDPaginatedUseCase:      findManyByHousingIDPaginatedUseCase,
+		findManyByHousingRoomIDPaginatedUseCase:  findManyByHousingRoomIDPaginatedUseCase,
+		findOneCompleteByIDUseCase:               findOneCompleteByIDUseCase,
+		updateOneByIDUseCase:                     updateOneByIDUseCase,
+		deleteOneByIDUseCase:                     deleteOneByIDUseCase,
 	}
 }
 
@@ -32,18 +51,14 @@ func (handler *Beneficiaries) Create(w http.ResponseWriter, r *http.Request) {
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeCreateOrganizationResource(user, organizationID); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -55,10 +70,13 @@ func (handler *Beneficiaries) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	beneficiary, err := handler.service.Create(organizationID, req.ToEntity())
+	data := req.ToEntity()
+	beneficiary, err := handler.createUseCase.Execute(user, organizationID, data)
 
 	if err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrBeneficiaryAlreadyExists):
 			http.Error(w, err.Error(), http.StatusConflict)
 		default:
@@ -80,18 +98,6 @@ func (handler *Beneficiaries) FindManyByHousingID(w http.ResponseWriter, r *http
 	housingID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingData(housingID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrHousingNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	search := r.URL.Query().Get("search")
 
 	offsetParam := r.URL.Query().Get("offset")
@@ -110,10 +116,17 @@ func (handler *Beneficiaries) FindManyByHousingID(w http.ResponseWriter, r *http
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByHousingID(housingID, search, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.findManyByHousingIDPaginatedUseCase.Execute(user, housingID, search, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -129,18 +142,6 @@ func (handler *Beneficiaries) FindManyByRoomID(w http.ResponseWriter, r *http.Re
 	roomID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessHousingRoomData(roomID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrHousingRoomNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	search := r.URL.Query().Get("search")
 
 	offsetParam := r.URL.Query().Get("offset")
@@ -159,10 +160,17 @@ func (handler *Beneficiaries) FindManyByRoomID(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByRoomID(roomID, search, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.findManyByHousingRoomIDPaginatedUseCase.Execute(user, roomID, search, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -178,18 +186,6 @@ func (handler *Beneficiaries) FindManyByOrganizationID(w http.ResponseWriter, r 
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrOrganizationNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	search := r.URL.Query().Get("search")
 
 	offsetParam := r.URL.Query().Get("offset")
@@ -208,10 +204,17 @@ func (handler *Beneficiaries) FindManyByOrganizationID(w http.ResponseWriter, r 
 		return
 	}
 
-	count, beneficiaries, err := handler.service.FindManyByOrganizationID(organizationID, search, int64(limit), int64(offset))
+	count, beneficiaries, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, search, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrHousingNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -227,22 +230,12 @@ func (handler *Beneficiaries) FindOneByID(w http.ResponseWriter, r *http.Request
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessBeneficiaryData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrBeneficiaryNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
-	beneficiary, err := handler.service.FindOneCompleteByID(id)
+	beneficiary, err := handler.findOneCompleteByIDUseCase.Execute(user, id)
 
 	if err != nil {
 		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrBeneficiaryNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
@@ -265,25 +258,14 @@ func (handler *Beneficiaries) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateBeneficiaryData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		case errors.Is(err, utils.ErrBeneficiaryNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -295,8 +277,16 @@ func (handler *Beneficiaries) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	data := req.ToEntity()
+	if err = handler.updateOneByIDUseCase.Execute(user, id, data); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -307,20 +297,15 @@ func (handler *Beneficiaries) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateBeneficiaryData(id, user); err != nil {
+	if err := handler.deleteOneByIDUseCase.Execute(user, id); err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		case errors.Is(err, utils.ErrBeneficiaryNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		return
-	}
-
-	if err := handler.service.InactivateOneByID(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -9,27 +9,39 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	usersUseCases "relif/platform-bff/usecases/users"
 	"relif/platform-bff/utils"
 	"strconv"
 )
 
 type Users struct {
-	service              services.Users
-	authorizationService services.Authorization
+	findOneCompleteByIDUseCase               usersUseCases.FindOneCompleteByID
+	findManyByOrganizationIDPaginatedUseCase usersUseCases.FindManyByOrganizationIDPaginated
+	updateOneByIDUseCase                     usersUseCases.UpdateOneByID
+	inactivateOneByIDUseCase                 usersUseCases.InactivateOneByID
+	reactivateOneByIDUseCase                 usersUseCases.ReactivateOneByID
 }
 
-func NewUsers(service services.Users, authorizationService services.Authorization) *Users {
+func NewUsers(
+	findOneCompleteByIDUseCase usersUseCases.FindOneCompleteByID,
+	findManyByOrganizationIDPaginatedUseCase usersUseCases.FindManyByOrganizationIDPaginated,
+	updateOneByIDUseCase usersUseCases.UpdateOneByID,
+	inactivateOneByIDUseCase usersUseCases.InactivateOneByID,
+	reactivateOneByIDUseCase usersUseCases.ReactivateOneByID,
+) *Users {
 	return &Users{
-		service:              service,
-		authorizationService: authorizationService,
+		findOneCompleteByIDUseCase:               findOneCompleteByIDUseCase,
+		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		updateOneByIDUseCase:                     updateOneByIDUseCase,
+		inactivateOneByIDUseCase:                 inactivateOneByIDUseCase,
+		reactivateOneByIDUseCase:                 reactivateOneByIDUseCase,
 	}
 }
 
 func (handler *Users) FindOne(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	user, err := handler.service.FindOneCompleteByID(id)
+	user, err := handler.findOneCompleteByIDUseCase.Execute(id)
 
 	if err != nil {
 		switch {
@@ -53,16 +65,6 @@ func (handler *Users) FindManyByOrganizationID(w http.ResponseWriter, r *http.Re
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeAccessOrganizationData(organizationID, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -79,10 +81,17 @@ func (handler *Users) FindManyByOrganizationID(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	count, users, err := handler.service.FindManyByOrganizationID(organizationID, int64(offset), int64(limit))
+	count, users, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -100,49 +109,26 @@ func (handler *Users) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
-	if err := handler.authorizationService.AuthorizeMutateUserData(id, user); err != nil {
-		switch {
-		case errors.Is(err, utils.ErrUserNotFound):
-			http.Error(w, err.Error(), http.StatusNotFound)
-		case errors.Is(err, utils.ErrUnauthorizedAction):
-			http.Error(w, err.Error(), http.StatusForbidden)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	defer r.Body.Close()
+
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err = handler.service.UpdateOneByID(id, req.ToEntity()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (handler *Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-
-	user := r.Context().Value("user").(entities.User)
-
-	if err := handler.authorizationService.AuthorizeMutateUserData(id, user); err != nil {
+	data := req.ToEntity()
+	if err = handler.updateOneByIDUseCase.Execute(user, id, data); err != nil {
 		switch {
 		case errors.Is(err, utils.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
-		case errors.Is(err, utils.ErrUnauthorizedAction):
+		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -150,8 +136,41 @@ func (handler *Users) DeleteOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := handler.service.InactivateOneByID(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (handler *Users) InactivateOne(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.inactivateOneByIDUseCase.Execute(user, id); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUserNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (handler *Users) ReactivateOne(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	if err := handler.reactivateOneByIDUseCase.Execute(user, id); err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUserNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

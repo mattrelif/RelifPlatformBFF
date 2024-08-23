@@ -12,9 +12,9 @@ import (
 
 type BeneficiaryAllocations interface {
 	Create(data entities.BeneficiaryAllocation) (entities.BeneficiaryAllocation, error)
-	FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
-	FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
-	FindManyByRoomID(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByBeneficiaryIDPaginated(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByHousingIDPaginated(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
+	FindManyByRoomIDPaginated(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error)
 }
 
 type mongoBeneficiaryAllocations struct {
@@ -37,7 +37,7 @@ func (repository *mongoBeneficiaryAllocations) Create(data entities.BeneficiaryA
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryID(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryIDPaginated(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
@@ -74,7 +74,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryID(beneficia
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaryAllocations) FindManyByHousingID(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+func (repository *mongoBeneficiaryAllocations) FindManyByHousingIDPaginated(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
@@ -111,7 +111,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByHousingID(housingID str
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaryAllocations) FindManyByRoomID(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
+func (repository *mongoBeneficiaryAllocations) FindManyByRoomIDPaginated(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 

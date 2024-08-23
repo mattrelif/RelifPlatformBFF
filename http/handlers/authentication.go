@@ -8,17 +8,28 @@ import (
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/services"
+	authenticationUseCases "relif/platform-bff/usecases/authentication"
 	"relif/platform-bff/utils"
 )
 
 type Authentication struct {
-	service services.Authentication
+	signUpUseCase             authenticationUseCases.SignUp
+	organizationSignUpUseCase authenticationUseCases.OrganizationSignUp
+	signInUseCase             authenticationUseCases.SignIn
+	signOutUseCase            authenticationUseCases.SignOut
 }
 
-func NewAuthentication(service services.Authentication) *Authentication {
+func NewAuthentication(
+	signUpUseCase authenticationUseCases.SignUp,
+	organizationSignUpUseCase authenticationUseCases.OrganizationSignUp,
+	signInUseCase authenticationUseCases.SignIn,
+	signOutUseCase authenticationUseCases.SignOut,
+) *Authentication {
 	return &Authentication{
-		service: service,
+		signUpUseCase:             signUpUseCase,
+		organizationSignUpUseCase: organizationSignUpUseCase,
+		signInUseCase:             signInUseCase,
+		signOutUseCase:            signOutUseCase,
 	}
 }
 
@@ -26,12 +37,13 @@ func (handler *Authentication) SignUp(w http.ResponseWriter, r *http.Request) {
 	var req requests.SignUp
 
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -43,10 +55,16 @@ func (handler *Authentication) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := handler.service.SignUp(req.ToEntity())
+	data := req.ToEntity()
+	token, err := handler.signUpUseCase.Execute(data)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrUserAlreadyExists):
+			http.Error(w, err.Error(), http.StatusConflict)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -59,12 +77,13 @@ func (handler *Authentication) OrganizationSignUp(w http.ResponseWriter, r *http
 	var req requests.OrganizationSignUp
 
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -76,10 +95,20 @@ func (handler *Authentication) OrganizationSignUp(w http.ResponseWriter, r *http
 		return
 	}
 
-	token, err := handler.service.OrganizationSignUp(req.ToEntity())
+	data := req.ToEntity()
+	token, err := handler.organizationSignUpUseCase.Execute(data)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, utils.ErrMemberOfInactiveOrganization):
+			http.Error(w, err.Error(), http.StatusGone)
+		case errors.Is(err, utils.ErrOrganizationNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrUserAlreadyExists):
+			http.Error(w, err.Error(), http.StatusConflict)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -92,12 +121,13 @@ func (handler *Authentication) SignIn(w http.ResponseWriter, r *http.Request) {
 	var req requests.SignIn
 
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -109,7 +139,7 @@ func (handler *Authentication) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := handler.service.SignIn(req.Email, req.Password)
+	token, err := handler.signInUseCase.Execute(req.Email, req.Password)
 
 	if err != nil {
 		switch {
@@ -117,6 +147,8 @@ func (handler *Authentication) SignIn(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		case errors.Is(err, utils.ErrMemberOfInactiveOrganization):
 			http.Error(w, err.Error(), http.StatusGone)
+		case errors.Is(err, utils.ErrInactiveUser):
+			http.Error(w, err.Error(), http.StatusForbidden)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -142,7 +174,7 @@ func (handler *Authentication) Me(w http.ResponseWriter, r *http.Request) {
 func (handler *Authentication) SignOut(w http.ResponseWriter, r *http.Request) {
 	session := r.Context().Value("session").(entities.Session)
 
-	if err := handler.service.SignOut(session.ID); err != nil {
+	if err := handler.signOutUseCase.Execute(session); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

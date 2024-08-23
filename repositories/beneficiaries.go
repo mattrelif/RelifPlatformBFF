@@ -12,13 +12,14 @@ import (
 
 type Beneficiaries interface {
 	Create(data entities.Beneficiary) (entities.Beneficiary, error)
-	FindManyByHousingID(housingID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
-	FindManyByRoomID(roomID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
-	FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Beneficiary, error)
+	FindManyByHousingIDPaginated(housingID, search string, offset, limit int64) (int64, []entities.Beneficiary, error)
+	FindManyByRoomIDPaginated(roomID, search string, offset, limit int64) (int64, []entities.Beneficiary, error)
+	FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.Beneficiary, error)
 	FindOneByID(id string) (entities.Beneficiary, error)
 	FindOneCompleteByID(id string) (entities.Beneficiary, error)
 	CountByEmail(email string) (int64, error)
 	UpdateOneByID(id string, data entities.Beneficiary) error
+	DeleteOneByID(id string) error
 }
 
 type mongoBeneficiaries struct {
@@ -41,7 +42,7 @@ func (repository *mongoBeneficiaries) Create(data entities.Beneficiary) (entitie
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoBeneficiaries) FindManyByHousingID(housingID, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+func (repository *mongoBeneficiaries) FindManyByHousingIDPaginated(housingID, search string, offset, limit int64) (int64, []entities.Beneficiary, error) {
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
@@ -54,13 +55,6 @@ func (repository *mongoBeneficiaries) FindManyByHousingID(housingID, search stri
 					"current_housing_id": housingID,
 				},
 				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-				bson.M{
 					"full_name": bson.D{
 						{"$regex", search},
 						{"$options", "i"},
@@ -70,18 +64,7 @@ func (repository *mongoBeneficiaries) FindManyByHousingID(housingID, search stri
 		}
 	} else {
 		filter = bson.M{
-			"$and": bson.A{
-				bson.M{
-					"current_housing_id": housingID,
-				},
-				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-			},
+			"current_housing_id": housingID,
 		}
 	}
 
@@ -158,7 +141,7 @@ func (repository *mongoBeneficiaries) FindManyByHousingID(housingID, search stri
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaries) FindManyByRoomID(roomID, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+func (repository *mongoBeneficiaries) FindManyByRoomIDPaginated(roomID, search string, offset, limit int64) (int64, []entities.Beneficiary, error) {
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
@@ -171,13 +154,6 @@ func (repository *mongoBeneficiaries) FindManyByRoomID(roomID, search string, li
 					"current_room_id": roomID,
 				},
 				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-				bson.M{
 					"full_name": bson.D{
 						{"$regex", search},
 						{"$options", "i"},
@@ -187,18 +163,7 @@ func (repository *mongoBeneficiaries) FindManyByRoomID(roomID, search string, li
 		}
 	} else {
 		filter = bson.M{
-			"$and": bson.A{
-				bson.M{
-					"current_room_id": roomID,
-				},
-				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-			},
+			"current_room_id": roomID,
 		}
 	}
 
@@ -275,7 +240,7 @@ func (repository *mongoBeneficiaries) FindManyByRoomID(roomID, search string, li
 	return count, entityList, nil
 }
 
-func (repository *mongoBeneficiaries) FindManyByOrganizationID(organizationID, search string, limit, offset int64) (int64, []entities.Beneficiary, error) {
+func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.Beneficiary, error) {
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
@@ -288,13 +253,6 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationID(organizationID, s
 					"current_organization_id": organizationID,
 				},
 				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-				bson.M{
 					"full_name": bson.D{
 						{"$regex", search},
 						{"$options", "i"},
@@ -304,18 +262,7 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationID(organizationID, s
 		}
 	} else {
 		filter = bson.M{
-			"$and": bson.A{
-				bson.M{
-					"current_organization_id": organizationID,
-				},
-				bson.M{
-					"status": bson.M{
-						"$not": bson.M{
-							"$eq": utils.InactiveStatus,
-						},
-					},
-				},
-			},
+			"current_organization_id": organizationID,
 		}
 	}
 
@@ -396,18 +343,7 @@ func (repository *mongoBeneficiaries) FindOneByID(id string) (entities.Beneficia
 	var model models.Beneficiary
 
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
+		"_id": id,
 	}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
@@ -425,18 +361,7 @@ func (repository *mongoBeneficiaries) FindOneCompleteByID(id string) (entities.B
 	var model models.FindBeneficiary
 
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"_id": id,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
+		"_id": id,
 	}
 
 	pipeline := mongo.Pipeline{
@@ -499,18 +424,7 @@ func (repository *mongoBeneficiaries) FindOneCompleteByID(id string) (entities.B
 
 func (repository *mongoBeneficiaries) CountByEmail(email string) (int64, error) {
 	filter := bson.M{
-		"$and": bson.A{
-			bson.M{
-				"email": email,
-			},
-			bson.M{
-				"status": bson.M{
-					"$not": bson.M{
-						"$eq": utils.InactiveStatus,
-					},
-				},
-			},
-		},
+		"email": email,
 	}
 
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
@@ -528,6 +442,16 @@ func (repository *mongoBeneficiaries) UpdateOneByID(id string, data entities.Ben
 	update := bson.M{"$set": &model}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository *mongoBeneficiaries) DeleteOneByID(id string) error {
+	filter := bson.M{"_id": id}
+
+	if _, err := repository.collection.DeleteOne(context.Background(), filter); err != nil {
 		return err
 	}
 

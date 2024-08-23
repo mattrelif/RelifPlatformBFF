@@ -12,7 +12,7 @@ import (
 type StorageRecords interface {
 	Create(data entities.StorageRecord) error
 	FindOneByProductTypeIDAndLocation(productTypeID string, location entities.Location) (entities.StorageRecord, error)
-	FindManyByLocation(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error)
+	FindManyByLocationPaginated(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error)
 	UpdateOneByID(id string, data entities.StorageRecord) error
 }
 
@@ -58,7 +58,7 @@ func (repository *mongoStorageRecords) FindOneByProductTypeIDAndLocation(product
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoStorageRecords) FindManyByLocation(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error) {
+func (repository *mongoStorageRecords) FindManyByLocationPaginated(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error) {
 	modelList := make([]models.FindByLocationStorageRecord, 0)
 	entityList := make([]entities.StorageRecord, 0)
 
