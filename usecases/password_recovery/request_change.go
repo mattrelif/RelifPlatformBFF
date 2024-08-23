@@ -1,7 +1,6 @@
 package password_recovery
 
 import (
-	"fmt"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/guards"
 	"relif/platform-bff/repositories"
@@ -57,7 +56,6 @@ func (uc *requestChangeImpl) Execute(email string) error {
 	}
 
 	if err = uc.emailService.SendPasswordResetEmail(request, user); err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
 
