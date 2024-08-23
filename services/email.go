@@ -52,6 +52,7 @@ func (service *emailSes) SendPasswordResetEmail(request entities.PasswordChangeR
 	}
 
 	if _, err = service.client.SendTemplatedEmail(context.Background(), input); err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
 
