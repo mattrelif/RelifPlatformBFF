@@ -12,7 +12,7 @@ import (
 
 type Housings interface {
 	Create(data entities.Housing) (entities.Housing, error)
-	FindManyByOrganizationIDPaginated(organizationID, search string, limit, offset int64) (int64, []entities.Housing, error)
+	FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.Housing, error)
 	FindOneByID(id string) (entities.Housing, error)
 	FindOneCompleteByID(id string) (entities.Housing, error)
 	UpdateOneByID(id string, data entities.Housing) error
@@ -39,7 +39,7 @@ func (repository *mongoHousings) Create(data entities.Housing) (entities.Housing
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoHousings) FindManyByOrganizationIDPaginated(organizationID, search string, limit, offset int64) (int64, []entities.Housing, error) {
+func (repository *mongoHousings) FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.Housing, error) {
 	var filter bson.M
 
 	modelList := make([]models.FindHousing, 0)

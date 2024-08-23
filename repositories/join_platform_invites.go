@@ -11,7 +11,7 @@ import (
 
 type JoinPlatformInvites interface {
 	Create(data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error)
-	FindManyByOrganizationIDPaginated(organizationID string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error)
+	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinPlatformInvite, error)
 	FindOneAndDeleteByCode(code string) (entities.JoinPlatformInvite, error)
 }
 
@@ -35,7 +35,7 @@ func (repository *mongoJoinPlatformInvites) Create(data entities.JoinPlatformInv
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoJoinPlatformInvites) FindManyByOrganizationIDPaginated(organizationID string, limit, offset int64) (int64, []entities.JoinPlatformInvite, error) {
+func (repository *mongoJoinPlatformInvites) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinPlatformInvite, error) {
 	modelList := make([]models.JoinPlatformInvite, 0)
 	entityList := make([]entities.JoinPlatformInvite, 0)
 
