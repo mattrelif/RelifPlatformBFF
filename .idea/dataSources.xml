@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="RelifBFF - MongoDB" uuid="23f02eb9-1888-493e-9cd5-7b76b65186aa">
-      <driver-ref>mongo</driver-ref>
+    <data-source source="LOCAL" name="Relif Platform - Production" uuid="dfa9a46d-aa77-450c-b986-925401ed23c6">
+      <driver-ref>documentdb</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
-      <jdbc-url>mongodb://localhost:27017</jdbc-url>
+      <jdbc-url>mongodb://relif-production.cluster-cz2wyqqgip24.us-east-1.docdb.amazonaws.com:27017</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

@@ -10,7 +10,7 @@ func CanAccessPlatform(actor entities.User) error {
 		return utils.ErrInactiveUser
 	}
 
-	if actor.OrganizationID != "" {
+	if actor.Organization.ID != "" {
 		if actor.Organization.Status == utils.InactiveStatus {
 			return utils.ErrMemberOfInactiveOrganization
 		}

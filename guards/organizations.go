@@ -7,7 +7,7 @@ import (
 
 func AuthorizeCreateOrganization(actor entities.User) error {
 	if err := IsSuperUser(actor); err != nil {
-		if actor.OrganizationID != "" && actor.PlatformRole != utils.NoOrgPlatformRole {
+		if actor.Organization.ID != "" && actor.PlatformRole != utils.NoOrgPlatformRole {
 			return utils.ErrForbiddenAction
 		}
 	}
@@ -17,7 +17,7 @@ func AuthorizeCreateOrganization(actor entities.User) error {
 
 func IsOrganizationAdmin(actor entities.User, organization entities.Organization) error {
 	if err := IsSuperUser(actor); err != nil {
-		if actor.OrganizationID != organization.ID && actor.PlatformRole != utils.OrgAdminPlatformRole {
+		if actor.Organization.ID != organization.ID && actor.PlatformRole != utils.OrgAdminPlatformRole {
 			return utils.ErrForbiddenAction
 		}
 	}
@@ -37,7 +37,7 @@ func organizationHasGrant(actor entities.User, target entities.Organization) boo
 
 func HasAccessToOrganizationData(actor entities.User, target entities.Organization) error {
 	if err := IsSuperUser(actor); err != nil {
-		if actor.OrganizationID != target.ID && !organizationHasGrant(actor, target) {
+		if actor.Organization.ID != target.ID && !organizationHasGrant(actor, target) {
 			return utils.ErrForbiddenAction
 		}
 	}

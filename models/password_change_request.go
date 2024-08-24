@@ -21,6 +21,7 @@ func (request *PasswordChangeRequest) ToEntity() entities.PasswordChangeRequest 
 
 func NewPasswordChangeRequest(entity entities.PasswordChangeRequest) PasswordChangeRequest {
 	return PasswordChangeRequest{
+		UserID:    entity.UserID,
 		Code:      entity.Code,
 		ExpiresAt: time.Now().Add(time.Hour * 24),
 	}

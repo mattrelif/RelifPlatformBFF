@@ -149,12 +149,13 @@ func (handler *Organizations) UpdateOne(w http.ResponseWriter, r *http.Request) 
 	user := r.Context().Value("user").(entities.User)
 
 	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

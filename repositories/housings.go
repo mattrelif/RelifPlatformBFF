@@ -228,6 +228,8 @@ func (repository *mongoHousings) FindOneCompleteByID(id string) (entities.Housin
 		if err = cursor.Decode(&model); err != nil {
 			return entities.Housing{}, err
 		}
+	} else {
+		return entities.Housing{}, utils.ErrHousingNotFound
 	}
 
 	return model.ToEntity(), nil

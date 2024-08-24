@@ -78,84 +78,61 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "storage_records"},
-				{"let", bson.D{{"productTypeID", "$_id"}}},
-				{"pipeline", bson.A{
-					bson.D{
-						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
-					},
-					bson.D{
-						{"$facet", bson.D{
-							{"organizationRecords", bson.A{
-								bson.D{
-									{"$match", bson.M{"location.type": utils.OrganizationLocationType}},
-								},
-								bson.D{
-									{"$lookup", bson.D{
-										{"from", "organizations"},
-										{"localField", "location.id"},
-										{"foreignField", "_id"},
-										{"as", "organization"},
-									}},
-								},
-								bson.D{
-									{"$unwind", "$organization"},
-								},
-								bson.D{
-									{"$addFields", bson.D{
-										{"location.name", "$organization.name"},
-									}},
-								},
-								bson.D{
-									{"$project", bson.M{
-										"organization": 0,
-									}},
-								},
-							}},
-							{"housingRecords", bson.A{
-								bson.D{
-									{"$match", bson.M{"location.type": utils.HousingLocationType}},
-								},
-								bson.D{
-									{"$lookup", bson.D{
-										{"from", "housings"},
-										{"localField", "location.id"},
-										{"foreignField", "_id"},
-										{"as", "housing"},
-									}},
-								},
-								bson.D{
-									{"$unwind", "$housing"},
-								},
-								bson.D{
-									{"$addFields", bson.D{
-										{"location.name", "$housing.name"},
-									}},
-								},
-								bson.D{
-									{"$project", bson.M{
-										"housing": 0,
-									}},
-								},
-							}},
-						}},
-					},
-					bson.D{
-						{"$project", bson.D{
-							{"records", bson.D{
-								{"$concatArrays", bson.A{"$organizationRecords", "$housingRecords"}},
-							}},
-						}},
-					},
-					bson.D{
-						{"$unwind", "$records"},
-					},
-					bson.D{
-						{"$replaceRoot", bson.D{
-							{"newRoot", "$records"}},
-						},
-					},
-				}},
+				{"localField", "_id"},
+				{"foreignField", "product_type_id"},
 				{"as", "storage_records"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$storage_records"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "storage_records.location.id"},
+				{"foreignField", "_id"},
+				{"as", "housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
+				{"storage_records.location.name", bson.D{
+					{"$switch", bson.D{
+						{"branches", bson.A{
+							bson.D{
+								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.OrganizationLocationType}}},
+								{"then", "$organization.name"},
+							},
+							bson.D{
+								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.HousingLocationType}}},
+								{"then", "$housing.name"},
+							},
+						}},
+					}},
+				}},
+			}},
+		},
+		bson.D{
+			{"$project", bson.M{
+				"housing": 0,
+			}},
+		},
+		bson.D{
+			{"$group", bson.D{
+				{"_id", "$_id"},
+				{"name", bson.D{{"$first", "$name"}}},
+				{"description", bson.D{{"$first", "$description"}}},
+				{"brand", bson.D{{"$first", "$brand"}}},
+				{"category", bson.D{{"$first", "$category"}}},
+				{"organization_id", bson.D{{"$first", "$organization_id"}}},
+				{"organization", bson.D{{"$first", "$organization"}}},
+				{"unit_type", bson.D{{"$first", "$unit_type"}}},
+				{"created_at", bson.D{{"$first", "$created_at"}}},
+				{"updated_at", bson.D{{"$first", "$updated_at"}}},
+				{"storage_records", bson.D{{"$push", "$storage_records"}}},
 			}},
 		},
 	}
@@ -217,84 +194,61 @@ func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizat
 		bson.D{
 			{"$lookup", bson.D{
 				{"from", "storage_records"},
-				{"let", bson.D{{"productTypeID", "$_id"}}},
-				{"pipeline", bson.A{
-					bson.D{
-						{"$match", bson.M{"product_type_id": "$$productTypeID"}},
-					},
-					bson.D{
-						{"$facet", bson.D{
-							{"organizationRecords", bson.A{
-								bson.D{
-									{"$match", bson.M{"location.type": utils.OrganizationLocationType}},
-								},
-								bson.D{
-									{"$lookup", bson.D{
-										{"from", "organizations"},
-										{"localField", "location.id"},
-										{"foreignField", "_id"},
-										{"as", "organization"},
-									}},
-								},
-								bson.D{
-									{"$unwind", "$organization"},
-								},
-								bson.D{
-									{"$addFields", bson.D{
-										{"location.name", "$organization.name"},
-									}},
-								},
-								bson.D{
-									{"$project", bson.M{
-										"organization": 0,
-									}},
-								},
-							}},
-							{"housingRecords", bson.A{
-								bson.D{
-									{"$match", bson.M{"location.type": utils.HousingLocationType}},
-								},
-								bson.D{
-									{"$lookup", bson.D{
-										{"from", "housings"},
-										{"localField", "location.id"},
-										{"foreignField", "_id"},
-										{"as", "housing"},
-									}},
-								},
-								bson.D{
-									{"$unwind", "$housing"},
-								},
-								bson.D{
-									{"$addFields", bson.D{
-										{"location.name", "$housing.name"},
-									}},
-								},
-								bson.D{
-									{"$project", bson.M{
-										"housing": 0,
-									}},
-								},
-							}},
-						}},
-					},
-					bson.D{
-						{"$project", bson.D{
-							{"records", bson.D{
-								{"$concatArrays", bson.A{"$organizationRecords", "$housingRecords"}},
-							}},
-						}},
-					},
-					bson.D{
-						{"$unwind", "$records"},
-					},
-					bson.D{
-						{"$replaceRoot", bson.D{
-							{"newRoot", "$records"}},
-						},
-					},
-				}},
+				{"localField", "_id"},
+				{"foreignField", "product_type_id"},
 				{"as", "storage_records"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$storage_records"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "storage_records.location.id"},
+				{"foreignField", "_id"},
+				{"as", "housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
+				{"storage_records.location.name", bson.D{
+					{"$switch", bson.D{
+						{"branches", bson.A{
+							bson.D{
+								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.OrganizationLocationType}}},
+								{"then", "$organization.name"},
+							},
+							bson.D{
+								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.HousingLocationType}}},
+								{"then", "$housing.name"},
+							},
+						}},
+					}},
+				}},
+			}},
+		},
+		bson.D{
+			{"$project", bson.M{
+				"housing": 0,
+			}},
+		},
+		bson.D{
+			{"$group", bson.D{
+				{"_id", "$_id"},
+				{"name", bson.D{{"$first", "$name"}}},
+				{"description", bson.D{{"$first", "$description"}}},
+				{"brand", bson.D{{"$first", "$brand"}}},
+				{"category", bson.D{{"$first", "$category"}}},
+				{"organization_id", bson.D{{"$first", "$organization_id"}}},
+				{"organization", bson.D{{"$first", "$organization"}}},
+				{"unit_type", bson.D{{"$first", "$unit_type"}}},
+				{"created_at", bson.D{{"$first", "$created_at"}}},
+				{"updated_at", bson.D{{"$first", "$updated_at"}}},
+				{"storage_records", bson.D{{"$push", "$storage_records"}}},
 			}},
 		},
 	}

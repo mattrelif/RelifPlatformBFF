@@ -2,11 +2,13 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
+	"relif/platform-bff/utils"
 )
 
 type Organizations interface {
@@ -72,6 +74,9 @@ func (repository *mongoOrganizations) FindOneByID(id string) (entities.Organizat
 	filter := bson.M{"_id": id}
 
 	if err := repository.collection.FindOne(context.Background(), filter).Decode(&model); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return entities.Organization{}, utils.ErrOrganizationNotFound
+		}
 		return entities.Organization{}, err
 	}
 
