@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
@@ -272,6 +273,9 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organiza
 		return 0, nil, err
 	}
 
+	fmt.Println(offset)
+	fmt.Println(limit)
+
 	pipeline := mongo.Pipeline{
 		bson.D{
 			{"$match", filter},
@@ -332,9 +336,13 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organiza
 		return 0, nil, err
 	}
 
+	fmt.Println(modelList)
+
 	for _, model := range modelList {
 		entityList = append(entityList, model.ToEntity())
 	}
+
+	fmt.Println(entityList)
 
 	return count, entityList, nil
 }
