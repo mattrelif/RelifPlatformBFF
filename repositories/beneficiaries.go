@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"errors"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
@@ -329,14 +328,8 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organiza
 
 	defer cursor.Close(context.Background())
 
-	for cursor.Next(context.Background()) {
-		var decoded map[string]interface{}
-
-		if err = cursor.Decode(&decoded); err != nil {
-			return 0, nil, err
-		}
-
-		fmt.Println(decoded)
+	if err = cursor.All(context.Background(), &modelList); err != nil {
+		return 0, nil, err
 	}
 
 	for _, model := range modelList {
