@@ -274,7 +274,6 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organiza
 	}
 
 	fmt.Println(offset)
-	fmt.Println(limit)
 
 	pipeline := mongo.Pipeline{
 		bson.D{
@@ -332,8 +331,14 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organiza
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
+	for cursor.Next(context.Background()) {
+		var model models.FindBeneficiary
+
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
+		modelList = append(modelList, model)
 	}
 
 	fmt.Println(modelList)
