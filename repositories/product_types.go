@@ -61,80 +61,87 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 	filter := bson.M{"_id": id}
 
 	pipeline := mongo.Pipeline{
-		bson.D{
-			{"$match", filter},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+		bson.D{{"$match", filter}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "organization_id"},
 				{"foreignField", "_id"},
 				{"as", "organization"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$organization"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "storage_records"},
 				{"localField", "_id"},
 				{"foreignField", "product_type_id"},
 				{"as", "storage_records"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$storage_records"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$storage_records"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "housings"},
 				{"localField", "storage_records.location.id"},
 				{"foreignField", "_id"},
 				{"as", "housing"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$addFields", bson.D{
-				{"storage_records.location.name", bson.D{
-					{"$switch", bson.D{
-						{"branches", bson.A{
-							bson.D{
-								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.OrganizationLocationType}}},
-								{"then", "$organization.name"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$housing"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$addFields", bson.D{
+				{"storage_records.location.name", bson.M{
+					"$switch": bson.M{
+						"branches": bson.A{
+							bson.M{
+								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.OrganizationLocationType}},
+								"then": "$organization.name",
 							},
-							bson.D{
-								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.HousingLocationType}}},
-								{"then", "$housing.name"},
+							bson.M{
+								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.HousingLocationType}},
+								"then": "$housing.name",
 							},
-						}},
-					}},
+						},
+					},
 				}},
-			}},
-		},
-		bson.D{
-			{"$project", bson.M{
+			},
+		}},
+		bson.D{{
+			"$project", bson.M{
 				"housing": 0,
-			}},
-		},
-		bson.D{
-			{"$group", bson.D{
+			},
+		}},
+		bson.D{{
+			"$group", bson.D{
 				{"_id", "$_id"},
-				{"name", bson.D{{"$first", "$name"}}},
-				{"description", bson.D{{"$first", "$description"}}},
-				{"brand", bson.D{{"$first", "$brand"}}},
-				{"category", bson.D{{"$first", "$category"}}},
-				{"organization_id", bson.D{{"$first", "$organization_id"}}},
-				{"organization", bson.D{{"$first", "$organization"}}},
-				{"unit_type", bson.D{{"$first", "$unit_type"}}},
-				{"created_at", bson.D{{"$first", "$created_at"}}},
-				{"updated_at", bson.D{{"$first", "$updated_at"}}},
-				{"storage_records", bson.D{{"$push", "$storage_records"}}},
-			}},
-		},
+				{"name", bson.M{"$first": "$name"}},
+				{"description", bson.M{"$first": "$description"}},
+				{"brand", bson.M{"$first": "$brand"}},
+				{"category", bson.M{"$first": "$category"}},
+				{"organization_id", bson.M{"$first": "$organization_id"}},
+				{"organization", bson.M{"$first": "$organization"}},
+				{"unit_type", bson.M{"$first": "$unit_type"}},
+				{"created_at", bson.M{"$first": "$created_at"}},
+				{"updated_at", bson.M{"$first": "$updated_at"}},
+				{"storage_records", bson.M{"$push": "$storage_records"}},
+			},
+		}},
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
@@ -168,89 +175,90 @@ func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizat
 	}
 
 	pipeline := mongo.Pipeline{
-		bson.D{
-			{"$match", filter},
-		},
-		bson.D{
-			{"$sort", bson.M{"name": 1}},
-		},
-		bson.D{
-			{"$skip", offset},
-		},
-		bson.D{
-			{"$limit", limit},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+		bson.D{{"$match", filter}},
+		bson.D{{"$sort", bson.M{"name": 1}}},
+		bson.D{{"$skip", offset}},
+		bson.D{{"$limit", limit}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "organization_id"},
 				{"foreignField", "_id"},
 				{"as", "organization"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$organization"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "storage_records"},
 				{"localField", "_id"},
 				{"foreignField", "product_type_id"},
 				{"as", "storage_records"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$storage_records"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$storage_records"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "housings"},
 				{"localField", "storage_records.location.id"},
 				{"foreignField", "_id"},
 				{"as", "housing"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$addFields", bson.D{
-				{"storage_records.location.name", bson.D{
-					{"$switch", bson.D{
-						{"branches", bson.A{
-							bson.D{
-								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.OrganizationLocationType}}},
-								{"then", "$organization.name"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$housing"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$addFields", bson.D{
+				{"storage_records.location.name", bson.M{
+					"$switch": bson.M{
+						"branches": bson.A{
+							bson.M{
+								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.OrganizationLocationType}},
+								"then": "$organization.name",
 							},
-							bson.D{
-								{"case", bson.M{"$eq": bson.M{"$storage_records.location.type": utils.HousingLocationType}}},
-								{"then", "$housing.name"},
+							bson.M{
+								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.HousingLocationType}},
+								"then": "$housing.name",
 							},
-						}},
-					}},
+						},
+					},
 				}},
-			}},
-		},
-		bson.D{
-			{"$project", bson.M{
+			},
+		}},
+		bson.D{{
+			"$project", bson.M{
 				"housing": 0,
-			}},
-		},
-		bson.D{
-			{"$group", bson.D{
+			},
+		}},
+		bson.D{{
+			"$group", bson.D{
 				{"_id", "$_id"},
-				{"name", bson.D{{"$first", "$name"}}},
-				{"description", bson.D{{"$first", "$description"}}},
-				{"brand", bson.D{{"$first", "$brand"}}},
-				{"category", bson.D{{"$first", "$category"}}},
-				{"organization_id", bson.D{{"$first", "$organization_id"}}},
-				{"organization", bson.D{{"$first", "$organization"}}},
-				{"unit_type", bson.D{{"$first", "$unit_type"}}},
-				{"created_at", bson.D{{"$first", "$created_at"}}},
-				{"updated_at", bson.D{{"$first", "$updated_at"}}},
-				{"storage_records", bson.D{{"$push", "$storage_records"}}},
-			}},
-		},
+				{"name", bson.M{"$first": "$name"}},
+				{"description", bson.M{"$first": "$description"}},
+				{"brand", bson.M{"$first": "$brand"}},
+				{"category", bson.M{"$first": "$category"}},
+				{"organization_id", bson.M{"$first": "$organization_id"}},
+				{"organization", bson.M{"$first": "$organization"}},
+				{"unit_type", bson.M{"$first": "$unit_type"}},
+				{"created_at", bson.M{"$first": "$created_at"}},
+				{"updated_at", bson.M{"$first": "$updated_at"}},
+				{"storage_records", bson.M{"$push": "$storage_records"}},
+			},
+		}},
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)

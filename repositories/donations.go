@@ -47,75 +47,76 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 	}
 
 	pipeline := mongo.Pipeline{
-		bson.D{
-			{"$match", filter},
-		},
-		bson.D{
-			{"$sort", bson.M{"created_at": -1}},
-		},
-		bson.D{
-			{"$skip", offset},
-		},
-		bson.D{
-			{"$limit", limit},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+		bson.D{{"$match", filter}},
+		bson.D{{"$sort", bson.M{"created_at": -1}}},
+		bson.D{{"$skip", offset}},
+		bson.D{{"$limit", limit}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "beneficiaries"},
 				{"localField", "beneficiary_id"},
 				{"foreignField", "_id"},
 				{"as", "beneficiary"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$beneficiary"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$beneficiary"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "location.id"},
 				{"foreignField", "_id"},
 				{"as", "organization"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$organization"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$lookup", bson.D{
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$organization"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "housings"},
 				{"localField", "location.id"},
 				{"foreignField", "_id"},
 				{"as", "housing"},
-			}},
-		},
-		bson.D{
-			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
-		},
-		bson.D{
-			{"$addFields", bson.D{
-				{"location.name", bson.D{
-					{"$switch", bson.D{
-						{"branches", bson.A{
-							bson.D{
-								{"case", bson.M{"$eq": bson.M{"$location.type": utils.OrganizationLocationType}}},
-								{"then", "$organization.name"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$housing"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$addFields", bson.D{
+				{"location.name", bson.M{
+					"$switch": bson.M{
+						"branches": bson.A{
+							bson.M{
+								"case": bson.M{"$eq": bson.A{"$location.type", utils.OrganizationLocationType}},
+								"then": "$organization.name",
 							},
-							bson.D{
-								{"case", bson.M{"$eq": bson.M{"$location.type": utils.HousingLocationType}}},
-								{"then", "$housing.name"},
+							bson.M{
+								"case": bson.M{"$eq": bson.A{"$location.type", utils.HousingLocationType}},
+								"then": "$housing.name",
 							},
-						}},
-					}},
+						},
+					},
 				}},
-			}},
-		},
-		bson.D{
-			{"$project", bson.M{
+			},
+		}},
+		bson.D{{
+			"$project", bson.M{
 				"housing":      0,
 				"organization": 0,
-			}},
-		},
+			},
+		}},
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
