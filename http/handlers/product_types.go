@@ -91,6 +91,8 @@ func (handler *ProductTypes) FindManyByOrganizationID(w http.ResponseWriter, r *
 	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
+	search := r.URL.Query().Get("search")
+
 	offsetParam := r.URL.Query().Get("offset")
 	offset, err := strconv.Atoi(offsetParam)
 
@@ -107,7 +109,7 @@ func (handler *ProductTypes) FindManyByOrganizationID(w http.ResponseWriter, r *
 		return
 	}
 
-	count, productTypes, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, int64(offset), int64(limit))
+	count, productTypes, err := handler.findManyByOrganizationIDPaginatedUseCase.Execute(user, organizationID, search, int64(offset), int64(limit))
 
 	if err != nil {
 		switch {

@@ -6,13 +6,15 @@ import (
 )
 
 func CanAccessPlatform(actor entities.User) error {
-	if actor.Status == utils.InactiveStatus {
-		return utils.ErrInactiveUser
-	}
+	if err := IsSuperUser(actor); err != nil {
+		if actor.Status == utils.InactiveStatus {
+			return utils.ErrInactiveUser
+		}
 
-	if actor.Organization.ID != "" {
-		if actor.Organization.Status == utils.InactiveStatus {
-			return utils.ErrMemberOfInactiveOrganization
+		if actor.Organization.ID != "" && actor.PlatformRole != utils.NoOrgPlatformRole {
+			if actor.Organization.Status == utils.InactiveStatus {
+				return utils.ErrMemberOfInactiveOrganization
+			}
 		}
 	}
 

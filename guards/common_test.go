@@ -12,25 +12,25 @@ func Test_IsSuperUser(t *testing.T) {
 		user          entities.User
 		expectedError error
 	}{
-		"Happy path": {
+		"Has RELIF_MEMBER platform role - allowed": {
 			user: entities.User{
 				PlatformRole: utils.RelifMemberPlatformRole,
 			},
 			expectedError: nil,
 		},
-		"NO_ORG role - Invalid": {
+		"Has NO_ORG platform role - not allowed": {
 			user: entities.User{
 				PlatformRole: utils.NoOrgPlatformRole,
 			},
 			expectedError: utils.ErrForbiddenAction,
 		},
-		"ORG_MEMBER role - Invalid": {
+		"Has ORG_MEMBER platform role - not allowed": {
 			user: entities.User{
 				PlatformRole: utils.OrgMemberPlatformRole,
 			},
 			expectedError: utils.ErrForbiddenAction,
 		},
-		"ORG_ADMIN role - Invalid": {
+		"Has ORG_ADMIN platform role - not allowed": {
 			user: entities.User{
 				PlatformRole: utils.OrgAdminPlatformRole,
 			},

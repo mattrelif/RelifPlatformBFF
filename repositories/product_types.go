@@ -12,7 +12,7 @@ import (
 
 type ProductTypes interface {
 	Create(data entities.ProductType) (entities.ProductType, error)
-	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.ProductType, error)
+	FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.ProductType, error)
 	FindOneByID(id string) (entities.ProductType, error)
 	FindOneCompleteByID(id string) (entities.ProductType, error)
 	UpdateOneByID(id string, data entities.ProductType) error
@@ -163,11 +163,30 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 	return model.ToEntity(), nil
 }
 
-func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.ProductType, error) {
+func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.ProductType, error) {
+	var filter bson.M
+
 	modelList := make([]models.FindProductType, 0)
 	entityList := make([]entities.ProductType, 0)
 
-	filter := bson.M{"organization_id": organizationID}
+	if search != "" {
+		filter = bson.M{
+			"$and": bson.A{
+				bson.M{"organization_id": organizationID},
+				bson.M{
+					"name": bson.D{
+						{"$regex", search},
+						{"$options", "i"},
+					},
+				},
+			},
+		}
+	} else {
+		filter = bson.M{
+			"organization_id": organizationID,
+		}
+	}
+
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {

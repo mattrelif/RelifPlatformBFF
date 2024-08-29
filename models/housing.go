@@ -13,6 +13,7 @@ type FindHousing struct {
 	Name              string    `bson:"name,omitempty"`
 	Status            string    `bson:"status,omitempty"`
 	TotalVacancies    int       `bson:"total_vacancies,omitempty"`
+	TotalRooms        int       `bson:"total_rooms,omitempty"`
 	OccupiedVacancies int       `bson:"occupied_vacancies,omitempty"`
 	Address           Address   `bson:"address,omitempty"`
 	CreatedAt         time.Time `bson:"created_at,omitempty"`
@@ -26,6 +27,7 @@ func (housing *FindHousing) ToEntity() entities.Housing {
 		Name:              housing.Name,
 		Status:            housing.Status,
 		TotalVacancies:    housing.TotalVacancies,
+		TotalRooms:        housing.TotalRooms,
 		OccupiedVacancies: housing.OccupiedVacancies,
 		Address:           housing.Address.ToEntity(),
 		CreatedAt:         housing.CreatedAt,

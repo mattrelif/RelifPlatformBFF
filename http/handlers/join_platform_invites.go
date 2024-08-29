@@ -35,7 +35,6 @@ func NewJoinPlatformInvites(
 func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateJoinPlatformInvite
 
-	organizationID := chi.URLParam(r, "id")
 	user := r.Context().Value("user").(entities.User)
 
 	body, err := io.ReadAll(r.Body)
@@ -58,7 +57,7 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 	}
 
 	data := req.ToEntity()
-	invite, err := handler.createUseCase.Execute(user, organizationID, data)
+	invite, err := handler.createUseCase.Execute(user, data)
 
 	if err != nil {
 		switch {

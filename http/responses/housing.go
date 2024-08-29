@@ -13,6 +13,7 @@ type Housing struct {
 	Name              string    `json:"name"`
 	Status            string    `json:"status"`
 	TotalVacancies    int       `json:"total_vacancies"`
+	TotalRooms        int       `json:"total_rooms"`
 	OccupiedVacancies int       `json:"occupied_vacancies"`
 	Address           Address   `json:"address"`
 	CreatedAt         time.Time `json:"created_at"`
@@ -26,6 +27,7 @@ func NewHousing(housing entities.Housing) Housing {
 		Name:              housing.Name,
 		Status:            housing.Status,
 		TotalVacancies:    housing.TotalVacancies,
+		TotalRooms:        housing.TotalRooms,
 		OccupiedVacancies: housing.OccupiedVacancies,
 		Address:           NewAddress(housing.Address),
 		CreatedAt:         housing.CreatedAt,

@@ -7,7 +7,7 @@ import (
 )
 
 type FindManyByOrganizationIDPaginated interface {
-	Execute(actor entities.User, organizationID string, offset, limit int64) (int64, []entities.ProductType, error)
+	Execute(actor entities.User, organizationID, search string, offset, limit int64) (int64, []entities.ProductType, error)
 }
 
 type findManyByOrganizationIDPaginatedImpl struct {
@@ -25,7 +25,7 @@ func NewFindManyByOrganizationIDPaginated(
 	}
 }
 
-func (uc *findManyByOrganizationIDPaginatedImpl) Execute(actor entities.User, organizationID string, offset, limit int64) (int64, []entities.ProductType, error) {
+func (uc *findManyByOrganizationIDPaginatedImpl) Execute(actor entities.User, organizationID, search string, offset, limit int64) (int64, []entities.ProductType, error) {
 	organization, err := uc.organizationsRepository.FindOneByID(organizationID)
 
 	if err != nil {
@@ -36,5 +36,5 @@ func (uc *findManyByOrganizationIDPaginatedImpl) Execute(actor entities.User, or
 		return 0, nil, err
 	}
 
-	return uc.productTypesRepository.FindManyByOrganizationIDPaginated(organizationID, offset, limit)
+	return uc.productTypesRepository.FindManyByOrganizationIDPaginated(organizationID, search, offset, limit)
 }

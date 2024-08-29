@@ -109,6 +109,13 @@ func (repository *mongoHousings) FindManyByOrganizationIDPaginated(organizationI
 		},
 		bson.D{
 			{"$addFields", bson.D{
+				{"total_rooms", bson.D{
+					{"$size", "$rooms"},
+				}},
+			}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
 				{"occupied_vacancies", bson.D{
 					{"$size", "$beneficiaries"},
 				}},
@@ -194,6 +201,13 @@ func (repository *mongoHousings) FindOneCompleteByID(id string) (entities.Housin
 			{"$addFields", bson.D{
 				{"total_vacancies", bson.D{
 					{"$sum", "$rooms.total_vacancies"},
+				}},
+			}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
+				{"total_rooms", bson.D{
+					{"$size", "$rooms"},
 				}},
 			}},
 		},

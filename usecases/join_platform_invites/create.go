@@ -9,7 +9,7 @@ import (
 )
 
 type Create interface {
-	Execute(actor entities.User, organizationID string, data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error)
+	Execute(actor entities.User, data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error)
 }
 
 type createImpl struct {
@@ -36,14 +36,8 @@ func NewCreate(
 	}
 }
 
-func (uc *createImpl) Execute(actor entities.User, organizationID string, data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error) {
-	organization, err := uc.organizationsRepository.FindOneByID(organizationID)
-
-	if err != nil {
-		return entities.JoinPlatformInvite{}, err
-	}
-
-	if err = guards.IsOrganizationAdmin(actor, organization); err != nil {
+func (uc *createImpl) Execute(actor entities.User, data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error) {
+	if err := guards.IsOrganizationAdmin(actor, actor.Organization); err != nil {
 		return entities.JoinPlatformInvite{}, err
 	}
 
@@ -57,7 +51,7 @@ func (uc *createImpl) Execute(actor entities.User, organizationID string, data e
 		return entities.JoinPlatformInvite{}, utils.ErrUserAlreadyExists
 	}
 
-	data.OrganizationID = organization.ID
+	data.OrganizationID = actor.Organization.ID
 	data.InviterID = actor.ID
 	data.Code = uc.uuidGeneratorFunction()
 

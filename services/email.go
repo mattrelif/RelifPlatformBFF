@@ -33,7 +33,7 @@ func NewSesEmail(client *ses.Client, emailDomain, frontendDomain string) Email {
 func (service *emailSes) SendPasswordResetEmail(request entities.PasswordChangeRequest, user entities.User) error {
 	templateData := map[string]string{
 		"first_name": user.FirstName,
-		"reset_link": fmt.Sprintf(`"https://%s/recover-password?code=%s"`, service.frontendDomain, request.Code),
+		"reset_link": fmt.Sprintf(`https://%s/recover-password?code=%s`, service.frontendDomain, request.Code),
 	}
 
 	templateDataJson, err := json.Marshal(templateData)
@@ -88,7 +88,7 @@ func (service *emailSes) SendPasswordChangedEmail(user entities.User) error {
 func (service *emailSes) SendPlatformInviteEmail(inviter entities.User, invite entities.JoinPlatformInvite) error {
 	templateData := map[string]string{
 		"inviter_name":      inviter.FirstName,
-		"registration_link": fmt.Sprintf("https://%s/join?code=%s", service.frontendDomain, invite.Code),
+		"registration_link": fmt.Sprintf(`https://%s/join?code=%s`, service.frontendDomain, invite.Code),
 	}
 
 	templateDataJson, err := json.Marshal(templateData)
