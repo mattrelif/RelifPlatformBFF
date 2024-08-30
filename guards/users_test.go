@@ -64,3 +64,46 @@ func Test_CanAccessPlatform(t *testing.T) {
 		})
 	}
 }
+
+func Test_IsUser(t *testing.T) {
+	tests := map[string]struct {
+		actor         entities.User
+		target        entities.User
+		expectedError error
+	}{
+		"Actor has RELIF_MEMBER platform role - allowed": {
+			actor: entities.User{
+				PlatformRole: utils.RelifMemberPlatformRole,
+			},
+			target:        entities.User{},
+			expectedError: nil,
+		},
+		"Actor has the same id as target - allowed": {
+			actor: entities.User{
+				ID:           "foo",
+				PlatformRole: utils.NoOrgPlatformRole,
+			},
+			target: entities.User{
+				ID: "foo",
+			},
+			expectedError: nil,
+		},
+		"Actor does not have the same id as target - not allowed": {
+			actor: entities.User{
+				ID:           "foo",
+				PlatformRole: utils.NoOrgPlatformRole,
+			},
+			target: entities.User{
+				ID: "bar",
+			},
+			expectedError: utils.ErrForbiddenAction,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := IsUser(test.actor, test.target)
+			assert.Equal(t, test.expectedError, err)
+		})
+	}
+}
