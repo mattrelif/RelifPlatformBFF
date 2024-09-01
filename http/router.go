@@ -75,6 +75,7 @@ func NewRouter(
 			r.Use(authenticateByTokenMiddleware.Handle)
 
 			r.Route("/users", func(r chi.Router) {
+				r.Get("/relif-members", usersHandler.FindManyRelifMembers)
 				r.Get("/{id}", usersHandler.FindOne)
 				r.Put("/{id}", usersHandler.UpdateOne)
 				r.Delete("/{id}", usersHandler.InactivateOne)

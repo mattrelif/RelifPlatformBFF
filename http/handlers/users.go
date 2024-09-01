@@ -17,6 +17,7 @@ import (
 type Users struct {
 	findOneCompleteByIDUseCase               usersUseCases.FindOneCompleteByID
 	findManyByOrganizationIDPaginatedUseCase usersUseCases.FindManyByOrganizationIDPaginated
+	findManyRelifMembersPaginatedUseCase     usersUseCases.FindManyRelifMembersPaginated
 	updateOneByIDUseCase                     usersUseCases.UpdateOneByID
 	inactivateOneByIDUseCase                 usersUseCases.InactivateOneByID
 	reactivateOneByIDUseCase                 usersUseCases.ReactivateOneByID
@@ -25,6 +26,7 @@ type Users struct {
 func NewUsers(
 	findOneCompleteByIDUseCase usersUseCases.FindOneCompleteByID,
 	findManyByOrganizationIDPaginatedUseCase usersUseCases.FindManyByOrganizationIDPaginated,
+	findManyRelifMembersPaginatedUseCase usersUseCases.FindManyRelifMembersPaginated,
 	updateOneByIDUseCase usersUseCases.UpdateOneByID,
 	inactivateOneByIDUseCase usersUseCases.InactivateOneByID,
 	reactivateOneByIDUseCase usersUseCases.ReactivateOneByID,
@@ -32,6 +34,7 @@ func NewUsers(
 	return &Users{
 		findOneCompleteByIDUseCase:               findOneCompleteByIDUseCase,
 		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
+		findManyRelifMembersPaginatedUseCase:     findManyRelifMembersPaginatedUseCase,
 		updateOneByIDUseCase:                     updateOneByIDUseCase,
 		inactivateOneByIDUseCase:                 inactivateOneByIDUseCase,
 		reactivateOneByIDUseCase:                 reactivateOneByIDUseCase,
@@ -87,6 +90,45 @@ func (handler *Users) FindManyByOrganizationID(w http.ResponseWriter, r *http.Re
 		switch {
 		case errors.Is(err, utils.ErrOrganizationNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	res := responses.FindMany[responses.Users]{Data: responses.NewUsers(users), Count: count}
+
+	if err = json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (handler *Users) FindManyRelifMembers(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(entities.User)
+
+	offsetParam := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, users, err := handler.findManyRelifMembersPaginatedUseCase.Execute(user, int64(offset), int64(limit))
+
+	if err != nil {
+		switch {
 		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 		default:

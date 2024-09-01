@@ -5,6 +5,7 @@ import (
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
 	"relif/platform-bff/utils"
@@ -13,6 +14,7 @@ import (
 type Users interface {
 	Create(data entities.User) (entities.User, error)
 	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.User, error)
+	FindManyRelifMembersPaginated(offset, limit int64) (int64, []entities.User, error)
 	FindOneByID(id string) (entities.User, error)
 	FindOneAndLookupByID(id string) (entities.User, error)
 	FindOneByEmail(email string) (entities.User, error)
@@ -91,6 +93,38 @@ func (repository *mongoUsers) FindManyByOrganizationIDPaginated(organizationID s
 	if err = cursor.All(context.Background(), &modelList); err != nil {
 		return 0, nil, err
 	}
+
+	for _, model := range modelList {
+		entityList = append(entityList, model.ToEntity())
+	}
+
+	return count, entityList, nil
+}
+
+func (repository *mongoUsers) FindManyRelifMembersPaginated(offset, limit int64) (int64, []entities.User, error) {
+	modelList := make([]models.User, 0)
+	entityList := make([]entities.User, 0)
+
+	filter := bson.M{"platform_role": utils.RelifMemberPlatformRole}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, nil, err
+	}
+
+	opts := options.Find().SetSkip(offset).SetLimit(limit)
+	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if err = cursor.All(context.Background(), &modelList); err != nil {
+		return 0, nil, err
+	}
+
+	defer cursor.Close(context.Background())
 
 	for _, model := range modelList {
 		entityList = append(entityList, model.ToEntity())

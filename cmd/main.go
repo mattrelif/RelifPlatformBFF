@@ -121,6 +121,7 @@ func main() {
 
 	findOneUserCompleteUseCase := usersUseCases.NewFindOneCompleteByID(usersRepository)
 	findManyUsersByOrganizationIDUseCase := usersUseCases.NewFindManyByOrganizationIDPaginated(usersRepository, organizationsRepository)
+	findManyRelifMembersUseCase := usersUseCases.NewFindManyRelifMembersPaginated(usersRepository)
 	updateOneUserByIDUseCase := usersUseCases.NewUpdateOneByID(usersRepository)
 	inactivateOneUserByIDUseCase := usersUseCases.NewInactivateOneByID(usersRepository)
 	reactivateOneUseByIDUseCase := usersUseCases.NewReactivateOneByID(usersRepository)
@@ -217,7 +218,7 @@ func main() {
 	/** Handlers **/
 	authenticationHandler := handlers.NewAuthentication(signUpUseCase, organizationSignUpUseCase, signInUseCase, signOutUseCase)
 	passwordRecoveryHandler := handlers.NewPassword(requestPasswordChangeUseCase, changePasswordUseCase)
-	usersHandler := handlers.NewUsers(findOneUserCompleteUseCase, findManyUsersByOrganizationIDUseCase, updateOneUserByIDUseCase, inactivateOneUserByIDUseCase, reactivateOneUseByIDUseCase)
+	usersHandler := handlers.NewUsers(findOneUserCompleteUseCase, findManyUsersByOrganizationIDUseCase, findManyRelifMembersUseCase, updateOneUserByIDUseCase, inactivateOneUserByIDUseCase, reactivateOneUseByIDUseCase)
 	organizationsHandler := handlers.NewOrganizations(createOrganizationUseCase, findManyOrganizationsUseCase, findOneOrganizationByIDUseCase, updateOneOrganizationByIDUseCase, inactivateOneOrganizationByIDUseCase, reactivateOneOrganizationByIDUseCase)
 	joinOrganizationRequestsHandler := handlers.NewJoinOrganizationRequests(createJoinOrganizationRequestUseCase, findManyJoinOrganizationRequestsByOrganizationIDUseCase, findManyJoinOrganizationRequestsByUserIDUseCase, acceptJoinOrganizationRequestUseCase, rejectJoinOrganizationRequestUseCase)
 	joinOrganizationInvitesHandler := handlers.NewJoinOrganizationInvites(createJoinOrganizationInviteUseCase, findManyJoinOrganizationInvitesByOrganizationIDUseCase, findManyJoinOrganizationInvitesByUserIDUseCase, acceptJoinOrganizationInviteUseCase, rejectJoinOrganizationInviteUseCase)
