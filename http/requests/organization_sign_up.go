@@ -18,7 +18,7 @@ type OrganizationSignUp struct {
 }
 
 func (req *OrganizationSignUp) Validate() error {
-	return validation.ValidateStruct(&req,
+	return validation.ValidateStruct(req,
 		validation.Field(&req.FirstName, validation.Required),
 		validation.Field(&req.LastName, validation.Required),
 		validation.Field(&req.Email, validation.Required, is.Email),

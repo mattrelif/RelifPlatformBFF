@@ -106,19 +106,24 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 		}},
 		bson.D{{
 			"$addFields", bson.D{
-				{"storage_records.location.name", bson.M{
-					"$switch": bson.M{
-						"branches": bson.A{
-							bson.M{
-								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.OrganizationLocationType}},
-								"then": "$organization.name",
+				{"storage_records", bson.D{
+					{"location", bson.D{
+						{"name", bson.M{
+							"$switch": bson.M{
+								"branches": bson.A{
+									bson.M{
+										"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.OrganizationLocationType}},
+										"then": "$organization.name",
+									},
+									bson.M{
+										"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.HousingLocationType}},
+										"then": "$housing.name",
+									},
+								},
+								"default": "",
 							},
-							bson.M{
-								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.HousingLocationType}},
-								"then": "$housing.name",
-							},
-						},
-					},
+						}},
+					}},
 				}},
 			},
 		}},
@@ -242,19 +247,24 @@ func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizat
 		}},
 		bson.D{{
 			"$addFields", bson.D{
-				{"storage_records.location.name", bson.M{
-					"$switch": bson.M{
-						"branches": bson.A{
-							bson.M{
-								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.OrganizationLocationType}},
-								"then": "$organization.name",
+				{"storage_records", bson.D{
+					{"location", bson.D{
+						{"name", bson.M{
+							"$switch": bson.M{
+								"branches": bson.A{
+									bson.M{
+										"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.OrganizationLocationType}},
+										"then": "$organization.name",
+									},
+									bson.M{
+										"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.HousingLocationType}},
+										"then": "$housing.name",
+									},
+								},
+								"default": "",
 							},
-							bson.M{
-								"case": bson.M{"$eq": bson.A{"$storage_records.location.type", utils.HousingLocationType}},
-								"then": "$housing.name",
-							},
-						},
-					},
+						}},
+					}},
 				}},
 			},
 		}},

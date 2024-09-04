@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/platform-bff/entities"
@@ -41,13 +40,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryIDPaginated(
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
-	oid, err := primitive.ObjectIDFromHex(beneficiaryID)
-
-	if err != nil {
-		return 0, nil, err
-	}
-
-	filter := bson.M{"beneficiary_id": oid}
+	filter := bson.M{"beneficiary_id": beneficiaryID}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -78,13 +71,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByHousingIDPaginated(hous
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
-	oid, err := primitive.ObjectIDFromHex(housingID)
-
-	if err != nil {
-		return 0, nil, err
-	}
-
-	filter := bson.M{"$or": []bson.M{{"old_housing_id": oid}, {"housing_id": oid}}}
+	filter := bson.M{"$or": bson.A{bson.M{"old_housing_id": housingID}, bson.M{"housing_id": housingID}}}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
@@ -115,13 +102,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByRoomIDPaginated(roomID 
 	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
-	oid, err := primitive.ObjectIDFromHex(roomID)
-
-	if err != nil {
-		return 0, nil, err
-	}
-
-	filter := bson.M{"$or": []bson.M{{"old_room_id": oid}, {"room_id": oid}}}
+	filter := bson.M{"$or": bson.A{bson.M{"old_room_id": roomID}, bson.M{"room_id": roomID}}}
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
