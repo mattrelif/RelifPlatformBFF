@@ -39,7 +39,6 @@ func (repository *mongoOrganizationDataAccessRequests) Create(data entities.Orga
 }
 
 func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessRequest, error) {
-	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
 	filter := bson.M{"requester_organization_id": organizationID}
@@ -105,11 +104,13 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindOrganizationDataAccessRequest
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -117,7 +118,6 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByRequesterOrgani
 }
 
 func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.OrganizationDataAccessRequest, error) {
-	modelList := make([]models.FindOrganizationDataAccessRequest, 0)
 	entityList := make([]entities.OrganizationDataAccessRequest, 0)
 
 	filter := bson.M{"target_organization_id": organizationID}
@@ -183,11 +183,13 @@ func (repository *mongoOrganizationDataAccessRequests) FindManyByTargetOrganizat
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindOrganizationDataAccessRequest
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

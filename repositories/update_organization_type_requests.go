@@ -54,7 +54,6 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindOneByID(id string) (e
 }
 
 func (repository *mongoUpdateOrganizationTypeRequests) FindManyPaginated(offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
-	modelList := make([]models.FindUpdateOrganizationTypeRequest, 0)
 	entityList := make([]entities.UpdateOrganizationTypeRequest, 0)
 
 	filter := bson.M{}
@@ -121,11 +120,13 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindManyPaginated(offset,
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindUpdateOrganizationTypeRequest
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -133,7 +134,6 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindManyPaginated(offset,
 }
 
 func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.UpdateOrganizationTypeRequest, error) {
-	modelList := make([]models.FindUpdateOrganizationTypeRequest, 0)
 	entityList := make([]entities.UpdateOrganizationTypeRequest, 0)
 
 	filter := bson.M{"organization_id": organizationID}
@@ -189,11 +189,13 @@ func (repository *mongoUpdateOrganizationTypeRequests) FindManyByOrganizationIDP
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindUpdateOrganizationTypeRequest
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

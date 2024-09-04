@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"errors"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
@@ -172,7 +171,6 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.ProductType, error) {
 	var filter bson.M
 
-	modelList := make([]models.FindProductType, 0)
 	entityList := make([]entities.ProductType, 0)
 
 	if search != "" {
@@ -303,14 +301,9 @@ func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizat
 		var model models.FindProductType
 
 		if err = cursor.Decode(&model); err != nil {
-			fmt.Println(err.Error())
 			return 0, nil, err
 		}
 
-		modelList = append(modelList, model)
-	}
-
-	for _, model := range modelList {
 		entityList = append(entityList, model.ToEntity())
 	}
 

@@ -46,7 +46,6 @@ func (repository *mongoBeneficiaries) FindManyByHousingIDPaginated(housingID, se
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
-	modelList := make([]models.FindBeneficiary, 0)
 
 	if search != "" {
 		filter = bson.M{
@@ -130,11 +129,13 @@ func (repository *mongoBeneficiaries) FindManyByHousingIDPaginated(housingID, se
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindBeneficiary
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -145,7 +146,6 @@ func (repository *mongoBeneficiaries) FindManyByRoomIDPaginated(roomID, search s
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
-	modelList := make([]models.FindBeneficiary, 0)
 
 	if search != "" {
 		filter = bson.M{
@@ -229,11 +229,13 @@ func (repository *mongoBeneficiaries) FindManyByRoomIDPaginated(roomID, search s
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindBeneficiary
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -244,7 +246,6 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organiza
 	var filter bson.M
 
 	entityList := make([]entities.Beneficiary, 0)
-	modelList := make([]models.FindBeneficiary, 0)
 
 	if search != "" {
 		filter = bson.M{
@@ -328,11 +329,13 @@ func (repository *mongoBeneficiaries) FindManyByOrganizationIDPaginated(organiza
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindBeneficiary
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

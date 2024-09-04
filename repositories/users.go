@@ -45,7 +45,6 @@ func (repository *mongoUsers) Create(data entities.User) (entities.User, error) 
 }
 
 func (repository *mongoUsers) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.User, error) {
-	modelList := make([]models.FindUser, 0)
 	entityList := make([]entities.User, 0)
 
 	filter := bson.M{"organization_id": organizationID}
@@ -90,11 +89,13 @@ func (repository *mongoUsers) FindManyByOrganizationIDPaginated(organizationID s
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindUser
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -102,7 +103,6 @@ func (repository *mongoUsers) FindManyByOrganizationIDPaginated(organizationID s
 }
 
 func (repository *mongoUsers) FindManyRelifMembersPaginated(offset, limit int64) (int64, []entities.User, error) {
-	modelList := make([]models.User, 0)
 	entityList := make([]entities.User, 0)
 
 	filter := bson.M{"platform_role": utils.RelifMemberPlatformRole}
@@ -120,13 +120,15 @@ func (repository *mongoUsers) FindManyRelifMembersPaginated(offset, limit int64)
 		return 0, nil, err
 	}
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
-
 	defer cursor.Close(context.Background())
 
-	for _, model := range modelList {
+	for cursor.Next(context.Background()) {
+		var model models.FindUser
+
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

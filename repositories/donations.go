@@ -35,7 +35,6 @@ func (repository *mongoDonations) Create(data entities.Donation) (entities.Donat
 }
 
 func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID string, offset, limit int64) (int64, []entities.Donation, error) {
-	modelList := make([]models.FindDonation, 0)
 	entityList := make([]entities.Donation, 0)
 
 	filter := bson.M{"beneficiary_id": beneficiaryID}
@@ -132,11 +131,13 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindDonation
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

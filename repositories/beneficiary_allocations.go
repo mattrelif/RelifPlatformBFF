@@ -37,7 +37,6 @@ func (repository *mongoBeneficiaryAllocations) Create(data entities.BeneficiaryA
 }
 
 func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryIDPaginated(beneficiaryID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
-	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
 	filter := bson.M{"beneficiary_id": beneficiaryID}
@@ -56,11 +55,13 @@ func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryIDPaginated(
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.BeneficiaryAllocation
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -68,7 +69,6 @@ func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryIDPaginated(
 }
 
 func (repository *mongoBeneficiaryAllocations) FindManyByHousingIDPaginated(housingID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
-	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
 	filter := bson.M{"$or": bson.A{bson.M{"old_housing_id": housingID}, bson.M{"housing_id": housingID}}}
@@ -87,11 +87,13 @@ func (repository *mongoBeneficiaryAllocations) FindManyByHousingIDPaginated(hous
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.BeneficiaryAllocation
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -99,7 +101,6 @@ func (repository *mongoBeneficiaryAllocations) FindManyByHousingIDPaginated(hous
 }
 
 func (repository *mongoBeneficiaryAllocations) FindManyByRoomIDPaginated(roomID string, offset, limit int64) (int64, []entities.BeneficiaryAllocation, error) {
-	modelList := make([]models.BeneficiaryAllocation, 0)
 	entityList := make([]entities.BeneficiaryAllocation, 0)
 
 	filter := bson.M{"$or": bson.A{bson.M{"old_room_id": roomID}, bson.M{"room_id": roomID}}}
@@ -118,11 +119,13 @@ func (repository *mongoBeneficiaryAllocations) FindManyByRoomIDPaginated(roomID 
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.BeneficiaryAllocation
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

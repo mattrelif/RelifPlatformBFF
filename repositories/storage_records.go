@@ -59,7 +59,6 @@ func (repository *mongoStorageRecords) FindOneByProductTypeIDAndLocation(product
 }
 
 func (repository *mongoStorageRecords) FindManyByLocationPaginated(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error) {
-	modelList := make([]models.FindByLocationStorageRecord, 0)
 	entityList := make([]entities.StorageRecord, 0)
 
 	filter := bson.M{
@@ -109,11 +108,13 @@ func (repository *mongoStorageRecords) FindManyByLocationPaginated(location enti
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindByLocationStorageRecord
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

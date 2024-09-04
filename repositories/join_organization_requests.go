@@ -39,7 +39,6 @@ func (repository *mongoJoinOrganizationRequests) Create(data entities.JoinOrgani
 }
 
 func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
-	modelList := make([]models.FindJoinOrganizationRequest, 0)
 	entityList := make([]entities.JoinOrganizationRequest, 0)
 
 	filter := bson.M{"organization_id": organizationID}
@@ -105,11 +104,13 @@ func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationIDPaginat
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindJoinOrganizationRequest
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
@@ -117,7 +118,6 @@ func (repository *mongoJoinOrganizationRequests) FindManyByOrganizationIDPaginat
 }
 
 func (repository *mongoJoinOrganizationRequests) FindManyByUserIDPaginated(userID string, offset, limit int64) (int64, []entities.JoinOrganizationRequest, error) {
-	modelList := make([]models.FindJoinOrganizationRequest, 0)
 	entityList := make([]entities.JoinOrganizationRequest, 0)
 
 	filter := bson.M{"user_id": userID}
@@ -183,11 +183,13 @@ func (repository *mongoJoinOrganizationRequests) FindManyByUserIDPaginated(userI
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindJoinOrganizationRequest
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

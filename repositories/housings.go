@@ -42,7 +42,6 @@ func (repository *mongoHousings) Create(data entities.Housing) (entities.Housing
 func (repository *mongoHousings) FindManyByOrganizationIDPaginated(organizationID, search string, offset, limit int64) (int64, []entities.Housing, error) {
 	var filter bson.M
 
-	modelList := make([]models.FindHousing, 0)
 	entityList := make([]entities.Housing, 0)
 
 	if search != "" {
@@ -141,11 +140,13 @@ func (repository *mongoHousings) FindManyByOrganizationIDPaginated(organizationI
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.FindHousing
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

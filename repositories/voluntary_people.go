@@ -44,7 +44,6 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationIDPaginated(organi
 	var filter bson.M
 
 	entityList := make([]entities.VoluntaryPerson, 0)
-	modelsList := make([]models.VoluntaryPerson, 0)
 
 	if search != "" {
 		filter = bson.M{
@@ -81,11 +80,13 @@ func (repository *mongoVoluntaryPeople) FindManyByOrganizationIDPaginated(organi
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelsList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.VoluntaryPerson
 
-	for _, model := range modelsList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

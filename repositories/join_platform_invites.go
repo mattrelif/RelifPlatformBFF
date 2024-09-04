@@ -36,7 +36,6 @@ func (repository *mongoJoinPlatformInvites) Create(data entities.JoinPlatformInv
 }
 
 func (repository *mongoJoinPlatformInvites) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinPlatformInvite, error) {
-	modelList := make([]models.JoinPlatformInvite, 0)
 	entityList := make([]entities.JoinPlatformInvite, 0)
 
 	filter := bson.M{"organization_id": organizationID}
@@ -55,11 +54,13 @@ func (repository *mongoJoinPlatformInvites) FindManyByOrganizationIDPaginated(or
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.JoinPlatformInvite
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 

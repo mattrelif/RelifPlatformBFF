@@ -39,7 +39,6 @@ func (repository *mongoOrganizations) Create(data entities.Organization) (entiti
 }
 
 func (repository *mongoOrganizations) FindManyPaginated(offset, limit int64) (int64, []entities.Organization, error) {
-	modelList := make([]models.Organization, 0)
 	entityList := make([]entities.Organization, 0)
 
 	count, err := repository.collection.CountDocuments(context.Background(), bson.M{})
@@ -57,11 +56,13 @@ func (repository *mongoOrganizations) FindManyPaginated(offset, limit int64) (in
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
-	}
+	for cursor.Next(context.Background()) {
+		var model models.Organization
 
-	for _, model := range modelList {
+		if err = cursor.Decode(&model); err != nil {
+			return 0, nil, err
+		}
+
 		entityList = append(entityList, model.ToEntity())
 	}
 
