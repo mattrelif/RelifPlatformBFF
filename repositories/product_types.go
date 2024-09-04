@@ -300,19 +300,15 @@ func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizat
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		var record bson.M
+		var model models.FindProductType
 
-		if err = cursor.Decode(&record); err != nil {
+		if err = cursor.Decode(&model); err != nil {
+			fmt.Println(err.Error())
 			return 0, nil, err
 		}
 
-		fmt.Println(record)
+		modelList = append(modelList, model)
 	}
-	/*
-		if err = cursor.All(context.Background(), &modelList); err != nil {
-			return 0, nil, err
-		}
-	*/
 
 	for _, model := range modelList {
 		entityList = append(entityList, model.ToEntity())
