@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
@@ -298,9 +299,20 @@ func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizat
 
 	defer cursor.Close(context.Background())
 
-	if err = cursor.All(context.Background(), &modelList); err != nil {
-		return 0, nil, err
+	for cursor.Next(context.Background()) {
+		var record bson.M
+
+		if err = cursor.Decode(&record); err != nil {
+			return 0, nil, err
+		}
+
+		fmt.Println(record)
 	}
+	/*
+		if err = cursor.All(context.Background(), &modelList); err != nil {
+			return 0, nil, err
+		}
+	*/
 
 	for _, model := range modelList {
 		entityList = append(entityList, model.ToEntity())
