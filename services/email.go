@@ -14,6 +14,7 @@ type Email interface {
 	SendPasswordResetEmail(request entities.PasswordChangeRequest, user entities.User) error
 	SendPasswordChangedEmail(user entities.User) error
 	SendPlatformInviteEmail(inviter entities.User, invite entities.JoinPlatformInvite) error
+	SendPlatformAdminInviteEmail(inviter entities.User, invite entities.JoinPlatformAdminInvite) error
 }
 
 type emailSes struct {
@@ -103,6 +104,34 @@ func (service *emailSes) SendPlatformInviteEmail(inviter entities.User, invite e
 			ToAddresses: []string{invite.InvitedEmail},
 		},
 		Template:     aws.String("PlatformInvitationTemplate"),
+		TemplateData: aws.String(string(templateDataJson)),
+	}
+
+	if _, err = service.client.SendTemplatedEmail(context.Background(), input); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (service *emailSes) SendPlatformAdminInviteEmail(inviter entities.User, invite entities.JoinPlatformAdminInvite) error {
+	templateData := map[string]string{
+		"inviter_name":      inviter.FirstName,
+		"registration_link": fmt.Sprintf(`https://%s/join?code=%s`, service.frontendDomain, invite.Code),
+	}
+
+	templateDataJson, err := json.Marshal(templateData)
+
+	if err != nil {
+		return err
+	}
+
+	input := &ses.SendTemplatedEmailInput{
+		Source: aws.String(service.emailDomain),
+		Destination: &types.Destination{
+			ToAddresses: []string{invite.InvitedEmail},
+		},
+		Template:     aws.String("PlatformAdminInvitationTemplate"),
 		TemplateData: aws.String(string(templateDataJson)),
 	}
 

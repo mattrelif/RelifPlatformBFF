@@ -6,6 +6,7 @@ type Beneficiary struct {
 	ID                    string
 	FullName              string
 	Email                 string
+	ImageURL              string
 	Documents             []Document
 	Birthdate             string
 	Phones                []string

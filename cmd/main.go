@@ -16,10 +16,12 @@ import (
 	beneficiariesUseCases "relif/platform-bff/usecases/beneficiaries"
 	beneficiaryAllocationsUseCases "relif/platform-bff/usecases/beneficiary_allocations"
 	donationsUseCases "relif/platform-bff/usecases/donations"
+	filesUseCases "relif/platform-bff/usecases/files"
 	housingRoomsUseCases "relif/platform-bff/usecases/housing_rooms"
 	housingsUseCases "relif/platform-bff/usecases/housings"
 	joinOrganizationInvitesUseCases "relif/platform-bff/usecases/join_organization_invites"
 	joinOrganizationRequestsUseCases "relif/platform-bff/usecases/join_organization_requests"
+	joinPlatformAdminInvitesUseCases "relif/platform-bff/usecases/join_platform_admin_invites"
 	joinPlatformInvitesUseCases "relif/platform-bff/usecases/join_platform_invites"
 	organizationDataAccessGrantsUseCases "relif/platform-bff/usecases/organization_data_access_grants"
 	organizationDataAccessRequestsUseCases "relif/platform-bff/usecases/organization_data_access_requests"
@@ -80,6 +82,7 @@ func main() {
 	database := mongo.Database(settingsInstance.MongoDatabase)
 
 	sesClient := clients.NewSESClient(awsConfig)
+	s3Client := clients.NewS3(awsConfig)
 
 	/** Repositories **/
 	sessionsRepository := repositories.NewSessionsMongo(database)
@@ -101,18 +104,23 @@ func main() {
 	productTypesAllocationRepository := repositories.NewMongoProductTypeAllocations(database)
 	storageRecordsRepository := repositories.NewMongoStorageRecords(database)
 	donationsRepository := repositories.NewDonations(database)
+	joinPlatformAdminInvitesRepository := repositories.NewJoinPlatformAdminInvites(database)
 
 	/** Services **/
 	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain, settingsInstance.FrontendDomain)
 	tokensService := services.NewTokens([]byte(settingsInstance.TokenSecret))
+	s3FileUploadsService := services.NewS3FileUploads(s3Client, settingsInstance.S3BucketName)
 
 	/** Use Cases **/
+	generateUploadLinkUseCase := filesUseCases.NewGenerateUploadLink(s3FileUploadsService, utils.GenerateUuid)
+
 	authenticateTokenUseCase := authenticationUseCases.NewAuthenticateToken(usersRepository, sessionsRepository, tokensService)
 
 	createUserUseCase := usersUseCases.NewCreate(usersRepository)
 
-	signUpUseCase := authenticationUseCases.NewSignUp(usersRepository, sessionsRepository, tokensService, createUserUseCase, utils.BcryptHash)
-	organizationSignUpUseCase := authenticationUseCases.NewOrganizationSignUp(usersRepository, sessionsRepository, organizationsRepository, tokensService, createUserUseCase, utils.BcryptHash)
+	signUpUseCase := authenticationUseCases.NewSignUp(sessionsRepository, tokensService, createUserUseCase, utils.BcryptHash)
+	adminSignUpUseCase := authenticationUseCases.NewAdminSignUp(sessionsRepository, tokensService, createUserUseCase, utils.BcryptHash)
+	organizationSignUpUseCase := authenticationUseCases.NewOrganizationSignUp(sessionsRepository, organizationsRepository, tokensService, createUserUseCase, utils.BcryptHash)
 	signInUseCase := authenticationUseCases.NewSignIn(usersRepository, sessionsRepository, tokensService, utils.BcryptCompare)
 	signOutUseCase := authenticationUseCases.NewSignOut(sessionsRepository)
 
@@ -174,6 +182,7 @@ func main() {
 	findOneBeneficiaryCompleteByIDUseCase := beneficiariesUseCases.NewFindOneCompleteByID(beneficiariesRepository)
 	updateBeneficiaryByIDUseCase := beneficiariesUseCases.NewUpdateOneByID(beneficiariesRepository, organizationsRepository)
 	deleteBeneficiaryByIDUseCase := beneficiariesUseCases.NewDeleteOneByID(beneficiariesRepository, organizationsRepository)
+	generateBeneficiaryProfileImageUploadLinkUseCase := beneficiariesUseCases.NewGenerateProfileImageUploadLink(generateUploadLinkUseCase)
 
 	createHousingRoomUseCase := housingRoomsUseCases.NewCreateHousingRoom(housingRoomsRepository, housingsRepository, organizationsRepository)
 	findOneHousingRoomCompleteByIDUseCase := housingRoomsUseCases.NewFindOneCompleteByID(housingRoomsRepository, organizationsRepository)
@@ -212,11 +221,15 @@ func main() {
 	findManyStorageRecordsByOrganizationIDUseCase := storageRecordsUseCases.NewFindManyByOrganizationIDPaginated(storageRecordsRepository, organizationsRepository)
 	findManyStorageRecordsByHousingIDUseCase := storageRecordsUseCases.NewFindManyByHousingIDPaginated(storageRecordsRepository, organizationsRepository, housingsRepository)
 
+	createJoinPlatformAdminInvitesUseCase := joinPlatformAdminInvitesUseCases.NewCreate(joinPlatformAdminInvitesRepository, sesEmailService, utils.GenerateUuid)
+	findManyJoinPlatformAdminInvitesPaginatedUseCase := joinPlatformAdminInvitesUseCases.NewFindManyPaginated(joinPlatformAdminInvitesRepository)
+	consumeJoinPlatformAdminInviteByCodeUseCase := joinPlatformAdminInvitesUseCases.NewConsumeByCode(joinPlatformAdminInvitesRepository)
+
 	/** Middlewares **/
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticateTokenUseCase)
 
 	/** Handlers **/
-	authenticationHandler := handlers.NewAuthentication(signUpUseCase, organizationSignUpUseCase, signInUseCase, signOutUseCase)
+	authenticationHandler := handlers.NewAuthentication(signUpUseCase, organizationSignUpUseCase, adminSignUpUseCase, signInUseCase, signOutUseCase)
 	passwordRecoveryHandler := handlers.NewPassword(requestPasswordChangeUseCase, changePasswordUseCase)
 	usersHandler := handlers.NewUsers(findOneUserCompleteUseCase, findManyUsersByOrganizationIDUseCase, findManyRelifMembersUseCase, updateOneUserByIDUseCase, inactivateOneUserByIDUseCase, reactivateOneUseByIDUseCase)
 	organizationsHandler := handlers.NewOrganizations(createOrganizationUseCase, findManyOrganizationsUseCase, findOneOrganizationByIDUseCase, updateOneOrganizationByIDUseCase, inactivateOneOrganizationByIDUseCase, reactivateOneOrganizationByIDUseCase)
@@ -226,7 +239,7 @@ func main() {
 	updateOrganizationTypeRequestsHandler := handlers.NewUpdateOrganizationTypeRequests(createUpdateOrganizationTypeRequestUseCase, findManyUpdateOrganizationTypeRequestsUseCase, findManyUpdateOrganizationTypeRequestsByOrganizationIDUseCase, acceptUpdateOrganizationTypeRequestUseCase, rejectUpdateOrganizationTypeRequestUseCase)
 	organizationsDataAccessRequestsHandler := handlers.NewOrganizationDataAccessRequests(createOrganizationDataAccessRequestsUseCase, findManyOrganizationDataAccessRequestsByTargetUseCase, findManyOrganizationDataAccessRequestsByRequesterUseCase, acceptOrganizationDataAccessRequestsUseCase, rejectOrganizationDataAccessRequestsUseCase)
 	joinPlatformInvitesHandler := handlers.NewJoinPlatformInvites(createJoinPlatformInviteUseCase, findManyJoinPlatformInvitesByOrganizationIDUseCase, consumeJoinPlatformInviteByCodeUseCase)
-	beneficiariesHandler := handlers.NewBeneficiaries(createBeneficiaryUseCase, findManyBeneficiariesByOrganizationIDUseCase, findManyBeneficiariesByHousingIDUseCase, findManyBeneficiariesByHousingRoomIDUseCase, findOneBeneficiaryCompleteByIDUseCase, updateBeneficiaryByIDUseCase, deleteBeneficiaryByIDUseCase)
+	beneficiariesHandler := handlers.NewBeneficiaries(createBeneficiaryUseCase, findManyBeneficiariesByOrganizationIDUseCase, findManyBeneficiariesByHousingIDUseCase, findManyBeneficiariesByHousingRoomIDUseCase, findOneBeneficiaryCompleteByIDUseCase, updateBeneficiaryByIDUseCase, deleteBeneficiaryByIDUseCase, generateBeneficiaryProfileImageUploadLinkUseCase)
 	housingRoomsHandler := handlers.NewHousingRooms(createHousingRoomUseCase, findOneHousingRoomCompleteByIDUseCase, findManyHousingRoomsByHousingIDUseCase, updateHousingRoomByIDUseCase, deleteHousingRoomByIDUseCase)
 	beneficiaryAllocationsHandler := handlers.NewBeneficiaryAllocations(createEntranceBeneficiaryAllocationUseCase, createReallocationBeneficiaryAllocationUseCase, findManyBeneficiaryAllocationsByBeneficiaryIDUseCase, findManyBeneficiaryAllocationsByHousingIDUseCase, findManyBeneficiaryAllocationsByHousingRoomIDUseCase)
 	voluntaryPeopleHandler := handlers.NewVoluntaryPeople(createVoluntaryPersonUseCase, findManyVoluntaryPeopleByOrganizationIDUseCase, findOneVoluntaryPersonCompleteByIDUseCase, updateOneVoluntaryPersonByIDUseCase, deleteOneVoluntaryPersonByIDUseCase)
@@ -235,6 +248,7 @@ func main() {
 	productTypesAllocationHandler := handlers.NewProductTypeAllocations(createProductTypeAllocationEntranceUseCase, createProductTypeAllocationReallocationUseCase)
 	donationsHandler := handlers.NewDonations(createDonationUseCase, findManyDonationsByBeneficiaryIDUseCase)
 	storageRecordsHandler := handlers.NewStorageRecords(findManyStorageRecordsByOrganizationIDUseCase, findManyStorageRecordsByHousingIDUseCase)
+	joinPlatformAdminInvitesHandler := handlers.NewJoinPlatformAdminInvites(createJoinPlatformAdminInvitesUseCase, findManyJoinPlatformAdminInvitesPaginatedUseCase, consumeJoinPlatformAdminInviteByCodeUseCase)
 
 	healthHandler := handlers.NewHealth()
 
@@ -261,6 +275,7 @@ func main() {
 		productTypesAllocationHandler,
 		donationsHandler,
 		storageRecordsHandler,
+		joinPlatformAdminInvitesHandler,
 	)
 	server := http.NewServer(router, settingsInstance.ServerPort)
 

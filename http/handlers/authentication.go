@@ -15,6 +15,7 @@ import (
 type Authentication struct {
 	signUpUseCase             authenticationUseCases.SignUp
 	organizationSignUpUseCase authenticationUseCases.OrganizationSignUp
+	adminSignUpUseCase        authenticationUseCases.AdminSignUp
 	signInUseCase             authenticationUseCases.SignIn
 	signOutUseCase            authenticationUseCases.SignOut
 }
@@ -22,12 +23,14 @@ type Authentication struct {
 func NewAuthentication(
 	signUpUseCase authenticationUseCases.SignUp,
 	organizationSignUpUseCase authenticationUseCases.OrganizationSignUp,
+	adminSignUpUseCase authenticationUseCases.AdminSignUp,
 	signInUseCase authenticationUseCases.SignIn,
 	signOutUseCase authenticationUseCases.SignOut,
 ) *Authentication {
 	return &Authentication{
 		signUpUseCase:             signUpUseCase,
 		organizationSignUpUseCase: organizationSignUpUseCase,
+		adminSignUpUseCase:        adminSignUpUseCase,
 		signInUseCase:             signInUseCase,
 		signOutUseCase:            signOutUseCase,
 	}
@@ -57,6 +60,46 @@ func (handler *Authentication) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	data := req.ToEntity()
 	token, err := handler.signUpUseCase.Execute(data)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, utils.ErrUserAlreadyExists):
+			http.Error(w, err.Error(), http.StatusConflict)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Token", token)
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (handler *Authentication) AdminSignUp(w http.ResponseWriter, r *http.Request) {
+	var req requests.SignUp
+
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	if err = json.Unmarshal(body, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data := req.ToEntity()
+	token, err := handler.adminSignUpUseCase.Execute(data)
 
 	if err != nil {
 		switch {

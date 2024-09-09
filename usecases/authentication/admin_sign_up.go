@@ -8,24 +8,24 @@ import (
 	"relif/platform-bff/utils"
 )
 
-type SignUp interface {
+type AdminSignUp interface {
 	Execute(data entities.User) (string, error)
 }
 
-type signUpImpl struct {
+type adminSignUp struct {
 	sessionsRepository   repositories.Sessions
 	tokensService        services.Tokens
 	createUserUseCase    usersUseCase.Create
 	passwordHashFunction utils.PasswordHashFn
 }
 
-func NewSignUp(
+func NewAdminSignUp(
 	sessionsRepository repositories.Sessions,
 	tokensService services.Tokens,
 	createUserUseCase usersUseCase.Create,
 	passwordHashFunction utils.PasswordHashFn,
-) SignUp {
-	return &signUpImpl{
+) AdminSignUp {
+	return &adminSignUp{
 		sessionsRepository:   sessionsRepository,
 		tokensService:        tokensService,
 		createUserUseCase:    createUserUseCase,
@@ -33,7 +33,7 @@ func NewSignUp(
 	}
 }
 
-func (uc *signUpImpl) Execute(data entities.User) (string, error) {
+func (uc *adminSignUp) Execute(data entities.User) (string, error) {
 	hashed, err := uc.passwordHashFunction(data.Password)
 
 	if err != nil {
@@ -41,7 +41,7 @@ func (uc *signUpImpl) Execute(data entities.User) (string, error) {
 	}
 
 	data.Password = hashed
-	data.PlatformRole = utils.NoOrgPlatformRole
+	data.PlatformRole = utils.RelifMemberPlatformRole
 
 	user, err := uc.createUserUseCase.Execute(data)
 

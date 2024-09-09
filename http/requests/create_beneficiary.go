@@ -9,6 +9,7 @@ import (
 type CreateBeneficiary struct {
 	FullName           string             `json:"full_name"`
 	Email              string             `json:"email"`
+	ImageURL           string             `json:"image_url"`
 	Documents          []Document         `json:"documents"`
 	Birthdate          string             `json:"birthdate"`
 	Phones             []string           `json:"phones"`
@@ -76,6 +77,7 @@ func (req *CreateBeneficiary) ToEntity() entities.Beneficiary {
 	return entities.Beneficiary{
 		FullName:           req.FullName,
 		Email:              req.Email,
+		ImageURL:           req.ImageURL,
 		Documents:          documentsEntityList,
 		Birthdate:          req.Birthdate,
 		Phones:             req.Phones,

@@ -13,7 +13,6 @@ type OrganizationSignUp interface {
 }
 
 type organizationSignUpImpl struct {
-	usersRepository         repositories.Users
 	sessionsRepository      repositories.Sessions
 	organizationsRepository repositories.Organizations
 	tokensService           services.Tokens
@@ -22,7 +21,6 @@ type organizationSignUpImpl struct {
 }
 
 func NewOrganizationSignUp(
-	usersRepository repositories.Users,
 	sessionsRepository repositories.Sessions,
 	organizationsRepository repositories.Organizations,
 	tokensService services.Tokens,
@@ -30,7 +28,6 @@ func NewOrganizationSignUp(
 	passwordHashFunction utils.PasswordHashFn,
 ) OrganizationSignUp {
 	return &organizationSignUpImpl{
-		usersRepository:         usersRepository,
 		sessionsRepository:      sessionsRepository,
 		organizationsRepository: organizationsRepository,
 		tokensService:           tokensService,

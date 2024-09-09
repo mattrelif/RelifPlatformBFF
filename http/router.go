@@ -34,6 +34,7 @@ func NewRouter(
 	productTypeAllocationsHandler *handlers.ProductTypeAllocations,
 	donationsHandler *handlers.Donations,
 	storageRecordsHandler *handlers.StorageRecords,
+	joinPlatformAdminInvites *handlers.JoinPlatformAdminInvites,
 ) http.Handler {
 	router := chi.NewRouter()
 
@@ -56,6 +57,7 @@ func NewRouter(
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/sign-up", authenticationHandler.SignUp)
 			r.Post("/org-sign-up", authenticationHandler.OrganizationSignUp)
+			r.Post("/admin-sign-up", authenticationHandler.AdminSignUp)
 			r.Post("/sign-in", authenticationHandler.SignIn)
 			r.With(authenticateByTokenMiddleware.Handle).Get("/me", authenticationHandler.Me)
 			r.With(authenticateByTokenMiddleware.Handle).Delete("/sign-out", authenticationHandler.SignOut)
@@ -69,6 +71,12 @@ func NewRouter(
 		r.Route("/join-platform-invites", func(r chi.Router) {
 			r.With(authenticateByTokenMiddleware.Handle).Post("/", joinPlatformInvitesHandler.Create)
 			r.Delete("/{code}/consume", joinPlatformInvitesHandler.Consume)
+		})
+
+		r.Route("/join-platform-admin-invites", func(r chi.Router) {
+			r.With(authenticateByTokenMiddleware.Handle).Post("/", joinPlatformAdminInvites.Create)
+			r.With(authenticateByTokenMiddleware.Handle).Get("/", joinPlatformAdminInvites.FindManyPaginated)
+			r.Delete("/{code}/consume", joinPlatformAdminInvites.ConsumeByCode)
 		})
 
 		r.Group(func(r chi.Router) {
@@ -177,6 +185,8 @@ func NewRouter(
 
 				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryID)
 				r.Get("/{id}/donations", donationsHandler.FindManyByBeneficiaryID)
+
+				r.Post("/generate-profile-image-upload-link", beneficiariesHandler.GenerateProfileImageUploadLink)
 			})
 
 			r.Route("/voluntary-people", func(r chi.Router) {

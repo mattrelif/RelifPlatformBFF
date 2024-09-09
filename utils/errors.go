@@ -73,3 +73,7 @@ var (
 var (
 	ErrInvalidToken = errors.New("invalid token")
 )
+
+var (
+	ErrJoinPlatformAdminInviteNotFound = errors.New("join platform admin invite with given data not found")
+)

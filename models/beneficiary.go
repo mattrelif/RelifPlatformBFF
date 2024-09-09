@@ -11,6 +11,7 @@ type FindBeneficiary struct {
 	ID                    string             `bson:"_id,omitempty"`
 	FullName              string             `bson:"full_name,omitempty"`
 	Email                 string             `bson:"email,omitempty"`
+	ImageURL              string             `bson:"image_url,omitempty"`
 	Documents             []Document         `bson:"documents,omitempty"`
 	Birthdate             string             `bson:"birthdate,omitempty"`
 	Phones                []string           `bson:"phones,omitempty"`
@@ -79,6 +80,7 @@ type Beneficiary struct {
 	ID                    string             `bson:"_id,omitempty"`
 	FullName              string             `bson:"full_name,omitempty"`
 	Email                 string             `bson:"email,omitempty"`
+	ImageURL              string             `bson:"image_url,omitempty"`
 	Documents             []Document         `bson:"documents,omitempty"`
 	Birthdate             string             `bson:"birthdate,omitempty"`
 	Phones                []string           `bson:"phones,omitempty"`
@@ -117,6 +119,7 @@ func (beneficiary *Beneficiary) ToEntity() entities.Beneficiary {
 		CurrentOrganizationID: beneficiary.CurrentOrganizationID,
 		FullName:              beneficiary.FullName,
 		Email:                 beneficiary.Email,
+		ImageURL:              beneficiary.ImageURL,
 		Documents:             documents,
 		Birthdate:             beneficiary.Birthdate,
 		Phones:                beneficiary.Phones,
@@ -155,6 +158,7 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		CurrentOrganizationID: entity.CurrentOrganizationID,
 		FullName:              entity.FullName,
 		Email:                 entity.Email,
+		ImageURL:              entity.ImageURL,
 		Documents:             documents,
 		Birthdate:             entity.Birthdate,
 		Phones:                entity.Phones,
@@ -189,6 +193,7 @@ func NewUpdatedBeneficiary(entity entities.Beneficiary) Beneficiary {
 		CurrentOrganizationID: entity.CurrentOrganizationID,
 		FullName:              entity.FullName,
 		Email:                 entity.Email,
+		ImageURL:              entity.ImageURL,
 		Documents:             documents,
 		Birthdate:             entity.Birthdate,
 		Phones:                entity.Phones,

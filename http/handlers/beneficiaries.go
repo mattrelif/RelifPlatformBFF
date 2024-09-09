@@ -23,6 +23,7 @@ type Beneficiaries struct {
 	findOneCompleteByIDUseCase               beneficiariesUseCases.FindOneCompleteByID
 	updateOneByIDUseCase                     beneficiariesUseCases.UpdateOneByID
 	deleteOneByIDUseCase                     beneficiariesUseCases.DeleteOneByID
+	generateProfileImageUploadLinkUseCase    beneficiariesUseCases.GenerateProfileImageUploadLink
 }
 
 func NewBeneficiaries(
@@ -33,6 +34,7 @@ func NewBeneficiaries(
 	findOneCompleteByIDUseCase beneficiariesUseCases.FindOneCompleteByID,
 	updateOneByIDUseCase beneficiariesUseCases.UpdateOneByID,
 	deleteOneByIDUseCase beneficiariesUseCases.DeleteOneByID,
+	generateProfileImageUploadLinkUseCase beneficiariesUseCases.GenerateProfileImageUploadLink,
 ) *Beneficiaries {
 	return &Beneficiaries{
 		createUseCase:                            createUseCase,
@@ -42,6 +44,7 @@ func NewBeneficiaries(
 		findOneCompleteByIDUseCase:               findOneCompleteByIDUseCase,
 		updateOneByIDUseCase:                     updateOneByIDUseCase,
 		deleteOneByIDUseCase:                     deleteOneByIDUseCase,
+		generateProfileImageUploadLinkUseCase:    generateProfileImageUploadLinkUseCase,
 	}
 }
 
@@ -310,4 +313,48 @@ func (handler *Beneficiaries) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (handler *Beneficiaries) GenerateProfileImageUploadLink(w http.ResponseWriter, r *http.Request) {
+	var req requests.GenerateFileUploadLink
+
+	user := r.Context().Value("user").(entities.User)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	if err = json.Unmarshal(body, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data := req.ToEntity()
+	link, err := handler.generateProfileImageUploadLinkUseCase.Execute(user, data.Type)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	res := responses.NewGenerateFileUploadLink(link)
+
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

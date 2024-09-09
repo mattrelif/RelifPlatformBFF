@@ -23,6 +23,8 @@ type Settings struct {
 
 	MongoURI      string `default:"mongodb://127.0.0.1:27017" split_words:"true" json:"MONGO_URI"`
 	MongoDatabase string `default:"test" split_words:"true" json:"MONGO_DATABASE"`
+
+	S3BucketName string `required:"true" split_words:"true" json:"S3_BUCKET_NAME"`
 }
 
 func NewSettings(secretsManagerClient *secretsmanager.Client) (*Settings, error) {
