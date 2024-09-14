@@ -4,7 +4,6 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
 )
@@ -46,8 +45,66 @@ func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryIDPaginated(
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housing_rooms"},
+				{"localField", "old_room_id"},
+				{"foreignField", "_id"},
+				{"as", "old_room"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$old_room"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "old_housing_id"},
+				{"foreignField", "_id"},
+				{"as", "old_housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$old_housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housing_rooms"},
+				{"localField", "room_id"},
+				{"foreignField", "_id"},
+				{"as", "room"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$room"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "housing_id"},
+				{"foreignField", "_id"},
+				{"as", "housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err
@@ -56,7 +113,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByBeneficiaryIDPaginated(
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		var model models.BeneficiaryAllocation
+		var model models.FindBeneficiaryAllocation
 
 		if err = cursor.Decode(&model); err != nil {
 			return 0, nil, err
@@ -78,8 +135,66 @@ func (repository *mongoBeneficiaryAllocations) FindManyByHousingIDPaginated(hous
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housing_rooms"},
+				{"localField", "old_room_id"},
+				{"foreignField", "_id"},
+				{"as", "old_room"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$old_room"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "old_housing_id"},
+				{"foreignField", "_id"},
+				{"as", "old_housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$old_housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housing_rooms"},
+				{"localField", "room_id"},
+				{"foreignField", "_id"},
+				{"as", "room"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$room"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "housing_id"},
+				{"foreignField", "_id"},
+				{"as", "housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err
@@ -88,7 +203,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByHousingIDPaginated(hous
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		var model models.BeneficiaryAllocation
+		var model models.FindBeneficiaryAllocation
 
 		if err = cursor.Decode(&model); err != nil {
 			return 0, nil, err
@@ -110,8 +225,66 @@ func (repository *mongoBeneficiaryAllocations) FindManyByRoomIDPaginated(roomID 
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housing_rooms"},
+				{"localField", "old_room_id"},
+				{"foreignField", "_id"},
+				{"as", "old_room"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$old_room"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "old_housing_id"},
+				{"foreignField", "_id"},
+				{"as", "old_housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$old_housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housing_rooms"},
+				{"localField", "room_id"},
+				{"foreignField", "_id"},
+				{"as", "room"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$room"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "housing_id"},
+				{"foreignField", "_id"},
+				{"as", "housing"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$housing"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err
@@ -120,7 +293,7 @@ func (repository *mongoBeneficiaryAllocations) FindManyByRoomIDPaginated(roomID 
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		var model models.BeneficiaryAllocation
+		var model models.FindBeneficiaryAllocation
 
 		if err = cursor.Decode(&model); err != nil {
 			return 0, nil, err

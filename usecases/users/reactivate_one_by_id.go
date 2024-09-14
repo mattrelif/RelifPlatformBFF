@@ -22,13 +22,13 @@ func NewReactivateOneByID(usersRepository repositories.Users) ReactivateOneByID 
 }
 
 func (uc *reactivateOneByIDImpl) Execute(actor entities.User, id string) error {
-	user, err := uc.usersRepository.FindOneByID(id)
+	user, err := uc.usersRepository.FindOneAndLookupByID(id)
 
 	if err != nil {
 		return err
 	}
 
-	if err = guards.IsSuperUser(actor); err != nil {
+	if err = guards.IsOrganizationAdmin(actor, user.Organization); err != nil {
 		return err
 	}
 
