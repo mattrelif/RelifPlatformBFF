@@ -56,9 +56,3 @@ func NewStorageRecord(entity entities.StorageRecord) StorageRecord {
 		Quantity:      entity.Quantity,
 	}
 }
-
-func NewUpdatedStorageRecord(entity entities.StorageRecord) StorageRecord {
-	return StorageRecord{
-		Quantity: entity.Quantity,
-	}
-}

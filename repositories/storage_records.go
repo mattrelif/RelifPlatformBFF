@@ -13,7 +13,9 @@ type StorageRecords interface {
 	Create(data entities.StorageRecord) error
 	FindOneByProductTypeIDAndLocation(productTypeID string, location entities.Location) (entities.StorageRecord, error)
 	FindManyByLocationPaginated(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error)
-	UpdateOneByID(id string, data entities.StorageRecord) error
+	IncreaseQuantityOfOneByID(id string, quantity int) error
+	DecreaseQuantityOfOneByID(id string, quantity int) error
+	DeleteManyByProductTypeID(productTypeID string) error
 }
 
 type mongoStorageRecords struct {
@@ -121,14 +123,34 @@ func (repository *mongoStorageRecords) FindManyByLocationPaginated(location enti
 	return count, entityList, nil
 }
 
-func (repository *mongoStorageRecords) UpdateOneByID(id string, data entities.StorageRecord) error {
-	model := models.NewUpdatedStorageRecord(data)
-
+func (repository *mongoStorageRecords) IncreaseQuantityOfOneByID(id string, quantity int) error {
 	update := bson.M{
-		"$set": &model,
+		"$inc": quantity,
 	}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository *mongoStorageRecords) DecreaseQuantityOfOneByID(id string, quantity int) error {
+	update := bson.M{
+		"$inc": -1 * quantity,
+	}
+
+	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository *mongoStorageRecords) DeleteManyByProductTypeID(productTypeID string) error {
+	filter := bson.M{"product_type_id": productTypeID}
+
+	if _, err := repository.collection.DeleteMany(context.Background(), filter); err != nil {
 		return err
 	}
 

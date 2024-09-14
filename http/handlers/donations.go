@@ -17,15 +17,18 @@ import (
 type Donations struct {
 	createUseCase                           donationsUseCases.Create
 	findManyByBeneficiaryIDPaginatedUseCase donationsUseCases.FindManyByBeneficiaryIDPaginated
+	findManyByProductTypeIDPaginatedUseCase donationsUseCases.FindManyByProductTypeIDPaginated
 }
 
 func NewDonations(
 	createUseCase donationsUseCases.Create,
 	findManyByBeneficiaryIDPaginatedUseCase donationsUseCases.FindManyByBeneficiaryIDPaginated,
+	findManyByProductTypeIDPaginatedUseCase donationsUseCases.FindManyByProductTypeIDPaginated,
 ) *Donations {
 	return &Donations{
 		createUseCase:                           createUseCase,
 		findManyByBeneficiaryIDPaginatedUseCase: findManyByBeneficiaryIDPaginatedUseCase,
+		findManyByProductTypeIDPaginatedUseCase: findManyByProductTypeIDPaginatedUseCase,
 	}
 }
 
@@ -98,6 +101,48 @@ func (handler *Donations) FindManyByBeneficiaryID(w http.ResponseWriter, r *http
 	}
 
 	count, donations, err := handler.findManyByBeneficiaryIDPaginatedUseCase.Execute(user, beneficiaryID, int64(offset), int64(limit))
+
+	if err != nil {
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrBeneficiaryNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	res := responses.FindMany[responses.Donations]{Data: responses.NewDonations(donations), Count: count}
+
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (handler *Donations) FindManyByProductTypeID(w http.ResponseWriter, r *http.Request) {
+	productTypeID := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	offsetParam := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limitParam := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitParam)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, donations, err := handler.findManyByBeneficiaryIDPaginatedUseCase.Execute(user, productTypeID, int64(offset), int64(limit))
 
 	if err != nil {
 		switch {

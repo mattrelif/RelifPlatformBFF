@@ -6,6 +6,30 @@ import (
 	"time"
 )
 
+type FindProductTypeAllocation struct {
+	ID             string       `bson:"_id,omitempty"`
+	ProductTypeID  string       `bson:"product_type_id,omitempty"`
+	Type           string       `bson:"type,omitempty"`
+	From           FindLocation `bson:"from,omitempty"`
+	To             FindLocation `bson:"to,omitempty"`
+	OrganizationID string       `bson:"organization_id,omitempty"`
+	Quantity       int          `bson:"quantity,omitempty"`
+	CreatedAt      time.Time    `bson:"created_at,omitempty"`
+}
+
+func (productTypeAllocation *FindProductTypeAllocation) ToEntity() entities.ProductTypeAllocation {
+	return entities.ProductTypeAllocation{
+		ID:             productTypeAllocation.ID,
+		ProductTypeID:  productTypeAllocation.ProductTypeID,
+		Type:           productTypeAllocation.Type,
+		From:           productTypeAllocation.From.ToEntity(),
+		To:             productTypeAllocation.To.ToEntity(),
+		OrganizationID: productTypeAllocation.OrganizationID,
+		Quantity:       productTypeAllocation.Quantity,
+		CreatedAt:      productTypeAllocation.CreatedAt,
+	}
+}
+
 type ProductTypeAllocation struct {
 	ID             string    `bson:"_id,omitempty"`
 	ProductTypeID  string    `bson:"product_type_id,omitempty"`

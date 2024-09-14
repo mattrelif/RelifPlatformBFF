@@ -56,9 +56,7 @@ func (uc *createReallocationImpl) Execute(actor entities.User, productTypeID str
 	}
 
 	if fromRecord.ID != "" {
-		fromRecord.Quantity = fromRecord.Quantity - data.Quantity
-
-		if err = uc.storageRecordRepository.UpdateOneByID(fromRecord.ID, fromRecord); err != nil {
+		if err = uc.storageRecordRepository.DecreaseQuantityOfOneByID(fromRecord.ID, data.Quantity); err != nil {
 			return entities.ProductTypeAllocation{}, err
 		}
 	} else {
@@ -72,9 +70,7 @@ func (uc *createReallocationImpl) Execute(actor entities.User, productTypeID str
 	}
 
 	if toRecord.ID != "" {
-		toRecord.Quantity = toRecord.Quantity + data.Quantity
-
-		if err = uc.storageRecordRepository.UpdateOneByID(toRecord.ID, toRecord); err != nil {
+		if err = uc.storageRecordRepository.IncreaseQuantityOfOneByID(toRecord.ID, data.Quantity); err != nil {
 			return entities.ProductTypeAllocation{}, err
 		}
 	} else {

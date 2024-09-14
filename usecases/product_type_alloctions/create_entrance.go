@@ -1,7 +1,6 @@
 package product_type_alloctions
 
 import (
-	"fmt"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/guards"
 	"relif/platform-bff/repositories"
@@ -57,11 +56,7 @@ func (uc *createEntranceImpl) Execute(actor entities.User, productTypeID string,
 	}
 
 	if record.ID != "" {
-		record.Quantity = record.Quantity + data.Quantity
-
-		fmt.Println(record.Quantity)
-
-		if err = uc.storageRecordRepository.UpdateOneByID(record.ID, record); err != nil {
+		if err = uc.storageRecordRepository.DecreaseQuantityOfOneByID(record.ID, data.Quantity); err != nil {
 			return entities.ProductTypeAllocation{}, err
 		}
 	} else {

@@ -65,9 +65,7 @@ func (uc *createImpl) Execute(actor entities.User, beneficiaryID string, data en
 	}
 
 	if record.ID != "" {
-		record.Quantity = record.Quantity - data.Quantity
-
-		if err = uc.storageRecordsRepository.UpdateOneByID(record.ID, record); err != nil {
+		if err = uc.storageRecordsRepository.DecreaseQuantityOfOneByID(record.ID, data.Quantity); err != nil {
 			return entities.Donation{}, err
 		}
 	} else {

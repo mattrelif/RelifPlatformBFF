@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type ProductTypeAllocations []ProductTypeAllocation
+
 type ProductTypeAllocation struct {
 	ID             string    `json:"id,omitempty"`
 	ProductTypeID  string    `json:"product_type_id,omitempty'"`
@@ -27,4 +29,14 @@ func NewProductTypeAllocation(entity entities.ProductTypeAllocation) ProductType
 		Quantity:       entity.Quantity,
 		CreatedAt:      entity.CreatedAt,
 	}
+}
+
+func NewProductTypeAllocations(entityList []entities.ProductTypeAllocation) ProductTypeAllocations {
+	res := make(ProductTypeAllocations, 0)
+
+	for _, entity := range entityList {
+		res = append(res, NewProductTypeAllocation(entity))
+	}
+
+	return res
 }

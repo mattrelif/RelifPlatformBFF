@@ -202,6 +202,9 @@ func NewRouter(
 
 				r.Post("/{id}/allocate", productTypeAllocationsHandler.Allocate)
 				r.Post("/{id}/reallocate", productTypeAllocationsHandler.Reallocate)
+
+				r.Get("/{id}/donations", donationsHandler.FindManyByProductTypeID)
+				r.Get("/{id}/allocations", productTypeAllocationsHandler.FindManyByProductTypeID)
 			})
 		})
 	})

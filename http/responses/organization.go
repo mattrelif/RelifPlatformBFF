@@ -14,6 +14,7 @@ type Organization struct {
 	Address     Address   `json:"address"`
 	OwnerID     string    `json:"owner_id"`
 	Status      string    `json:"status"`
+	Type        string    `json:"type"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -26,6 +27,7 @@ func NewOrganization(organization entities.Organization) Organization {
 		Address:     NewAddress(organization.Address),
 		OwnerID:     organization.OwnerID,
 		Status:      organization.Status,
+		Type:        organization.Type,
 		CreatedAt:   organization.CreatedAt,
 		UpdatedAt:   organization.UpdatedAt,
 	}

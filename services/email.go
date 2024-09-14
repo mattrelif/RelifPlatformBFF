@@ -117,7 +117,7 @@ func (service *emailSes) SendPlatformInviteEmail(inviter entities.User, invite e
 func (service *emailSes) SendPlatformAdminInviteEmail(inviter entities.User, invite entities.JoinPlatformAdminInvite) error {
 	templateData := map[string]string{
 		"inviter_name":      inviter.FirstName,
-		"registration_link": fmt.Sprintf(`https://%s/join?code=%s`, service.frontendDomain, invite.Code),
+		"registration_link": fmt.Sprintf(`https://%s/join-admin?code=%s`, service.frontendDomain, invite.Code),
 	}
 
 	templateDataJson, err := json.Marshal(templateData)
