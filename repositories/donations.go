@@ -68,6 +68,20 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 		}},
 		bson.D{{
 			"$lookup", bson.D{
+				{"from", "product_types"},
+				{"localField", "product_type_id"},
+				{"foreignField", "_id"},
+				{"as", "product_type"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$product_type"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "location.id"},
 				{"foreignField", "_id"},
@@ -96,16 +110,16 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 		}},
 		bson.D{{
 			"$addFields", bson.D{
-				{"location", bson.D{
+				{"from", bson.D{
 					{"name", bson.M{
 						"$switch": bson.M{
 							"branches": bson.A{
 								bson.M{
-									"case": bson.M{"$eq": bson.A{"location.type", utils.OrganizationLocationType}},
+									"case": bson.M{"$eq": bson.A{"from.type", utils.OrganizationLocationType}},
 									"then": "$organization.name",
 								},
 								bson.M{
-									"case": bson.M{"$eq": bson.A{"location.type", utils.HousingLocationType}},
+									"case": bson.M{"$eq": bson.A{"from.type", utils.HousingLocationType}},
 									"then": "$housing.name",
 								},
 							},
@@ -176,6 +190,20 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 		}},
 		bson.D{{
 			"$lookup", bson.D{
+				{"from", "product_types"},
+				{"localField", "product_type_id"},
+				{"foreignField", "_id"},
+				{"as", "product_type"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$product_type"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "organizations"},
 				{"localField", "location.id"},
 				{"foreignField", "_id"},
@@ -204,16 +232,16 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 		}},
 		bson.D{{
 			"$addFields", bson.D{
-				{"location", bson.D{
+				{"from", bson.D{
 					{"name", bson.M{
 						"$switch": bson.M{
 							"branches": bson.A{
 								bson.M{
-									"case": bson.M{"$eq": bson.A{"location.type", utils.OrganizationLocationType}},
+									"case": bson.M{"$eq": bson.A{"from.type", utils.OrganizationLocationType}},
 									"then": "$organization.name",
 								},
 								bson.M{
-									"case": bson.M{"$eq": bson.A{"location.type", utils.HousingLocationType}},
+									"case": bson.M{"$eq": bson.A{"from.type", utils.HousingLocationType}},
 									"then": "$housing.name",
 								},
 							},

@@ -5,6 +5,7 @@ import "time"
 type ProductTypeAllocation struct {
 	ID             string
 	ProductTypeID  string
+	ProductType    ProductType
 	Type           string
 	From           Location
 	To             Location

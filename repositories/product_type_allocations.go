@@ -66,6 +66,20 @@ func (repository *mongoProductTypeAllocations) FindManyByProductTypeIDPaginated(
 		}},
 		bson.D{{
 			"$lookup", bson.D{
+				{"from", "product_types"},
+				{"localField", "product_type_id"},
+				{"foreignField", "_id"},
+				{"as", "product_type"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$product_type"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
 				{"from", "housings"},
 				{"localField", "from.id"},
 				{"foreignField", "_id"},

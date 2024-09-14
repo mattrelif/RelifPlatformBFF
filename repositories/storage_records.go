@@ -125,7 +125,7 @@ func (repository *mongoStorageRecords) FindManyByLocationPaginated(location enti
 
 func (repository *mongoStorageRecords) IncreaseQuantityOfOneByID(id string, quantity int) error {
 	update := bson.M{
-		"$inc": quantity,
+		"$inc": bson.M{"$quantity": quantity},
 	}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
@@ -137,7 +137,7 @@ func (repository *mongoStorageRecords) IncreaseQuantityOfOneByID(id string, quan
 
 func (repository *mongoStorageRecords) DecreaseQuantityOfOneByID(id string, quantity int) error {
 	update := bson.M{
-		"$inc": -1 * quantity,
+		"$inc": bson.M{"$quantity": -1 * quantity},
 	}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {

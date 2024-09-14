@@ -9,6 +9,7 @@ import (
 type FindProductTypeAllocation struct {
 	ID             string       `bson:"_id,omitempty"`
 	ProductTypeID  string       `bson:"product_type_id,omitempty"`
+	ProductType    ProductType  `bson:"product_type,omitempty"`
 	Type           string       `bson:"type,omitempty"`
 	From           FindLocation `bson:"from,omitempty"`
 	To             FindLocation `bson:"to,omitempty"`
@@ -21,6 +22,7 @@ func (productTypeAllocation *FindProductTypeAllocation) ToEntity() entities.Prod
 	return entities.ProductTypeAllocation{
 		ID:             productTypeAllocation.ID,
 		ProductTypeID:  productTypeAllocation.ProductTypeID,
+		ProductType:    productTypeAllocation.ProductType.ToEntity(),
 		Type:           productTypeAllocation.Type,
 		From:           productTypeAllocation.From.ToEntity(),
 		To:             productTypeAllocation.To.ToEntity(),
