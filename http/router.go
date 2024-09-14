@@ -87,6 +87,7 @@ func NewRouter(
 				r.Get("/{id}", usersHandler.FindOne)
 				r.Put("/{id}", usersHandler.UpdateOne)
 				r.Delete("/{id}", usersHandler.InactivateOne)
+				r.Put("/{id}/reactivate", usersHandler.ReactivateOne)
 
 				r.Get("/{id}/join-organization-requests", joinOrganizationRequestsHandler.FindManyByUserID)
 				r.Get("/{id}/join-organization-invites", joinOrganizationInvitesHandler.FindManyByUserID)
