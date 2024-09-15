@@ -7,11 +7,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
+	"relif/platform-bff/utils"
 )
 
 type StorageRecords interface {
 	Create(data entities.StorageRecord) error
 	FindOneByProductTypeIDAndLocation(productTypeID string, location entities.Location) (entities.StorageRecord, error)
+	FindManyByProductTypeID(productTypeID string) ([]entities.StorageRecord, error)
 	FindManyByLocationPaginated(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error)
 	IncreaseQuantityOfOneByID(id string, quantity int) error
 	DecreaseQuantityOfOneByID(id string, quantity int) error
@@ -58,6 +60,93 @@ func (repository *mongoStorageRecords) FindOneByProductTypeIDAndLocation(product
 	}
 
 	return model.ToEntity(), nil
+}
+
+func (repository *mongoStorageRecords) FindManyByProductTypeID(productTypeID string) ([]entities.StorageRecord, error) {
+	entityList := make([]entities.StorageRecord, 0)
+
+	filter := bson.M{"product_type_id": productTypeID}
+
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{{
+			"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "location.id"},
+				{"foreignField", "_id"},
+				{"as", "organization"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$organization"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
+				{"from", "housings"},
+				{"localField", "location.id"},
+				{"foreignField", "_id"},
+				{"as", "housing"},
+			},
+		}},
+		bson.D{{
+			"$unwind", bson.D{
+				{"path", "$housing"},
+				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$addFields", bson.D{
+				{"location", bson.D{
+					{"name", bson.M{
+						"$switch": bson.M{
+							"branches": bson.A{
+								bson.M{
+									"case": bson.M{"$eq": bson.A{"location.type", utils.OrganizationLocationType}},
+									"then": "$organization.name",
+								},
+								bson.M{
+									"case": bson.M{"$eq": bson.A{"location.type", utils.HousingLocationType}},
+									"then": "$housing.name",
+								},
+							},
+							"default": "",
+						},
+					}},
+				}},
+			},
+		}},
+		bson.D{{
+			"$project", bson.M{
+				"housing":      0,
+				"organization": 0,
+			},
+		}},
+	}
+
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer cursor.Close(context.Background())
+
+	for cursor.Next(context.Background()) {
+		var model models.StorageRecord
+
+		if err = cursor.Decode(&model); err != nil {
+			return nil, err
+		}
+
+		entityList = append(entityList, model.ToEntity())
+	}
+
+	return entityList, nil
 }
 
 func (repository *mongoStorageRecords) FindManyByLocationPaginated(location entities.Location, offset, limit int64) (int64, []entities.StorageRecord, error) {

@@ -31,6 +31,8 @@ func (uc *createImpl) Execute(actor entities.User, data entities.Organization) (
 		return entities.Organization{}, err
 	}
 
+	data.OwnerID = actor.ID
+
 	organization, err := uc.organizationsRepository.Create(data)
 
 	if err != nil {

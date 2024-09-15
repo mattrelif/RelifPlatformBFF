@@ -206,6 +206,7 @@ func NewRouter(
 
 				r.Get("/{id}/donations", donationsHandler.FindManyByProductTypeID)
 				r.Get("/{id}/allocations", productTypeAllocationsHandler.FindManyByProductTypeID)
+				r.Get("/{id}/storage-records", storageRecordsHandler.FindManyByProductTypeID)
 			})
 		})
 	})

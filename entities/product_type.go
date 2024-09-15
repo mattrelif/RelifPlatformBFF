@@ -11,7 +11,6 @@ type ProductType struct {
 	OrganizationID string
 	Organization   Organization
 	UnitType       string
-	StorageRecords []StorageRecord
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

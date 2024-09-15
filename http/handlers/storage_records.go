@@ -15,15 +15,18 @@ import (
 type StorageRecords struct {
 	findManyByOrganizationIDPaginatedUseCase storageRecordsUseCases.FindManyByOrganizationIDPaginated
 	findManyByHousingIDPaginatedUseCase      storageRecordsUseCases.FindManyByHousingIDPaginated
+	findManyByProductTypeIDUseCase           storageRecordsUseCases.FindManyByProductTypeID
 }
 
 func NewStorageRecords(
 	findManyByOrganizationIDPaginatedUseCase storageRecordsUseCases.FindManyByOrganizationIDPaginated,
 	findManyByHousingIDPaginatedUseCase storageRecordsUseCases.FindManyByHousingIDPaginated,
+	findManyByProductTypeIDUseCase storageRecordsUseCases.FindManyByProductTypeID,
 ) *StorageRecords {
 	return &StorageRecords{
 		findManyByOrganizationIDPaginatedUseCase: findManyByOrganizationIDPaginatedUseCase,
 		findManyByHousingIDPaginatedUseCase:      findManyByHousingIDPaginatedUseCase,
+		findManyByProductTypeIDUseCase:           findManyByProductTypeIDUseCase,
 	}
 }
 
@@ -104,6 +107,32 @@ func (handler *StorageRecords) FindManyByHousingID(w http.ResponseWriter, r *htt
 	}
 
 	res := responses.FindMany[responses.StorageRecordsByLocation]{Data: responses.NewStorageRecordsByLocation(records), Count: count}
+
+	if err = json.NewEncoder(w).Encode(&res); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (handler *StorageRecords) FindManyByProductTypeID(w http.ResponseWriter, r *http.Request) {
+	productTypeID := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	records, err := handler.findManyByProductTypeIDUseCase.Execute(user, productTypeID)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, utils.ErrForbiddenAction):
+			http.Error(w, err.Error(), http.StatusForbidden)
+		case errors.Is(err, utils.ErrProductTypeNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	res := responses.NewStorageRecordsByProductType(records)
 
 	if err = json.NewEncoder(w).Encode(&res); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
