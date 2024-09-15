@@ -125,7 +125,9 @@ func (repository *mongoStorageRecords) FindManyByLocationPaginated(location enti
 
 func (repository *mongoStorageRecords) IncreaseQuantityOfOneByID(id string, quantity int) error {
 	update := bson.M{
-		"$inc": bson.M{"$quantity": quantity},
+		"$inc": bson.M{
+			"quantity": quantity,
+		},
 	}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
@@ -137,7 +139,9 @@ func (repository *mongoStorageRecords) IncreaseQuantityOfOneByID(id string, quan
 
 func (repository *mongoStorageRecords) DecreaseQuantityOfOneByID(id string, quantity int) error {
 	update := bson.M{
-		"$inc": bson.M{"$quantity": -1 * quantity},
+		"$inc": bson.M{
+			"quantity": -1 * quantity,
+		},
 	}
 
 	if _, err := repository.collection.UpdateByID(context.Background(), id, update); err != nil {
@@ -148,7 +152,9 @@ func (repository *mongoStorageRecords) DecreaseQuantityOfOneByID(id string, quan
 }
 
 func (repository *mongoStorageRecords) DeleteManyByProductTypeID(productTypeID string) error {
-	filter := bson.M{"product_type_id": productTypeID}
+	filter := bson.M{
+		"product_type_id": productTypeID,
+	}
 
 	if _, err := repository.collection.DeleteMany(context.Background(), filter); err != nil {
 		return err
