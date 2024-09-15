@@ -1,6 +1,9 @@
 package models
 
-import "relif/platform-bff/entities"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"relif/platform-bff/entities"
+)
 
 type FindByLocationStorageRecord struct {
 	ID            string      `bson:"_id,omitempty"`
@@ -50,7 +53,7 @@ func (record *StorageRecord) ToEntity() entities.StorageRecord {
 
 func NewStorageRecord(entity entities.StorageRecord) StorageRecord {
 	return StorageRecord{
-		ID:            entity.ID,
+		ID:            primitive.NewObjectID().Hex(),
 		Location:      NewLocation(entity.Location),
 		ProductTypeID: entity.ProductTypeID,
 		Quantity:      entity.Quantity,
