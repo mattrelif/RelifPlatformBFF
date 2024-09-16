@@ -35,6 +35,16 @@ func (uc *createImpl) Execute(actor entities.User, data entities.JoinPlatformAdm
 		return entities.JoinPlatformAdminInvite{}, err
 	}
 
+	count, err := uc.repository.CountByInvitedEmail(data.InvitedEmail)
+
+	if err != nil {
+		return entities.JoinPlatformAdminInvite{}, err
+	}
+
+	if count > 0 {
+		return entities.JoinPlatformAdminInvite{}, utils.ErrInviteAlreadyExists
+	}
+
 	data.Code = uc.uuidGeneratorFunction()
 	data.InviterID = actor.ID
 

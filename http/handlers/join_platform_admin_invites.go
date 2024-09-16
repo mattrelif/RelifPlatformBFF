@@ -61,6 +61,8 @@ func (handler *JoinPlatformAdminInvites) Create(w http.ResponseWriter, r *http.R
 
 	if err != nil {
 		switch {
+		case errors.Is(err, utils.ErrInviteAlreadyExists):
+			http.Error(w, err.Error(), http.StatusConflict)
 		case errors.Is(err, utils.ErrForbiddenAction):
 			http.Error(w, err.Error(), http.StatusForbidden)
 		default:

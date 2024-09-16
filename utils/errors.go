@@ -77,3 +77,7 @@ var (
 var (
 	ErrJoinPlatformAdminInviteNotFound = errors.New("join platform admin invite with given data not found")
 )
+
+var (
+	ErrInviteAlreadyExists = errors.New("invite with given e-mail already exists")
+)

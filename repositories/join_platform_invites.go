@@ -11,6 +11,7 @@ import (
 
 type JoinPlatformInvites interface {
 	Create(data entities.JoinPlatformInvite) (entities.JoinPlatformInvite, error)
+	CountByInvitedEmail(email string) (int64, error)
 	FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinPlatformInvite, error)
 	FindOneAndDeleteByCode(code string) (entities.JoinPlatformInvite, error)
 }
@@ -33,6 +34,18 @@ func (repository *mongoJoinPlatformInvites) Create(data entities.JoinPlatformInv
 	}
 
 	return model.ToEntity(), nil
+}
+
+func (repository *mongoJoinPlatformInvites) CountByInvitedEmail(email string) (int64, error) {
+	filter := bson.M{"_id": email}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (repository *mongoJoinPlatformInvites) FindManyByOrganizationIDPaginated(organizationID string, offset, limit int64) (int64, []entities.JoinPlatformInvite, error) {

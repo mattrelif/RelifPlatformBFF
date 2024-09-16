@@ -61,7 +61,7 @@ func (handler *JoinPlatformInvites) Create(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		switch {
-		case errors.Is(err, utils.ErrUserAlreadyExists):
+		case errors.Is(err, utils.ErrInviteAlreadyExists):
 			http.Error(w, err.Error(), http.StatusConflict)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)

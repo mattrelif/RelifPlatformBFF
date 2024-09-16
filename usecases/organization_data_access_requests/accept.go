@@ -31,10 +31,6 @@ func NewAccept(
 }
 
 func (uc *acceptImpl) Execute(actor entities.User, requestID string) error {
-	if err := guards.IsSuperUser(actor); err != nil {
-		return err
-	}
-
 	request, err := uc.organizationDataAccessRequestsRepository.FindOneByID(requestID)
 
 	if err != nil {
@@ -44,6 +40,10 @@ func (uc *acceptImpl) Execute(actor entities.User, requestID string) error {
 	targetOrganization, err := uc.organizationsRepository.FindOneByID(request.TargetOrganizationID)
 
 	if err != nil {
+		return err
+	}
+
+	if err = guards.IsOrganizationAdmin(actor, targetOrganization); err != nil {
 		return err
 	}
 

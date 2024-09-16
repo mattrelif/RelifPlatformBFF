@@ -14,22 +14,33 @@ type Reject interface {
 
 type rejectImpl struct {
 	organizationDataAccessRequestsRepository repositories.OrganizationDataAccessRequests
+	organizationsRepository                  repositories.Organizations
 }
 
-func NewReject(organizationDataAccessRequestsRepository repositories.OrganizationDataAccessRequests) Reject {
+func NewReject(
+	organizationDataAccessRequestsRepository repositories.OrganizationDataAccessRequests,
+	organizationsRepository repositories.Organizations,
+) Reject {
 	return &rejectImpl{
 		organizationDataAccessRequestsRepository: organizationDataAccessRequestsRepository,
+		organizationsRepository:                  organizationsRepository,
 	}
 }
 
 func (uc *rejectImpl) Execute(actor entities.User, requestID, rejectReason string) error {
-	if err := guards.IsSuperUser(actor); err != nil {
-		return err
-	}
-
 	request, err := uc.organizationDataAccessRequestsRepository.FindOneByID(requestID)
 
 	if err != nil {
+		return err
+	}
+
+	targetOrganization, err := uc.organizationsRepository.FindOneByID(request.TargetOrganizationID)
+
+	if err != nil {
+		return err
+	}
+
+	if err = guards.IsOrganizationAdmin(actor, targetOrganization); err != nil {
 		return err
 	}
 

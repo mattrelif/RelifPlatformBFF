@@ -12,6 +12,7 @@ import (
 
 type JoinPlatformAdminInvites interface {
 	Create(invite entities.JoinPlatformAdminInvite) (entities.JoinPlatformAdminInvite, error)
+	CountByInvitedEmail(email string) (int64, error)
 	FindManyPaginated(offset, limit int64) (int64, []entities.JoinPlatformAdminInvite, error)
 	FindOneAndDeleteByCode(code string) (entities.JoinPlatformAdminInvite, error)
 }
@@ -34,6 +35,18 @@ func (repository *joinPlatformAdminInvites) Create(invite entities.JoinPlatformA
 	}
 
 	return model.ToEntity(), nil
+}
+
+func (repository *joinPlatformAdminInvites) CountByInvitedEmail(email string) (int64, error) {
+	filter := bson.M{"_id": email}
+
+	count, err := repository.collection.CountDocuments(context.Background(), filter)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (repository *joinPlatformAdminInvites) FindManyPaginated(offset, limit int64) (int64, []entities.JoinPlatformAdminInvite, error) {

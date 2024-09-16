@@ -41,14 +41,14 @@ func (uc *createImpl) Execute(actor entities.User, data entities.JoinPlatformInv
 		return entities.JoinPlatformInvite{}, err
 	}
 
-	count, err := uc.usersRepository.CountByEmail(data.InvitedEmail)
+	count, err := uc.joinPlatformInvitesRepository.CountByInvitedEmail(data.InvitedEmail)
 
 	if err != nil {
 		return entities.JoinPlatformInvite{}, err
 	}
 
 	if count > 0 {
-		return entities.JoinPlatformInvite{}, utils.ErrUserAlreadyExists
+		return entities.JoinPlatformInvite{}, utils.ErrInviteAlreadyExists
 	}
 
 	data.OrganizationID = actor.Organization.ID
