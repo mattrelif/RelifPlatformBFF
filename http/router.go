@@ -114,7 +114,7 @@ func NewRouter(
 				r.Get("/{id}/storage-records", storageRecordsHandler.FindManyByOrganizationID)
 
 				r.Put("/{id}", organizationsHandler.UpdateOne)
-				r.Put("/{id}", organizationsHandler.ReactivateOne)
+				r.Put("/{id}/reactivate", organizationsHandler.ReactivateOne)
 
 				r.Post("/{id}/join-organization-requests", joinOrganizationRequestsHandler.Create)
 				r.Post("/{id}/request-organization-data-access", organizationDataAccessRequestsHandler.Create)
