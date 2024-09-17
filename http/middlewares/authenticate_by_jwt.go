@@ -21,10 +21,24 @@ func NewAuthenticateByToken(authenticateTokenUseCase authenticationUseCases.Auth
 
 func (middleware *AuthenticateByToken) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := strings.TrimSpace(strings.Split(r.Header.Get("Authorization"), " ")[1])
+		header := r.Header.Get("Authorization")
+
+		if header == "" {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		splitHeader := strings.Split(header, " ")
+
+		if len(splitHeader) != 2 {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		token := splitHeader[1]
 
 		if token == "" {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
