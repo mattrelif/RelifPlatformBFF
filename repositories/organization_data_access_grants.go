@@ -43,15 +43,38 @@ func (repository *mongoOrganizationDataAccessGrants) FindManyByOrganizationIDPag
 	entityList := make([]entities.OrganizationDataAccessGrant, 0)
 
 	filter := bson.M{"organization_id": organizationID}
-
 	count, err := repository.collection.CountDocuments(context.Background(), filter)
 
 	if err != nil {
 		return 0, nil, err
 	}
 
-	opts := options.Find().SetLimit(limit).SetSkip(offset).SetSort(bson.M{"created_at": -1})
-	cursor, err := repository.collection.Find(context.Background(), filter, opts)
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$match", filter},
+		},
+		bson.D{
+			{"$sort", bson.M{"created_at": -1}},
+		},
+		bson.D{
+			{"$skip", offset},
+		},
+		bson.D{
+			{"$limit", limit},
+		},
+		bson.D{
+			{"$lookup", bson.D{
+				{"from", "organizations"},
+				{"localField", "target_organization_id"},
+				{"foreignField", "_id"},
+				{"as", "target_organization"},
+			}},
+		},
+		bson.D{
+			{"$unwind", bson.D{{"path", "$target_organization"}, {"preserveNullAndEmptyArrays", true}}},
+		},
+	}
+	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
 
 	if err != nil {
 		return 0, nil, err

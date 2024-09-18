@@ -8,17 +8,19 @@ import (
 type OrganizationDataAccessGrants []OrganizationDataAccessGrant
 
 type OrganizationDataAccessGrant struct {
-	ID                   string    `json:"id"`
-	TargetOrganizationID string    `json:"target_organization_id"`
-	OrganizationID       string    `json:"organization_id"`
-	AuditorID            string    `json:"auditor_id"`
-	CreatedAt            time.Time `json:"created_at"`
+	ID                   string       `json:"id"`
+	TargetOrganizationID string       `json:"target_organization_id"`
+	TargetOrganization   Organization `json:"target_organization"`
+	OrganizationID       string       `json:"organization_id"`
+	AuditorID            string       `json:"auditor_id"`
+	CreatedAt            time.Time    `json:"created_at"`
 }
 
 func NewOrganizationDataAccessGrant(entity entities.OrganizationDataAccessGrant) OrganizationDataAccessGrant {
 	return OrganizationDataAccessGrant{
 		ID:                   entity.ID,
 		TargetOrganizationID: entity.TargetOrganizationID,
+		TargetOrganization:   NewOrganization(entity.TargetOrganization),
 		OrganizationID:       entity.OrganizationID,
 		AuditorID:            entity.AuditorID,
 		CreatedAt:            entity.CreatedAt,

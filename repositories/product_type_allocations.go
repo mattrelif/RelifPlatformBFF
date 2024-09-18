@@ -112,11 +112,11 @@ func (repository *mongoProductTypeAllocations) FindManyByProductTypeIDPaginated(
 					"$switch": bson.M{
 						"branches": bson.A{
 							bson.M{
-								"case": bson.M{"$eq": bson.M{"$from.type": utils.OrganizationLocationType}},
+								"case": bson.M{"$eq": bson.M{"from.type": utils.OrganizationLocationType}},
 								"then": "$organization.name",
 							},
 							bson.M{
-								"case": bson.M{"$eq": bson.M{"$from.type": utils.HousingLocationType}},
+								"case": bson.M{"$eq": bson.M{"from.type": utils.HousingLocationType}},
 								"then": "$from_housing.name",
 							},
 						},
@@ -131,11 +131,11 @@ func (repository *mongoProductTypeAllocations) FindManyByProductTypeIDPaginated(
 					"$switch": bson.M{
 						"branches": bson.A{
 							bson.M{
-								"case": bson.M{"$eq": bson.M{"$to.type": utils.OrganizationLocationType}},
+								"case": bson.M{"$eq": bson.M{"to.type": utils.OrganizationLocationType}},
 								"then": "$organization.name",
 							},
 							bson.M{
-								"case": bson.M{"$eq": bson.M{"$to.type": utils.HousingLocationType}},
+								"case": bson.M{"$eq": bson.M{"to.type": utils.HousingLocationType}},
 								"then": "$to_housing.name",
 							},
 						},

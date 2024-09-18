@@ -104,7 +104,7 @@ func NewRouter(
 				r.Get("/{id}/requested-data-access-requests", organizationDataAccessRequestsHandler.FindManyByRequesterOrganizationID)
 				r.Get("/{id}/targeted-data-access-requests", organizationDataAccessRequestsHandler.FindManyByTargetOrganizationID)
 				r.Get("/{id}/data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationID)
-				r.Get("/{id}/targeted-data-access-grants", organizationDataAccessGrantHandler.FindManyByOrganizationID)
+				r.Get("/{id}/targeted-data-access-grants", organizationDataAccessGrantHandler.FindManyByTargetOrganizationID)
 				r.Get("/{id}/update-organization-type-requests", updateOrganizationTypeRequestsHandler.FindManyByOrganizationID)
 				r.Get("/{id}/housings", housingsHandler.FindManyByOrganizationID)
 				r.Get("/{id}/join-platform-invites", joinPlatformInvitesHandler.FindManyByOrganizationID)
