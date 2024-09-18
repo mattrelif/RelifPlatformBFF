@@ -50,6 +50,7 @@ func (beneficiary *FindBeneficiary) ToEntity() entities.Beneficiary {
 
 	return entities.Beneficiary{
 		ID:                    beneficiary.ID,
+		ImageURL:              beneficiary.ImageURL,
 		CurrentOrganizationID: beneficiary.CurrentOrganizationID,
 		CurrentOrganization:   beneficiary.CurrentOrganization.ToEntity(),
 		FullName:              beneficiary.FullName,

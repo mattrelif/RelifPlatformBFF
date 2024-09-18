@@ -10,6 +10,7 @@ type Beneficiaries []Beneficiary
 type Beneficiary struct {
 	ID                    string             `json:"id"`
 	FullName              string             `json:"full_name"`
+	ImageURL              string             `json:"image_url"`
 	Email                 string             `json:"email"`
 	Documents             []Document         `json:"documents"`
 	Birthdate             string             `json:"birthdate"`
@@ -49,6 +50,7 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 	return Beneficiary{
 		ID:                    entity.ID,
 		FullName:              entity.FullName,
+		ImageURL:              entity.ImageURL,
 		Email:                 entity.Email,
 		Documents:             documents,
 		Birthdate:             entity.Birthdate,
