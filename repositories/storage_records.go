@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
+	"relif/platform-bff/utils"
 )
 
 type StorageRecords interface {
@@ -100,8 +101,19 @@ func (repository *mongoStorageRecords) FindManyByProductTypeID(productTypeID str
 		}},
 		bson.D{{
 			"$project", bson.M{
-				"housing":      0,
-				"organization": 0,
+				"_id": 1,
+				"location": bson.D{
+					{"id", "$location.id"},
+					{"type", "$location.type"},
+					{"name", bson.D{
+						{"$cond", bson.D{
+							{"if", bson.D{{"$eq", bson.A{"$location.type", utils.OrganizationLocationType}}}},
+							{"then", "$organization.name"},
+							{"else", "$housing.name"},
+						}},
+					}},
+				},
+				"quantity": 1,
 			},
 		}},
 	}
@@ -115,7 +127,7 @@ func (repository *mongoStorageRecords) FindManyByProductTypeID(productTypeID str
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		var model models.StorageRecord
+		var model models.FindByProductTypeStorageRecord
 
 		if err = cursor.Decode(&model); err != nil {
 			return nil, err

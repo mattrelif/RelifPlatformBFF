@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
+	"relif/platform-bff/utils"
 )
 
 type ProductTypeAllocations interface {
@@ -107,9 +108,35 @@ func (repository *mongoProductTypeAllocations) FindManyByProductTypeIDPaginated(
 		}},
 		bson.D{{
 			"$project", bson.M{
-				"from_housing": 0,
-				"to_housing":   0,
-				"organization": 0,
+				"_id":             1,
+				"product_type_id": 1,
+				"product_type":    1,
+				"type":            1,
+				"from": bson.D{
+					{"id", "$from.id"},
+					{"type", "$from.type"},
+					{"name", bson.D{
+						{"$cond", bson.D{
+							{"if", bson.D{{"$eq", bson.A{"$from.type", utils.OrganizationLocationType}}}},
+							{"then", "$organization.name"},
+							{"else", "$from_housing.name"},
+						}},
+					}},
+				},
+				"to": bson.D{
+					{"id", "$to.id"},
+					{"type", "$to.type"},
+					{"name", bson.D{
+						{"$cond", bson.D{
+							{"if", bson.D{{"$eq", bson.A{"$to.type", utils.OrganizationLocationType}}}},
+							{"then", "$organization.name"},
+							{"else", "$to_housing.name"},
+						}},
+					}},
+				},
+				"organization_id": 1,
+				"quantity":        1,
+				"created_at":      1,
 			},
 		}},
 	}

@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
+	"relif/platform-bff/utils"
 )
 
 type Donations interface {
@@ -82,7 +83,7 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 		bson.D{{
 			"$lookup", bson.D{
 				{"from", "organizations"},
-				{"localField", "location.id"},
+				{"localField", "from.id"},
 				{"foreignField", "_id"},
 				{"as", "organization"},
 			},
@@ -96,7 +97,7 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 		bson.D{{
 			"$lookup", bson.D{
 				{"from", "housings"},
-				{"localField", "location.id"},
+				{"localField", "from.id"},
 				{"foreignField", "_id"},
 				{"as", "housing"},
 			},
@@ -105,6 +106,29 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 			"$unwind", bson.D{
 				{"path", "$housing"},
 				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$project", bson.M{
+				"_id":             1,
+				"organization_id": 1,
+				"beneficiary_id":  1,
+				"beneficiary":     1,
+				"from": bson.D{
+					{"id", "$from.id"},
+					{"type", "$from.type"},
+					{"name", bson.D{
+						{"$cond", bson.D{
+							{"if", bson.D{{"$eq", bson.A{"$from.type", utils.OrganizationLocationType}}}},
+							{"then", "$organization.name"},
+							{"else", "$housing.name"},
+						}},
+					}},
+				},
+				"product_type_id": 1,
+				"product_type":    1,
+				"quantity":        1,
+				"created_at":      1,
 			},
 		}},
 	}
@@ -177,7 +201,7 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 		bson.D{{
 			"$lookup", bson.D{
 				{"from", "organizations"},
-				{"localField", "location.id"},
+				{"localField", "from.id"},
 				{"foreignField", "_id"},
 				{"as", "organization"},
 			},
@@ -191,7 +215,7 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 		bson.D{{
 			"$lookup", bson.D{
 				{"from", "housings"},
-				{"localField", "location.id"},
+				{"localField", "from.id"},
 				{"foreignField", "_id"},
 				{"as", "housing"},
 			},
@@ -200,6 +224,29 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 			"$unwind", bson.D{
 				{"path", "$housing"},
 				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$project", bson.M{
+				"_id":             1,
+				"organization_id": 1,
+				"beneficiary_id":  1,
+				"beneficiary":     1,
+				"from": bson.D{
+					{"id", "$from.id"},
+					{"type", "$from.type"},
+					{"name", bson.D{
+						{"$cond", bson.D{
+							{"if", bson.D{{"$eq", bson.A{"$from.type", utils.OrganizationLocationType}}}},
+							{"then", "$organization.name"},
+							{"else", "$housing.name"},
+						}},
+					}},
+				},
+				"product_type_id": 1,
+				"product_type":    1,
+				"quantity":        1,
+				"created_at":      1,
 			},
 		}},
 	}
