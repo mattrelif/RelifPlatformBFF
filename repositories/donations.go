@@ -109,30 +109,29 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 			},
 		}},
 		bson.D{{
-			"$setField", bson.M{
-				"field": "name",
-				"input": "$from",
-				"value": bson.M{
-					"$switch": bson.M{
-						"branches": bson.A{
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"from.type": utils.OrganizationLocationType}},
-								"then": "$organization.name",
-							},
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"from.type": utils.HousingLocationType}},
+			"$project", bson.M{
+				"_id":             1,
+				"organization_id": 1,
+				"beneficiary_id":  1,
+				"beneficiary":     1,
+				"from": bson.M{
+					"id":   1,
+					"type": 1,
+					"name": bson.M{
+						"$cond": bson.M{
+							"if":   bson.M{"$eq": bson.A{"$from.type", utils.OrganizationLocationType}},
+							"then": "$organization.name",
+							"else": bson.M{
+								"if":   bson.M{"$eq": bson.A{"$from.type", utils.HousingLocationType}},
 								"then": "$housing.name",
 							},
 						},
-						"default": "",
 					},
 				},
-			},
-		}},
-		bson.D{{
-			"$project", bson.M{
-				"housing":      0,
-				"organization": 0,
+				"product_type_id": 1,
+				"product_type":    1,
+				"quantity":        1,
+				"created_at":      1,
 			},
 		}},
 	}
@@ -231,30 +230,29 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 			},
 		}},
 		bson.D{{
-			"$setField", bson.M{
-				"field": "name",
-				"input": "$from",
-				"value": bson.M{
-					"$switch": bson.M{
-						"branches": bson.A{
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"from.type": utils.OrganizationLocationType}},
-								"then": "$organization.name",
-							},
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"from.type": utils.HousingLocationType}},
+			"$project", bson.M{
+				"_id":             1,
+				"organization_id": 1,
+				"beneficiary_id":  1,
+				"beneficiary":     1,
+				"from": bson.M{
+					"id":   1,
+					"type": 1,
+					"name": bson.M{
+						"$cond": bson.M{
+							"if":   bson.M{"$eq": bson.A{"$from.type", utils.OrganizationLocationType}},
+							"then": "$organization.name",
+							"else": bson.M{
+								"if":   bson.M{"$eq": bson.A{"$from.type", utils.HousingLocationType}},
 								"then": "$housing.name",
 							},
 						},
-						"default": "",
 					},
 				},
-			},
-		}},
-		bson.D{{
-			"$project", bson.M{
-				"housing":      0,
-				"organization": 0,
+				"product_type_id": 1,
+				"product_type":    1,
+				"quantity":        1,
+				"created_at":      1,
 			},
 		}},
 	}
