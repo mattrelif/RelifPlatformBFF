@@ -11,6 +11,7 @@ type ProductType struct {
 	OrganizationID string
 	Organization   Organization
 	UnitType       string
+	TotalInStorage int
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

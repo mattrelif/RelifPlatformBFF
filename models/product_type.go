@@ -15,6 +15,7 @@ type FindProductType struct {
 	OrganizationID string       `bson:"organization_id,omitempty"`
 	Organization   Organization `bson:"organization,omitempty"`
 	UnitType       string       `bson:"unit_type,omitempty"`
+	TotalInStorage int          `bson:"total_in_storage,omitempty"`
 	CreatedAt      time.Time    `bson:"created_at,omitempty"`
 	UpdatedAt      time.Time    `bson:"updated_at,omitempty"`
 }
@@ -29,6 +30,7 @@ func (productType *FindProductType) ToEntity() entities.ProductType {
 		OrganizationID: productType.OrganizationID,
 		Organization:   productType.Organization.ToEntity(),
 		UnitType:       productType.UnitType,
+		TotalInStorage: productType.TotalInStorage,
 		CreatedAt:      productType.CreatedAt,
 		UpdatedAt:      productType.UpdatedAt,
 	}

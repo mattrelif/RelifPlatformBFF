@@ -76,6 +76,26 @@ func (repository *mongoProductTypes) FindOneCompleteByID(id string) (entities.Pr
 				{"preserveNullAndEmptyArrays", true},
 			},
 		}},
+		bson.D{{
+			"$lookup", bson.D{
+				{"from", "storage_records"},
+				{"localField", "_id"},
+				{"foreignField", "product_type_id"},
+				{"as", "storage_records"},
+			},
+		}},
+		bson.D{{
+			"$addFields", bson.D{{
+				"total_in_storage", bson.D{{
+					"$sum", "$storage_records.quantity",
+				}},
+			}},
+		}},
+		bson.D{{
+			"$project", bson.M{
+				"storage_records": 0,
+			},
+		}},
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
@@ -143,6 +163,26 @@ func (repository *mongoProductTypes) FindManyByOrganizationIDPaginated(organizat
 			"$unwind", bson.D{
 				{"path", "$organization"},
 				{"preserveNullAndEmptyArrays", true},
+			},
+		}},
+		bson.D{{
+			"$lookup", bson.D{
+				{"from", "storage_records"},
+				{"localField", "_id"},
+				{"foreignField", "product_type_id"},
+				{"as", "storage_records"},
+			},
+		}},
+		bson.D{{
+			"$addFields", bson.D{{
+				"total_in_storage", bson.D{{
+					"$sum", "$storage_records.quantity",
+				}},
+			}},
+		}},
+		bson.D{{
+			"$project", bson.M{
+				"storage_records": 0,
 			},
 		}},
 	}

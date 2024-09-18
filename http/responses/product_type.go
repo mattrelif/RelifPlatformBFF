@@ -16,6 +16,7 @@ type ProductType struct {
 	OrganizationID string       `json:"organization_id"`
 	Organization   Organization `json:"organization"`
 	UnitType       string       `json:"unit_type"`
+	TotalInStorage int          `json:"total_in_storage"`
 	CreatedAt      time.Time    `json:"created_at"`
 	UpdatedAt      time.Time    `json:"updated_at"`
 }
@@ -30,6 +31,7 @@ func NewProductType(entity entities.ProductType) ProductType {
 		Brand:          entity.Brand,
 		Organization:   NewOrganization(entity.Organization),
 		UnitType:       entity.UnitType,
+		TotalInStorage: entity.TotalInStorage,
 		CreatedAt:      entity.CreatedAt,
 		UpdatedAt:      entity.UpdatedAt,
 	}
