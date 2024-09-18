@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
-	"relif/platform-bff/utils"
 )
 
 type StorageRecords interface {
@@ -97,25 +96,6 @@ func (repository *mongoStorageRecords) FindManyByProductTypeID(productTypeID str
 			"$unwind", bson.D{
 				{"path", "$housing"},
 				{"preserveNullAndEmptyArrays", true},
-			},
-		}},
-		bson.D{{
-			"$addFields", bson.D{
-				{"location.name", bson.M{
-					"$switch": bson.M{
-						"branches": bson.A{
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"location.type": utils.OrganizationLocationType}},
-								"then": "$organization.name",
-							},
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"location.type": utils.HousingLocationType}},
-								"then": "$housing.name",
-							},
-						},
-						"default": "",
-					},
-				}},
 			},
 		}},
 		bson.D{{

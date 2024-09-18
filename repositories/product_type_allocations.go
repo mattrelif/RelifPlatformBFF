@@ -6,7 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
-	"relif/platform-bff/utils"
 )
 
 type ProductTypeAllocations interface {
@@ -104,44 +103,6 @@ func (repository *mongoProductTypeAllocations) FindManyByProductTypeIDPaginated(
 			"$unwind", bson.D{
 				{"path", "$to_housing"},
 				{"preserveNullAndEmptyArrays", true},
-			},
-		}},
-		bson.D{{
-			"$addFields", bson.D{
-				{"from.name", bson.M{
-					"$switch": bson.M{
-						"branches": bson.A{
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"from.type": utils.OrganizationLocationType}},
-								"then": "$organization.name",
-							},
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"from.type": utils.HousingLocationType}},
-								"then": "$from_housing.name",
-							},
-						},
-						"default": "",
-					},
-				}},
-			},
-		}},
-		bson.D{{
-			"$addFields", bson.D{
-				{"to.name", bson.M{
-					"$switch": bson.M{
-						"branches": bson.A{
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"to.type": utils.OrganizationLocationType}},
-								"then": "$organization.name",
-							},
-							bson.M{
-								"case": bson.M{"$eq": bson.M{"to.type": utils.HousingLocationType}},
-								"then": "$to_housing.name",
-							},
-						},
-						"default": "",
-					},
-				}},
 			},
 		}},
 		bson.D{{

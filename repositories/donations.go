@@ -6,7 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/models"
-	"relif/platform-bff/utils"
 )
 
 type Donations interface {
@@ -108,32 +107,6 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 				{"preserveNullAndEmptyArrays", true},
 			},
 		}},
-		bson.D{{
-			"$project", bson.M{
-				"_id":             1,
-				"organization_id": 1,
-				"beneficiary_id":  1,
-				"beneficiary":     1,
-				"from": bson.M{
-					"id":   "$from.id",
-					"type": "$from.type",
-					"name": bson.M{
-						"$cond": bson.M{
-							"if":   bson.M{"$eq": bson.A{"$from.type", utils.OrganizationLocationType}},
-							"then": "$organization.name",
-							"else": bson.M{
-								"if":   bson.M{"$eq": bson.A{"$from.type", utils.HousingLocationType}},
-								"then": "$housing.name",
-							},
-						},
-					},
-				},
-				"product_type_id": 1,
-				"product_type":    1,
-				"quantity":        1,
-				"created_at":      1,
-			},
-		}},
 	}
 
 	cursor, err := repository.collection.Aggregate(context.Background(), pipeline)
@@ -227,32 +200,6 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 			"$unwind", bson.D{
 				{"path", "$housing"},
 				{"preserveNullAndEmptyArrays", true},
-			},
-		}},
-		bson.D{{
-			"$project", bson.M{
-				"_id":             1,
-				"organization_id": 1,
-				"beneficiary_id":  1,
-				"beneficiary":     1,
-				"from": bson.M{
-					"id":   "$from.id",
-					"type": "$from.type",
-					"name": bson.M{
-						"$cond": bson.M{
-							"if":   bson.M{"$eq": bson.A{"$from.type", utils.OrganizationLocationType}},
-							"then": "$organization.name",
-							"else": bson.M{
-								"if":   bson.M{"$eq": bson.A{"$from.type", utils.HousingLocationType}},
-								"then": "$housing.name",
-							},
-						},
-					},
-				},
-				"product_type_id": 1,
-				"product_type":    1,
-				"quantity":        1,
-				"created_at":      1,
 			},
 		}},
 	}
