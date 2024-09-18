@@ -115,8 +115,8 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 				"beneficiary_id":  1,
 				"beneficiary":     1,
 				"from": bson.M{
-					"id":   1,
-					"type": 1,
+					"id":   "$from.id",
+					"type": "$from.type",
 					"name": bson.M{
 						"$cond": bson.M{
 							"if":   bson.M{"$eq": bson.A{"$from.type", utils.OrganizationLocationType}},
@@ -236,8 +236,8 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 				"beneficiary_id":  1,
 				"beneficiary":     1,
 				"from": bson.M{
-					"id":   1,
-					"type": 1,
+					"id":   "$from.id",
+					"type": "$from.type",
 					"name": bson.M{
 						"$cond": bson.M{
 							"if":   bson.M{"$eq": bson.A{"$from.type", utils.OrganizationLocationType}},
