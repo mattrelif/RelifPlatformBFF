@@ -109,8 +109,10 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 			},
 		}},
 		bson.D{{
-			"$addFields", bson.D{
-				{"from.name", bson.M{
+			"$setField", bson.M{
+				"field": "name",
+				"input": "$from",
+				"value": bson.M{
 					"$switch": bson.M{
 						"branches": bson.A{
 							bson.M{
@@ -124,7 +126,7 @@ func (repository *mongoDonations) FindManyByBeneficiaryIDPaginated(beneficiaryID
 						},
 						"default": "",
 					},
-				}},
+				},
 			},
 		}},
 		bson.D{{
@@ -229,8 +231,10 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 			},
 		}},
 		bson.D{{
-			"$addFields", bson.D{
-				{"from.name", bson.M{
+			"$setField", bson.M{
+				"field": "name",
+				"input": "$from",
+				"value": bson.M{
 					"$switch": bson.M{
 						"branches": bson.A{
 							bson.M{
@@ -244,7 +248,7 @@ func (repository *mongoDonations) FindManyByProductTypeIDPaginated(productTypeID
 						},
 						"default": "",
 					},
-				}},
+				},
 			},
 		}},
 		bson.D{{
