@@ -142,7 +142,7 @@ func (handler *Donations) FindManyByProductTypeID(w http.ResponseWriter, r *http
 		return
 	}
 
-	count, donations, err := handler.findManyByBeneficiaryIDPaginatedUseCase.Execute(user, productTypeID, int64(offset), int64(limit))
+	count, donations, err := handler.findManyByProductTypeIDPaginatedUseCase.Execute(user, productTypeID, int64(offset), int64(limit))
 
 	if err != nil {
 		switch {
