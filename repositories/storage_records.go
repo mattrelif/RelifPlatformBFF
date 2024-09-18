@@ -101,22 +101,20 @@ func (repository *mongoStorageRecords) FindManyByProductTypeID(productTypeID str
 		}},
 		bson.D{{
 			"$addFields", bson.D{
-				{"location", bson.D{
-					{"name", bson.M{
-						"$switch": bson.M{
-							"branches": bson.A{
-								bson.M{
-									"case": bson.M{"$eq": bson.A{"location.type", utils.OrganizationLocationType}},
-									"then": "$organization.name",
-								},
-								bson.M{
-									"case": bson.M{"$eq": bson.A{"location.type", utils.HousingLocationType}},
-									"then": "$housing.name",
-								},
+				{"location.name", bson.M{
+					"$switch": bson.M{
+						"branches": bson.A{
+							bson.M{
+								"case": bson.M{"$eq": bson.M{"$location.type": utils.OrganizationLocationType}},
+								"then": "$organization.name",
 							},
-							"default": "",
+							bson.M{
+								"case": bson.M{"$eq": bson.M{"$location.type": utils.HousingLocationType}},
+								"then": "$housing.name",
+							},
 						},
-					}},
+						"default": "",
+					},
 				}},
 			},
 		}},

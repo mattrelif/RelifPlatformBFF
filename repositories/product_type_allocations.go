@@ -108,43 +108,39 @@ func (repository *mongoProductTypeAllocations) FindManyByProductTypeIDPaginated(
 		}},
 		bson.D{{
 			"$addFields", bson.D{
-				{"from", bson.D{
-					{"name", bson.M{
-						"$switch": bson.M{
-							"branches": bson.A{
-								bson.M{
-									"case": bson.M{"$eq": bson.A{"from.type", utils.OrganizationLocationType}},
-									"then": "$organization.name",
-								},
-								bson.M{
-									"case": bson.M{"$eq": bson.A{"from.type", utils.HousingLocationType}},
-									"then": "$from_housing.name",
-								},
+				{"from.name", bson.M{
+					"$switch": bson.M{
+						"branches": bson.A{
+							bson.M{
+								"case": bson.M{"$eq": bson.M{"$from.type": utils.OrganizationLocationType}},
+								"then": "$organization.name",
 							},
-							"default": "",
+							bson.M{
+								"case": bson.M{"$eq": bson.M{"$from.type": utils.HousingLocationType}},
+								"then": "$from_housing.name",
+							},
 						},
-					}},
+						"default": "",
+					},
 				}},
 			},
 		}},
 		bson.D{{
 			"$addFields", bson.D{
-				{"to", bson.D{
-					{"name", bson.M{
-						"$switch": bson.M{
-							"branches": bson.A{
-								bson.M{
-									"case": bson.M{"$eq": bson.A{"to.type", utils.OrganizationLocationType}},
-									"then": "$organization.name",
-								},
-								bson.M{
-									"case": bson.M{"$eq": bson.A{"to.type", utils.HousingLocationType}},
-									"then": "$to_housing.name",
-								},
+				{"to.name", bson.M{
+					"$switch": bson.M{
+						"branches": bson.A{
+							bson.M{
+								"case": bson.M{"$eq": bson.M{"$to.type": utils.OrganizationLocationType}},
+								"then": "$organization.name",
 							},
-							"default": "",
+							bson.M{
+								"case": bson.M{"$eq": bson.M{"$to.type": utils.HousingLocationType}},
+								"then": "$to_housing.name",
+							},
 						},
-					}},
+						"default": "",
+					},
 				}},
 			},
 		}},
