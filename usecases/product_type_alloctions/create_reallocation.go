@@ -87,6 +87,7 @@ func (uc *createReallocationImpl) Execute(actor entities.User, productTypeID str
 
 	data.Type = utils.ReallocationType
 	data.OrganizationID = actor.Organization.ID
+	data.ProductTypeID = productType.ID
 
 	return uc.productTypeAllocationsRepository.Create(data)
 }

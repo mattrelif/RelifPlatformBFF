@@ -56,7 +56,7 @@ func (uc *createEntranceImpl) Execute(actor entities.User, productTypeID string,
 	}
 
 	if record.ID != "" {
-		if err = uc.storageRecordRepository.DecreaseQuantityOfOneByID(record.ID, data.Quantity); err != nil {
+		if err = uc.storageRecordRepository.IncreaseQuantityOfOneByID(record.ID, data.Quantity); err != nil {
 			return entities.ProductTypeAllocation{}, err
 		}
 	} else {
@@ -73,6 +73,7 @@ func (uc *createEntranceImpl) Execute(actor entities.User, productTypeID string,
 
 	data.Type = utils.EntranceType
 	data.OrganizationID = actor.Organization.ID
+	data.ProductTypeID = productType.ID
 
 	return uc.productTypeAllocationsRepository.Create(data)
 }

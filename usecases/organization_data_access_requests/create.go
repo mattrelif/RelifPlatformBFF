@@ -37,8 +37,9 @@ func (uc *createImpl) Execute(actor entities.User, targetOrganizationID string) 
 	}
 
 	request := entities.OrganizationDataAccessRequest{
-		TargetOrganizationID: targetOrganization.ID,
-		RequesterID:          actor.ID,
+		TargetOrganizationID:    targetOrganization.ID,
+		RequesterID:             actor.ID,
+		RequesterOrganizationID: actor.Organization.ID,
 	}
 
 	return uc.organizationDataAccessRequestsRepository.Create(request)
