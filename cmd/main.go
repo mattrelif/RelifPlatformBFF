@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
