@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
@@ -51,7 +52,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
 	logger.Info("initializing AWS configuration")
 	awsConfig, err = settings.NewAWSConfig(settings.AWSRegion)
 
@@ -110,6 +110,7 @@ func main() {
 	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain, settingsInstance.FrontendDomain)
 	tokensService := services.NewTokens([]byte(settingsInstance.TokenSecret))
 	s3FileUploadsService := services.NewS3FileUploads(s3Client, settingsInstance.S3BucketName)
+	cognitoService, err := services.NewCognito(settingsInstance.AWS_REGION, settingsInstance.COGNITO_CLIENT_ID, usersRepository)
 
 	/** Use Cases **/
 	generateUploadLinkUseCase := filesUseCases.NewGenerateUploadLink(s3FileUploadsService, utils.GenerateUuid)
@@ -118,11 +119,12 @@ func main() {
 
 	createUserUseCase := usersUseCases.NewCreate(usersRepository)
 
-	signUpUseCase := authenticationUseCases.NewSignUp(sessionsRepository, tokensService, createUserUseCase, utils.BcryptHash)
+	signUpUseCase := authenticationUseCases.NewSignUp(sessionsRepository, tokensService, createUserUseCase, utils.BcryptHash, cognitoService)
 	adminSignUpUseCase := authenticationUseCases.NewAdminSignUp(sessionsRepository, tokensService, createUserUseCase, utils.BcryptHash)
 	organizationSignUpUseCase := authenticationUseCases.NewOrganizationSignUp(sessionsRepository, organizationsRepository, tokensService, createUserUseCase, utils.BcryptHash)
-	signInUseCase := authenticationUseCases.NewSignIn(usersRepository, sessionsRepository, tokensService, utils.BcryptCompare)
+	signInUseCase := authenticationUseCases.NewSignIn(usersRepository, sessionsRepository, tokensService, utils.BcryptCompare, cognitoService)
 	signOutUseCase := authenticationUseCases.NewSignOut(sessionsRepository)
+	verifyUseCase := authenticationUseCases.NewVerify(cognitoService)
 
 	requestPasswordChangeUseCase := passwordRecoveryUseCases.NewRequestChange(usersRepository, passwordChangeRequestsRepository, sesEmailService, utils.GenerateUuid)
 	changePasswordUseCase := passwordRecoveryUseCases.NewChange(usersRepository, passwordChangeRequestsRepository, sesEmailService, utils.BcryptHash)
@@ -232,7 +234,7 @@ func main() {
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticateTokenUseCase)
 
 	/** Handlers **/
-	authenticationHandler := handlers.NewAuthentication(signUpUseCase, organizationSignUpUseCase, adminSignUpUseCase, signInUseCase, signOutUseCase)
+	authenticationHandler := handlers.NewAuthentication(signUpUseCase, organizationSignUpUseCase, adminSignUpUseCase, signInUseCase, signOutUseCase, verifyUseCase)
 	passwordRecoveryHandler := handlers.NewPassword(requestPasswordChangeUseCase, changePasswordUseCase)
 	usersHandler := handlers.NewUsers(findOneUserCompleteUseCase, findManyUsersByOrganizationIDUseCase, findManyRelifMembersUseCase, updateOneUserByIDUseCase, inactivateOneUserByIDUseCase, reactivateOneUseByIDUseCase)
 	organizationsHandler := handlers.NewOrganizations(createOrganizationUseCase, findManyOrganizationsUseCase, findOneOrganizationByIDUseCase, updateOneOrganizationByIDUseCase, inactivateOneOrganizationByIDUseCase, reactivateOneOrganizationByIDUseCase)

@@ -59,6 +59,7 @@ func NewRouter(
 			r.Post("/org-sign-up", authenticationHandler.OrganizationSignUp)
 			r.Post("/admin-sign-up", authenticationHandler.AdminSignUp)
 			r.Post("/sign-in", authenticationHandler.SignIn)
+			r.Get("/verify-email", authenticationHandler.Verify)
 			r.With(authenticateByTokenMiddleware.Handle).Get("/me", authenticationHandler.Me)
 			r.With(authenticateByTokenMiddleware.Handle).Delete("/sign-out", authenticationHandler.SignOut)
 		})

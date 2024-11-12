@@ -9,7 +9,7 @@ import (
 )
 
 type SignUp interface {
-	Execute(data entities.User) (string, error)
+	Execute(data entities.User, locale string) (string, error)
 }
 
 type signUpImpl struct {
@@ -17,6 +17,7 @@ type signUpImpl struct {
 	tokensService        services.Tokens
 	createUserUseCase    usersUseCase.Create
 	passwordHashFunction utils.PasswordHashFn
+	cognitoService       services.Cognito
 }
 
 func NewSignUp(
@@ -24,16 +25,18 @@ func NewSignUp(
 	tokensService services.Tokens,
 	createUserUseCase usersUseCase.Create,
 	passwordHashFunction utils.PasswordHashFn,
+	cognitoService services.Cognito,
 ) SignUp {
 	return &signUpImpl{
 		sessionsRepository:   sessionsRepository,
 		tokensService:        tokensService,
 		createUserUseCase:    createUserUseCase,
 		passwordHashFunction: passwordHashFunction,
+		cognitoService:       cognitoService,
 	}
 }
 
-func (uc *signUpImpl) Execute(data entities.User) (string, error) {
+func (uc *signUpImpl) Execute(data entities.User, locale string) (string, error) {
 	hashed, err := uc.passwordHashFunction(data.Password)
 
 	if err != nil {
@@ -42,6 +45,13 @@ func (uc *signUpImpl) Execute(data entities.User) (string, error) {
 
 	data.Password = hashed
 	data.PlatformRole = utils.NoOrgPlatformRole
+	data.Status = utils.UnverifedStatus
+
+	err = uc.cognitoService.InitiateEmailOrPhoneVerification(data.Email, data.Password, data.FirstName, locale)
+	if err != nil {
+		// Handle error (you might want to delete the created user if this fails)
+		return "", err
+	}
 
 	user, err := uc.createUserUseCase.Execute(data)
 

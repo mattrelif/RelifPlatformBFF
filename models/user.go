@@ -110,7 +110,7 @@ func NewUser(entity entities.User) User {
 		Role:           entity.Role,
 		PlatformRole:   entity.PlatformRole,
 		OrganizationID: entity.OrganizationID,
-		Status:         utils.ActiveStatus,
+		Status:         utils.UnverifedStatus,
 		Preferences:    NewUserPreferences(entity.Preferences),
 		CreatedAt:      time.Now(),
 	}

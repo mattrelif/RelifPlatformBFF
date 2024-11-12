@@ -25,6 +25,12 @@ type Settings struct {
 	MongoDatabase string `default:"test" split_words:"true" json:"MONGO_DATABASE"`
 
 	S3BucketName string `required:"true" split_words:"true" json:"S3_BUCKET_NAME"`
+
+	AWS_REGION string `required:"true" split_words:"true" json:"AWS_REGION"`
+
+	COGNITO_CLIENT_ID string `required:"true" split_words:"true" json:"COGNITO_CLIENT_ID"`
+
+	POOL_ID string `required:"true" split_words:"true" json:"POOL_ID"`
 }
 
 func NewSettings(secretsManagerClient *secretsmanager.Client) (*Settings, error) {

@@ -2,6 +2,7 @@ package authentication
 
 import (
 	"errors"
+	"fmt"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/guards"
 	"relif/platform-bff/repositories"
@@ -18,6 +19,7 @@ type signInImpl struct {
 	sessionsRepository      repositories.Sessions
 	tokensService           services.Tokens
 	passwordCompareFunction utils.PasswordCompareFn
+	cognitoService          services.Cognito
 }
 
 func NewSignIn(
@@ -25,16 +27,31 @@ func NewSignIn(
 	sessionsRepository repositories.Sessions,
 	tokensService services.Tokens,
 	passwordCompareFunction utils.PasswordCompareFn,
+	cognitoService services.Cognito,
 ) SignIn {
 	return &signInImpl{
 		usersRepository:         usersRepository,
 		sessionsRepository:      sessionsRepository,
 		tokensService:           tokensService,
 		passwordCompareFunction: passwordCompareFunction,
+		cognitoService:          cognitoService,
 	}
 }
 
 func (uc *signInImpl) Execute(email, password string) (string, error) {
+	userResp, err := uc.cognitoService.AdminGetUser(email)
+	if err == nil {
+		// User exists, check verification status
+		if userResp.UserStatus == "UNCONFIRMED" {
+			// User is unverified, resend verification code
+			err = uc.cognitoService.ResendConfirmationCode(email)
+			if err != nil {
+				return "", fmt.Errorf("failed to resend verification code: %w", err)
+			}
+			return "", errors.New("user is not verified, verification code has been resent")
+		}
+	}
+
 	user, err := uc.usersRepository.FindOneAndLookupByEmail(email)
 
 	if err != nil {

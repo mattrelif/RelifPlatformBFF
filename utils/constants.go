@@ -10,6 +10,7 @@ var (
 var (
 	ActiveStatus   = "ACTIVE"
 	InactiveStatus = "INACTIVE"
+	UnverifedStatus = "UNVERIFIED"
 	PendingStatus  = "PENDING"
 	AcceptedStatus = "ACCEPTED"
 	RejectedStatus = "REJECTED"
