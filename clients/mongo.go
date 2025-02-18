@@ -13,7 +13,10 @@ func NewMongoClient(uri string) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	opts := options.Client().ApplyURI(uri)
+	opts := options.Client().
+		ApplyURI(uri).
+		SetRetryWrites(true).
+		SetRetryReads(true)
 	client, err := mongo.Connect(ctx, opts)
 
 	if err != nil {
