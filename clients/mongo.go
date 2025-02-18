@@ -15,8 +15,8 @@ func NewMongoClient(uri string) (*mongo.Client, error) {
 
 	opts := options.Client().
 		ApplyURI(uri).
-		SetRetryWrites(true).
-		SetRetryReads(true)
+		SetDirect(true).
+		SetRetryWrites(false)
 	client, err := mongo.Connect(ctx, opts)
 
 	if err != nil {
