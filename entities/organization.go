@@ -6,6 +6,8 @@ type Organization struct {
 	ID               string
 	Name             string
 	Description      string
+	Logo             string
+	AreasOfWork      []string
 	Address          Address
 	Type             string
 	OwnerID          string
