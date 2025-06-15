@@ -154,7 +154,7 @@ func (h *CaseNotes) Create(w http.ResponseWriter, r *http.Request) {
 // PUT /api/cases/{case_id}/notes/{note_id}
 func (h *CaseNotes) Update(w http.ResponseWriter, r *http.Request) {
 	noteID := chi.URLParam(r, "note_id")
-	user := r.Context().Value("user").(entities.User)
+	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
 
 	var req requests.UpdateCaseNoteRequest
 
@@ -212,7 +212,7 @@ func (h *CaseNotes) Update(w http.ResponseWriter, r *http.Request) {
 func (h *CaseNotes) Delete(w http.ResponseWriter, r *http.Request) {
 	caseID := chi.URLParam(r, "case_id")
 	noteID := chi.URLParam(r, "note_id")
-	user := r.Context().Value("user").(entities.User)
+	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
 
 	err := h.noteRepo.Delete(r.Context(), noteID)
 	if err != nil {

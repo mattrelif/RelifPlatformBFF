@@ -35,6 +35,9 @@ type CaseFilters struct {
 	ToDate         *time.Time `json:"to_date,omitempty"`
 	Search         *string    `json:"search,omitempty"`
 	Tags           []string   `json:"tags,omitempty"`
+	SortBy         string     `json:"sort_by"`
+	SortOrder      string     `json:"sort_order"`
+	Page           int        `json:"page"`
 	Limit          int        `json:"limit"`
 	Offset         int        `json:"offset"`
 }

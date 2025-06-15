@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
 	"relif/platform-bff/models"
 	"relif/platform-bff/repositories"
-	"relif/platform-bff/usecases/beneficiaries"
-	"relif/platform-bff/usecases/users"
 )
 
 // Simple interfaces to avoid circular dependencies
@@ -26,17 +22,17 @@ type UserService interface {
 }
 
 type CaseUseCase struct {
-	caseRepo      *repositories.CaseRepository
+	caseRepo      repositories.CaseRepository
 	noteRepo      *repositories.CaseNoteRepository
-	beneficiaryUC *beneficiaries.BeneficiaryUseCase
-	userUC        *users.UserUseCase
+	beneficiaryUC BeneficiaryService
+	userUC        UserService
 }
 
 func NewCaseUseCase(
-	caseRepo *repositories.CaseRepository,
+	caseRepo repositories.CaseRepository,
 	noteRepo *repositories.CaseNoteRepository,
-	beneficiaryUC *beneficiaries.BeneficiaryUseCase,
-	userUC *users.UserUseCase,
+	beneficiaryUC BeneficiaryService,
+	userUC UserService,
 ) *CaseUseCase {
 	return &CaseUseCase{
 		caseRepo:      caseRepo,
@@ -46,7 +42,7 @@ func NewCaseUseCase(
 	}
 }
 
-func (uc *CaseUseCase) CreateCase(ctx context.Context, req requests.CreateCaseRequest) (*responses.CaseResponse, error) {
+func (uc *CaseUseCase) CreateCase(ctx context.Context, req requests.CreateCase, userID, organizationID string) (*responses.CaseResponse, error) {
 	// Validate beneficiary exists
 	beneficiary, err := uc.beneficiaryUC.GetByID(ctx, req.BeneficiaryID)
 	if err != nil {
@@ -59,227 +55,161 @@ func (uc *CaseUseCase) CreateCase(ctx context.Context, req requests.CreateCaseRe
 		return nil, fmt.Errorf("assigned user not found: %w", err)
 	}
 
-	// Create case entity
-	caseEntity := entities.Case{
-		Title:          req.Title,
-		Description:    req.Description,
-		Status:         "OPEN", // Always start as OPEN
-		Priority:       req.Priority,
-		UrgencyLevel:   req.UrgencyLevel,
-		CaseType:       req.CaseType,
-		BeneficiaryID:  req.BeneficiaryID,
-		Beneficiary:    *beneficiary,
-		AssignedToID:   req.AssignedToID,
-		AssignedTo:     *assignedUser,
-		Tags:           req.Tags,
-		OrganizationID: beneficiary.CurrentOrganizationID,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		LastActivity:   time.Now(),
+	// Validate organization boundaries
+	if err := req.ValidateOrganizationBoundaries(organizationID, beneficiary, assignedUser); err != nil {
+		return nil, err
 	}
 
-	// Handle optional fields
-	if req.DueDate != nil {
-		dueDate, err := time.Parse(time.RFC3339, *req.DueDate)
-		if err != nil {
-			return nil, fmt.Errorf("invalid due date format: %w", err)
-		}
-		caseEntity.DueDate = &dueDate
-	}
-	if req.EstimatedDuration != nil {
-		caseEntity.EstimatedDuration = *req.EstimatedDuration
-	}
-	if req.BudgetAllocated != nil {
-		caseEntity.BudgetAllocated = *req.BudgetAllocated
-	}
+	// Create case entity using the request's ToEntity method
+	caseEntity := req.ToEntity(organizationID)
+	caseEntity.Status = "OPEN" // Always start as OPEN
+	caseEntity.CreatedAt = time.Now()
+	caseEntity.UpdatedAt = time.Now()
+	caseEntity.LastActivity = time.Now()
 
-	// Convert to model and create
-	caseModel := models.NewCaseFromEntity(caseEntity)
-	caseID, err := uc.caseRepo.Create(ctx, *caseModel)
+	// Create the case
+	createdCase, err := uc.caseRepo.Create(ctx, caseEntity)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create case: %w", err)
 	}
 
 	// If initial note provided, create it
 	if req.InitialNote != nil {
-		note := entities.CaseNote{
-			CaseID:      caseID,
-			Title:       req.InitialNote.Title,
-			Content:     req.InitialNote.Content,
-			Tags:        req.InitialNote.Tags,
-			NoteType:    req.InitialNote.NoteType,
-			IsImportant: req.InitialNote.IsImportant,
-			CreatedByID: assignedUser.ID,
-			CreatedBy:   *assignedUser,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		}
+		noteEntity := req.ToInitialNoteEntity(createdCase.ID, userID)
+		if noteEntity != nil {
+			noteEntity.CreatedAt = time.Now()
+			noteEntity.UpdatedAt = time.Now()
 
-		noteModel := models.NewCaseNoteFromEntity(note)
-		_, err = uc.noteRepo.Create(ctx, *noteModel)
-		if err != nil {
-			// Log error but don't fail case creation
-			fmt.Printf("Warning: failed to create initial note: %v\n", err)
-		} else {
-			// Increment notes count
-			uc.caseRepo.IncrementNotesCount(ctx, caseID)
+			// Convert entity to model for repository
+			noteModel := models.NewCaseNoteFromEntity(*noteEntity)
+			_, err = uc.noteRepo.Create(ctx, *noteModel)
+			if err != nil {
+				// Log error but don't fail case creation
+				fmt.Printf("Warning: failed to create initial note: %v\n", err)
+			} else {
+				// Increment notes count
+				uc.caseRepo.UpdateNotesCount(ctx, createdCase.ID, 1)
+			}
 		}
 	}
 
 	// Get the created case with populated relations
-	createdCase, err := uc.GetByID(ctx, caseID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve created case: %w", err)
-	}
-
-	return createdCase, nil
+	return uc.GetByID(ctx, createdCase.ID)
 }
 
 func (uc *CaseUseCase) GetByID(ctx context.Context, id string) (*responses.CaseResponse, error) {
 	// Get case from repository
-	caseModel, err := uc.caseRepo.GetByID(ctx, id)
+	caseEntity, err := uc.caseRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get beneficiary details
-	beneficiary, err := uc.beneficiaryUC.GetByID(ctx, caseModel.BeneficiaryID)
+	beneficiary, err := uc.beneficiaryUC.GetByID(ctx, caseEntity.BeneficiaryID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get beneficiary: %w", err)
 	}
 
 	// Get assigned user details
-	assignedUser, err := uc.userUC.GetByID(ctx, caseModel.AssignedToID)
+	assignedUser, err := uc.userUC.GetByID(ctx, caseEntity.AssignedToID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get assigned user: %w", err)
 	}
 
-	// Convert to entity with populated relations
-	caseEntity := caseModel.ToEntity()
-	caseEntity.Beneficiary = *beneficiary
-	caseEntity.AssignedTo = *assignedUser
+	// Populate relations in the entity
+	caseEntity.Beneficiary = beneficiary
+	caseEntity.AssignedTo = assignedUser
 
 	// Convert to response
 	response := responses.NewCaseResponse(caseEntity)
 	return &response, nil
 }
 
-func (uc *CaseUseCase) Update(ctx context.Context, id string, req requests.UpdateCaseRequest) (*responses.CaseResponse, error) {
-	// Build updates map
-	updates := bson.M{}
-
-	if req.Title != nil {
-		updates["title"] = *req.Title
-	}
-	if req.Description != nil {
-		updates["description"] = *req.Description
-	}
-	if req.Status != nil {
-		updates["status"] = *req.Status
-	}
-	if req.Priority != nil {
-		updates["priority"] = *req.Priority
-	}
-	if req.UrgencyLevel != nil {
-		updates["urgency_level"] = *req.UrgencyLevel
-	}
-	if req.CaseType != nil {
-		updates["case_type"] = *req.CaseType
-	}
-	if req.AssignedToID != nil {
-		// Validate user exists
-		_, err := uc.userUC.GetByID(ctx, *req.AssignedToID)
-		if err != nil {
-			return nil, fmt.Errorf("assigned user not found: %w", err)
-		}
-		updates["assigned_to_id"] = *req.AssignedToID
-	}
-	if req.DueDate != nil {
-		dueDate, err := time.Parse(time.RFC3339, *req.DueDate)
-		if err != nil {
-			return nil, fmt.Errorf("invalid due date format: %w", err)
-		}
-		updates["due_date"] = dueDate
-	}
-	if req.EstimatedDuration != nil {
-		updates["estimated_duration"] = *req.EstimatedDuration
-	}
-	if req.BudgetAllocated != nil {
-		updates["budget_allocated"] = *req.BudgetAllocated
-	}
-	if req.Tags != nil {
-		updates["tags"] = req.Tags
-	}
-
-	// Update last activity
-	updates["last_activity"] = time.Now()
-
-	// Perform update
-	err := uc.caseRepo.Update(ctx, id, updates)
+func (uc *CaseUseCase) UpdateCase(ctx context.Context, id string, req requests.UpdateCase, organizationID string) (*responses.CaseResponse, error) {
+	// Get existing case
+	existingCase, err := uc.caseRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Return updated case
-	return uc.GetByID(ctx, id)
+	// Validate organization boundaries for reassignment
+	if req.AssignedToID != nil {
+		assignedUser, err := uc.userUC.GetByID(ctx, *req.AssignedToID)
+		if err != nil {
+			return nil, fmt.Errorf("assigned user not found: %w", err)
+		}
+		if err := req.ValidateOrganizationBoundaries(organizationID, &assignedUser); err != nil {
+			return nil, err
+		}
+	}
+
+	// Convert request to entity with updates
+	updateEntity := req.ToEntity()
+	updateEntity.ID = existingCase.ID
+	updateEntity.UpdatedAt = time.Now()
+	updateEntity.LastActivity = time.Now()
+
+	// Update the case
+	updatedCase, err := uc.caseRepo.Update(ctx, id, updateEntity)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return updated case with populated relations
+	return uc.GetByID(ctx, updatedCase.ID)
 }
 
-func (uc *CaseUseCase) Delete(ctx context.Context, id string) error {
+func (uc *CaseUseCase) DeleteCase(ctx context.Context, id, organizationID string) error {
+	// Get case to verify organization
+	caseEntity, err := uc.caseRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if caseEntity.OrganizationID != organizationID {
+		return fmt.Errorf("case not found in organization")
+	}
+
 	return uc.caseRepo.Delete(ctx, id)
 }
 
 func (uc *CaseUseCase) ListByOrganization(ctx context.Context, organizationID string, filters repositories.CaseFilters) (*responses.CaseListResponse, error) {
-	// Set organization ID in filters
+	// Ensure organization ID is set in filters
 	filters.OrganizationID = organizationID
 
 	// Get cases from repository
-	caseModels, total, err := uc.caseRepo.List(ctx, filters)
+	cases, total, err := uc.caseRepo.GetByOrganization(ctx, organizationID, filters)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert to responses with populated relations
-	caseResponses := make([]responses.CaseResponse, len(caseModels))
-	for i, caseModel := range caseModels {
-		// Get beneficiary details
-		beneficiary, err := uc.beneficiaryUC.GetByID(ctx, caseModel.BeneficiaryID)
-		if err != nil {
-			// Handle missing beneficiary gracefully
-			beneficiary = &entities.Beneficiary{
-				ID:       caseModel.BeneficiaryID,
-				FullName: "Unknown Beneficiary",
+	// Convert to response format
+	caseResponses := make([]responses.CaseResponse, len(cases))
+	for i, caseEntity := range cases {
+		// Get beneficiary and assigned user details for each case
+		if caseEntity.BeneficiaryID != "" {
+			beneficiary, err := uc.beneficiaryUC.GetByID(ctx, caseEntity.BeneficiaryID)
+			if err == nil {
+				caseEntity.Beneficiary = beneficiary
+			}
+		}
+		if caseEntity.AssignedToID != "" {
+			assignedUser, err := uc.userUC.GetByID(ctx, caseEntity.AssignedToID)
+			if err == nil {
+				caseEntity.AssignedTo = assignedUser
 			}
 		}
 
-		// Get assigned user details
-		assignedUser, err := uc.userUC.GetByID(ctx, caseModel.AssignedToID)
-		if err != nil {
-			// Handle missing user gracefully
-			assignedUser = &entities.User{
-				ID:        caseModel.AssignedToID,
-				FirstName: "Unknown",
-				LastName:  "User",
-				FullName:  "Unknown User",
-				Email:     "unknown@example.com",
-			}
-		}
-
-		// Convert to entity with populated relations
-		caseEntity := caseModel.ToEntity()
-		caseEntity.Beneficiary = *beneficiary
-		caseEntity.AssignedTo = *assignedUser
-
-		// Convert to response
 		caseResponses[i] = responses.NewCaseResponse(caseEntity)
 	}
 
 	return &responses.CaseListResponse{
-		Count: total,
+		Count: int(total),
 		Data:  caseResponses,
 	}, nil
 }
 
-func (uc *CaseUseCase) GetStats(ctx context.Context, organizationID string) (*responses.CaseStatsResponse, error) {
+func (uc *CaseUseCase) GetCaseStats(ctx context.Context, organizationID string) (*responses.CaseStatsResponse, error) {
 	stats, err := uc.caseRepo.GetStats(ctx, organizationID)
 	if err != nil {
 		return nil, err

@@ -8,7 +8,6 @@ import (
 
 	"relif/platform-bff/entities"
 	"relif/platform-bff/http/requests"
-	"relif/platform-bff/http/responses"
 	"relif/platform-bff/repositories"
 	"relif/platform-bff/usecases/cases"
 
@@ -57,13 +56,21 @@ func (h *Cases) CreateCase(w http.ResponseWriter, r *http.Request) {
 func (h *Cases) FindManyByOrganization(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(entities.User)
 
+	// Helper function to convert string to *string if not empty
+	stringPtr := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
+
 	// Build filters from query parameters
 	filters := repositories.CaseFilters{
-		Status:       r.URL.Query().Get("status"),
-		Priority:     r.URL.Query().Get("priority"),
-		CaseType:     r.URL.Query().Get("case_type"),
-		AssignedToID: r.URL.Query().Get("assigned_to_id"),
-		Search:       r.URL.Query().Get("search"),
+		Status:       stringPtr(r.URL.Query().Get("status")),
+		Priority:     stringPtr(r.URL.Query().Get("priority")),
+		CaseType:     stringPtr(r.URL.Query().Get("case_type")),
+		AssignedToID: stringPtr(r.URL.Query().Get("assigned_to_id")),
+		Search:       stringPtr(r.URL.Query().Get("search")),
 		SortBy:       r.URL.Query().Get("sort_by"),
 		SortOrder:    r.URL.Query().Get("sort_order"),
 	}
@@ -87,27 +94,21 @@ func (h *Cases) FindManyByOrganization(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cases, total, err := h.caseUC.ListCases(r.Context(), user.OrganizationID, filters)
+	result, err := h.caseUC.ListByOrganization(r.Context(), user.OrganizationID, filters)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := responses.FindMany[[]responses.CaseResponse]{
-		Data:  cases,
-		Count: total,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	json.NewEncoder(w).Encode(result)
 }
 
 // GET /api/cases/:id
 func (h *Cases) FindOne(w http.ResponseWriter, r *http.Request) {
 	caseID := chi.URLParam(r, "id")
-	user := r.Context().Value("user").(entities.User)
 
-	result, err := h.caseUC.GetCase(r.Context(), caseID, user.OrganizationID)
+	result, err := h.caseUC.GetByID(r.Context(), caseID)
 	if err != nil {
 		http.Error(w, "Case not found", http.StatusNotFound)
 		return
