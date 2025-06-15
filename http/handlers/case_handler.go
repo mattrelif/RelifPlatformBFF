@@ -41,6 +41,11 @@ func (h *Cases) CreateCase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err = req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	result, err := h.caseUC.CreateCase(r.Context(), req, user.ID, user.OrganizationID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -149,6 +154,12 @@ func (h *Cases) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err = json.Unmarshal(body, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// ADD MISSING VALIDATION!
+	if err = req.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
