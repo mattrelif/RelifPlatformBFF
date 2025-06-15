@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"relif/platform-bff/clients"
+	"relif/platform-bff/entities"
 	"relif/platform-bff/http"
 	"relif/platform-bff/http/handlers"
 	"relif/platform-bff/http/middlewares"
@@ -13,6 +15,7 @@ import (
 	authenticationUseCases "relif/platform-bff/usecases/authentication"
 	beneficiariesUseCases "relif/platform-bff/usecases/beneficiaries"
 	beneficiaryAllocationsUseCases "relif/platform-bff/usecases/beneficiary_allocations"
+	"relif/platform-bff/usecases/cases"
 	donationsUseCases "relif/platform-bff/usecases/donations"
 	filesUseCases "relif/platform-bff/usecases/files"
 	housingRoomsUseCases "relif/platform-bff/usecases/housing_rooms"
@@ -44,6 +47,23 @@ var (
 	settingsInstance *settings.Settings
 	awsConfig        aws.Config
 )
+
+// Adapter structs to implement the interfaces needed by case use case
+type BeneficiaryServiceAdapter struct {
+	repo repositories.Beneficiaries
+}
+
+func (b *BeneficiaryServiceAdapter) GetByID(ctx context.Context, id string) (entities.Beneficiary, error) {
+	return b.repo.FindOneByID(id)
+}
+
+type UserServiceAdapter struct {
+	repo repositories.Users
+}
+
+func (u *UserServiceAdapter) GetByID(ctx context.Context, id string) (entities.User, error) {
+	return u.repo.FindOneByID(id)
+}
 
 func init() {
 	var err error
@@ -122,6 +142,9 @@ func main() {
 	storageRecordsRepository := repositories.NewMongoStorageRecords(database)
 	donationsRepository := repositories.NewDonations(database)
 	joinPlatformAdminInvitesRepository := repositories.NewJoinPlatformAdminInvites(database)
+	caseRepository := repositories.NewCaseRepository(database)
+	caseNoteRepository := repositories.NewCaseNoteRepository(database)
+	caseDocumentRepository := repositories.NewCaseDocumentRepository(database)
 
 	/** Services **/
 	sesEmailService := services.NewSesEmail(sesClient, settingsInstance.EmailDomain, settingsInstance.FrontendDomain)
@@ -247,6 +270,11 @@ func main() {
 	findManyJoinPlatformAdminInvitesPaginatedUseCase := joinPlatformAdminInvitesUseCases.NewFindManyPaginated(joinPlatformAdminInvitesRepository)
 	consumeJoinPlatformAdminInviteByCodeUseCase := joinPlatformAdminInvitesUseCases.NewConsumeByCode(joinPlatformAdminInvitesRepository)
 
+	// Create case use cases - we'll use simple adapters for the interfaces
+	beneficiaryService := &BeneficiaryServiceAdapter{beneficiariesRepository}
+	userService := &UserServiceAdapter{usersRepository}
+	caseUseCase := cases.NewCaseUseCase(caseRepository, caseNoteRepository, beneficiaryService, userService)
+
 	/** Middlewares **/
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticateTokenUseCase)
 
@@ -271,6 +299,11 @@ func main() {
 	donationsHandler := handlers.NewDonations(createDonationUseCase, findManyDonationsByBeneficiaryIDUseCase, findManyDonationsByProductTypeIDUseCase)
 	storageRecordsHandler := handlers.NewStorageRecords(findManyStorageRecordsByOrganizationIDUseCase, findManyStorageRecordsByHousingIDUseCase, findManyStorageRecordsByProductTypeIDUseCase)
 	joinPlatformAdminInvitesHandler := handlers.NewJoinPlatformAdminInvites(createJoinPlatformAdminInvitesUseCase, findManyJoinPlatformAdminInvitesPaginatedUseCase, consumeJoinPlatformAdminInviteByCodeUseCase)
+
+	// Case handlers
+	casesHandler := handlers.NewCases(*caseUseCase)
+	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository)
+	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository)
 
 	healthHandler := handlers.NewHealth(mongo)
 
@@ -298,6 +331,9 @@ func main() {
 		donationsHandler,
 		storageRecordsHandler,
 		joinPlatformAdminInvitesHandler,
+		casesHandler,
+		caseNotesHandler,
+		caseDocumentsHandler,
 	)
 	server := http.NewServer(router, settingsInstance.ServerPort)
 

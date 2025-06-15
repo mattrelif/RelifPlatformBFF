@@ -75,6 +75,15 @@ func (h *Cases) FindManyByOrganization(w http.ResponseWriter, r *http.Request) {
 		SortOrder:    r.URL.Query().Get("sort_order"),
 	}
 
+	// Handle organization_id from query params (for frontend compatibility)
+	// But still use authenticated user's organization for security
+	if orgIDParam := r.URL.Query().Get("organization_id"); orgIDParam != "" {
+		if orgIDParam != user.OrganizationID {
+			http.Error(w, "Access denied: organization mismatch", http.StatusForbidden)
+			return
+		}
+	}
+
 	if filters.SortBy == "" {
 		filters.SortBy = "created_at"
 	}
@@ -82,7 +91,7 @@ func (h *Cases) FindManyByOrganization(w http.ResponseWriter, r *http.Request) {
 		filters.SortOrder = "desc"
 	}
 
-	// Parse pagination
+	// Parse pagination (handle both page/limit and offset/limit patterns)
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if page, err := strconv.Atoi(pageStr); err == nil {
 			filters.Page = page
@@ -91,6 +100,13 @@ func (h *Cases) FindManyByOrganization(w http.ResponseWriter, r *http.Request) {
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if limit, err := strconv.Atoi(limitStr); err == nil {
 			filters.Limit = limit
+		}
+	}
+
+	// Handle offset-based pagination (frontend compatibility)
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if offset, err := strconv.Atoi(offsetStr); err == nil && filters.Limit > 0 {
+			filters.Page = (offset / filters.Limit) + 1
 		}
 	}
 

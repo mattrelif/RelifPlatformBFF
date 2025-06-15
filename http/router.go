@@ -36,6 +36,9 @@ func NewRouter(
 	donationsHandler *handlers.Donations,
 	storageRecordsHandler *handlers.StorageRecords,
 	joinPlatformAdminInvites *handlers.JoinPlatformAdminInvites,
+	casesHandler *handlers.Cases,
+	caseNotesHandler *handlers.CaseNotes,
+	caseDocumentsHandler *handlers.CaseDocuments,
 ) http.Handler {
 	router := chi.NewRouter()
 
@@ -213,6 +216,28 @@ func NewRouter(
 				r.Get("/{id}/donations", donationsHandler.FindManyByProductTypeID)
 				r.Get("/{id}/allocations", productTypeAllocationsHandler.FindManyByProductTypeID)
 				r.Get("/{id}/storage-records", storageRecordsHandler.FindManyByProductTypeID)
+			})
+
+			r.Route("/cases", func(r chi.Router) {
+				r.Post("/", casesHandler.CreateCase)
+				r.Get("/", casesHandler.FindManyByOrganization)
+				r.Get("/stats", casesHandler.GetStats)
+				r.Get("/{id}", casesHandler.FindOne)
+				r.Put("/{id}", casesHandler.UpdateOne)
+				r.Delete("/{id}", casesHandler.DeleteOne)
+
+				r.Route("/{case_id}/notes", func(r chi.Router) {
+					r.Get("/", caseNotesHandler.ListByCaseID)
+					r.Post("/", caseNotesHandler.Create)
+					r.Put("/{note_id}", caseNotesHandler.Update)
+					r.Delete("/{note_id}", caseNotesHandler.Delete)
+				})
+
+				r.Route("/{case_id}/documents", func(r chi.Router) {
+					r.Get("/", caseDocumentsHandler.ListByCaseID)
+					r.Post("/", caseDocumentsHandler.Upload)
+					r.Delete("/{doc_id}", caseDocumentsHandler.Delete)
+				})
 			})
 		})
 	})
