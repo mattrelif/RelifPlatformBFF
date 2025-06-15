@@ -301,7 +301,7 @@ func main() {
 	joinPlatformAdminInvitesHandler := handlers.NewJoinPlatformAdminInvites(createJoinPlatformAdminInvitesUseCase, findManyJoinPlatformAdminInvitesPaginatedUseCase, consumeJoinPlatformAdminInviteByCodeUseCase)
 
 	// Case handlers
-	casesHandler := handlers.NewCases(*caseUseCase)
+	casesHandler := handlers.NewCases(caseUseCase)
 	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository)
 	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository)
 

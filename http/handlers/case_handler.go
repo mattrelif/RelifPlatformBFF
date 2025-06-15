@@ -15,10 +15,10 @@ import (
 )
 
 type Cases struct {
-	caseUC cases.CaseUseCase
+	caseUC *cases.CaseUseCase
 }
 
-func NewCases(caseUC cases.CaseUseCase) *Cases {
+func NewCases(caseUC *cases.CaseUseCase) *Cases {
 	return &Cases{
 		caseUC: caseUC,
 	}
