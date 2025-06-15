@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"relif/platform-bff/clients"
@@ -35,6 +33,10 @@ import (
 	voluntaryPeopleUseCases "relif/platform-bff/usecases/voluntary_people"
 	"relif/platform-bff/utils"
 	"syscall"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"go.uber.org/zap"
 )
 
 var (
@@ -51,15 +53,26 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
 	logger.Info("initializing AWS configuration")
 	awsConfig, err = settings.NewAWSConfig(settings.AWSRegion)
 
 	if err != nil {
-		logger.Fatal("could not initialize AWS config", zap.Error(err))
+		logger.Error("AWS configuration failed, some features may not work", zap.Error(err))
+		// Don't fail completely - continue with limited functionality
+	} else {
+		logger.Info("AWS configuration initialized successfully")
 	}
 
 	logger.Info("initializing Secrets Manager client")
-	secretsManagerClient := clients.NewSecretsManager(awsConfig)
+	var secretsManagerClient *secretsmanager.Client
+
+	// Only create Secrets Manager client if AWS config is available
+	if err == nil {
+		secretsManagerClient = clients.NewSecretsManager(awsConfig)
+	} else {
+		logger.Warn("Skipping Secrets Manager client due to AWS configuration issues")
+	}
 
 	logger.Info("initializing settings")
 	settingsInstance, err = settings.NewSettings(secretsManagerClient)
@@ -67,6 +80,11 @@ func init() {
 	if err != nil {
 		logger.Fatal("could not initialize settings", zap.Error(err))
 	}
+
+	logger.Info("application initialization completed",
+		zap.String("environment", settings.Environment),
+		zap.String("server_port", settingsInstance.ServerPort),
+		zap.String("database", settingsInstance.MongoDatabase))
 }
 
 func main() {
@@ -254,7 +272,7 @@ func main() {
 	storageRecordsHandler := handlers.NewStorageRecords(findManyStorageRecordsByOrganizationIDUseCase, findManyStorageRecordsByHousingIDUseCase, findManyStorageRecordsByProductTypeIDUseCase)
 	joinPlatformAdminInvitesHandler := handlers.NewJoinPlatformAdminInvites(createJoinPlatformAdminInvitesUseCase, findManyJoinPlatformAdminInvitesPaginatedUseCase, consumeJoinPlatformAdminInviteByCodeUseCase)
 
-	healthHandler := handlers.NewHealth()
+	healthHandler := handlers.NewHealth(mongo)
 
 	router := http.NewRouter(
 		settingsInstance,

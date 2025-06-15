@@ -142,4 +142,4 @@ fabric.properties
 .env*
 !.env.example
 
-RelifBFF*
+RelifBFF*main

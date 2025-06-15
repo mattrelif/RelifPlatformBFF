@@ -2,13 +2,14 @@ package http
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"net/http"
 	"relif/platform-bff/http/handlers"
 	"relif/platform-bff/http/middlewares"
 	"relif/platform-bff/settings"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 func NewRouter(
@@ -38,7 +39,8 @@ func NewRouter(
 ) http.Handler {
 	router := chi.NewRouter()
 
-	router.Get("/health", healthHandler.HealthCheck)
+	// Simple health check for load balancers
+	router.Get("/health", healthHandler.SimpleHealthCheck)
 
 	router.Route(settingsInstance.RouterContext, func(r chi.Router) {
 		r.Use(middleware.RequestID)
@@ -53,6 +55,9 @@ func NewRouter(
 			AllowCredentials: true,
 			MaxAge:           300,
 		}))
+
+		// Detailed health check with database status
+		r.Get("/health", healthHandler.HealthCheck)
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/sign-up", authenticationHandler.SignUp)

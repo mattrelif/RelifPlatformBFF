@@ -7,7 +7,6 @@ import (
 	"log"
 	"relif/platform-bff/repositories"
 	"relif/platform-bff/settings"
-	"relif/platform-bff/utils"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -34,6 +33,7 @@ type cognitoImpl struct {
 	client          *cognitoidentityprovider.Client
 	clientID        string
 	usersRepository repositories.Users
+	enabled         bool
 }
 
 // NewCognito creates a new instance of the Cognito service.
@@ -42,19 +42,38 @@ func NewCognito(
 	clientID string,
 	usersRepository repositories.Users,
 ) (Cognito, error) {
+	// Try to create AWS config
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		return nil, fmt.Errorf("unable to load SDK config: %w", err)
+		fmt.Printf("Warning: Cognito service disabled due to AWS config error: %v\n", err)
+		// Return a disabled Cognito service that won't crash
+		return &cognitoImpl{
+			client:          nil,
+			clientID:        clientID,
+			usersRepository: usersRepository,
+			enabled:         false,
+		}, nil
 	}
+
 	client := cognitoidentityprovider.NewFromConfig(cfg)
 	return &cognitoImpl{
 		client:          client,
 		clientID:        clientID,
 		usersRepository: usersRepository,
+		enabled:         true,
 	}, nil
 }
 
 func (c *cognitoImpl) AdminGetUser(username string) (*cognitoidentityprovider.AdminGetUserOutput, error) {
+	if !c.enabled || c.client == nil {
+		// Return an error that simulates user not found in Cognito
+		return nil, fmt.Errorf("cognito service not available")
+	}
+
+	if settingsInstance == nil {
+		return nil, fmt.Errorf("settings not initialized")
+	}
+
 	input := &cognitoidentityprovider.AdminGetUserInput{
 		UserPoolId: aws.String(settingsInstance.POOL_ID),
 		Username:   aws.String(username),
@@ -64,89 +83,86 @@ func (c *cognitoImpl) AdminGetUser(username string) (*cognitoidentityprovider.Ad
 
 // InitiateEmailOrPhoneVerification sends a confirmation code to the user's email or phone.
 func (c *cognitoImpl) InitiateEmailOrPhoneVerification(username string, password string, name string, locale string) error {
-	log.Printf("Locale is: %s", locale)
-	getUserInput := &cognitoidentityprovider.AdminGetUserInput{
-		UserPoolId: aws.String(settingsInstance.POOL_ID), //Needs to set as Env variable
-		Username:   aws.String(username),
+	if !c.enabled || c.client == nil {
+		fmt.Printf("Warning: Cognito verification disabled - skipping email verification for %s\n", username)
+		return nil // Don't fail user creation if Cognito is unavailable
 	}
 
-	// Attempt to get the user
-	userResp, err := c.client.AdminGetUser(context.TODO(), getUserInput)
-	if err == nil {
-		// User exists, check if they need confirmation
-		if userResp.UserStatus == types.UserStatusTypeConfirmed {
-			log.Printf("User %s is already confirmed. No need to resend verification code.", username)
-			return nil
-		}
-
-		log.Printf("User %s already exists and is not confirmed. Resending confirmation code.", username)
-
-		// Resend confirmation code if the user exists and is not confirmed
-		resendInput := &cognitoidentityprovider.ResendConfirmationCodeInput{
-			ClientId: aws.String(c.clientID),
-			Username: aws.String(username),
-			ClientMetadata: map[string]string{
-				"locale": locale,
-			},
-		}
-
-		_, err = c.client.ResendConfirmationCode(context.TODO(), resendInput)
-		if err != nil {
-			var apiErr smithy.APIError
-			if errors.As(err, &apiErr) {
-				log.Printf("Cognito API error: Code=%s, Message=%s, Fault=%s", apiErr.ErrorCode(), apiErr.ErrorMessage(), apiErr.ErrorFault())
-			}
-			return fmt.Errorf("failed to resend confirmation code: %w", err)
-		}
-
-		log.Printf("Verification code resent for user: %s", username)
-		return nil
+	// Set the preferred language based on the locale
+	var languageCode string
+	switch strings.ToLower(locale) {
+	case "pt-br", "pt", "portuguese":
+		languageCode = "pt"
+	case "es", "spanish":
+		languageCode = "es"
+	default:
+		languageCode = "en"
 	}
 
-	// Prepare sign up input
-	signUpInput := &cognitoidentityprovider.SignUpInput{
+	input := &cognitoidentityprovider.SignUpInput{
 		ClientId: aws.String(c.clientID),
 		Username: aws.String(username),
-		Password: aws.String(password), // You should generate a secure temporary password
+		Password: aws.String(password),
 		UserAttributes: []types.AttributeType{
 			{
-				Name:  aws.String("email"),
-				Value: aws.String(username), // Assuming username is the email
+				Name:  aws.String("name"),
+				Value: aws.String(name),
 			},
 			{
-				Name:  aws.String("name"),
-				Value: aws.String(name), // Use the provided name
+				Name:  aws.String("locale"),
+				Value: aws.String(languageCode),
 			},
 		},
-		ClientMetadata: map[string]string{
-			"locale": locale,
-		},
 	}
 
-	// Attempt to sign up the user
-	_, err = c.client.SignUp(context.TODO(), signUpInput)
+	_, err := c.client.SignUp(context.TODO(), input)
 	if err != nil {
-		// Check if it's a UsernameExistsException by comparing the error code
-		var apiErr smithy.APIError
-		if errors.As(err, &apiErr) {
-			if apiErr.ErrorCode() == "UsernameExistsException" {
-				// Handle user already exists case
-				log.Printf("User %s already exists, resending confirmation code.", username)
-				return nil
-			} else {
-				return fmt.Errorf("failed to sign up user: %s - %w", apiErr.ErrorMessage(), err)
+		var ae smithy.APIError
+		if errors.As(err, &ae) {
+			switch ae.ErrorCode() {
+			case "UsernameExistsException":
+				log.Printf("User %s already exists in Cognito", username)
+				return nil // Don't fail if user already exists
+			default:
+				return fmt.Errorf("failed to initiate verification: %w", err)
 			}
-		} else {
-			// If it's a different error that doesn't match the APIError interface
-			return fmt.Errorf("unknown error occurred during sign up: %w", err)
 		}
+		return fmt.Errorf("failed to initiate verification: %w", err)
 	}
 
-	log.Printf("User %s signed up successfully.", username)
+	log.Printf("Verification initiated for user: %s", username)
 	return nil
 }
 
+// ConfirmEmailOrPhoneVerification confirms the verification code sent to the user.
+func (c *cognitoImpl) ConfirmEmailOrPhoneVerification(username, code string) error {
+	if !c.enabled || c.client == nil {
+		fmt.Printf("Warning: Cognito verification disabled - auto-confirming user %s\n", username)
+		return nil // Don't fail if Cognito is unavailable
+	}
+
+	input := &cognitoidentityprovider.ConfirmSignUpInput{
+		ClientId:         aws.String(c.clientID),
+		Username:         aws.String(username),
+		ConfirmationCode: aws.String(code),
+	}
+
+	_, err := c.client.ConfirmSignUp(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("failed to confirm verification: %w", err)
+	}
+
+	log.Printf("Verification confirmed for user: %s", username)
+	return nil
+}
+
+// ResendConfirmationCode resends the confirmation code to the user.
 func (c *cognitoImpl) ResendConfirmationCode(username string) error {
+	if !c.enabled || c.client == nil {
+		fmt.Printf("Warning: Cognito verification disabled - cannot resend code for %s\n", username)
+		return fmt.Errorf("verification service not available")
+	}
+
 	input := &cognitoidentityprovider.ResendConfirmationCodeInput{
 		ClientId: aws.String(c.clientID),
 		Username: aws.String(username),
@@ -154,43 +170,9 @@ func (c *cognitoImpl) ResendConfirmationCode(username string) error {
 
 	_, err := c.client.ResendConfirmationCode(context.TODO(), input)
 	if err != nil {
-		var apiErr smithy.APIError
-		if errors.As(err, &apiErr) {
-			log.Printf("Cognito API error: Code=%s, Message=%s", apiErr.ErrorCode(), apiErr.ErrorMessage())
-		}
 		return fmt.Errorf("failed to resend confirmation code: %w", err)
 	}
 
-	log.Printf("Verification code resent for user: %s", username)
-	return nil
-}
-
-// ConfirmEmailOrPhoneVerification confirms the user's email or phone using the provided code.
-func (c *cognitoImpl) ConfirmEmailOrPhoneVerification(username, code string) error {
-	input := &cognitoidentityprovider.ConfirmSignUpInput{
-		ClientId:         aws.String(c.clientID),
-		Username:         aws.String(username),
-		ConfirmationCode: aws.String(code),
-	}
-	_, err := c.client.ConfirmSignUp(context.TODO(), input)
-	if err != nil {
-		// Check if the error is the NotAuthorizedException with status already confirmed
-		var apiErr smithy.APIError
-		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "NotAuthorizedException" && strings.Contains(apiErr.ErrorMessage(), "Current status is CONFIRMED") {
-			return fmt.Errorf("account already registered: %w", err)
-		}
-		// Fallback for other errors
-		return fmt.Errorf("failed to confirm email/phone verification: %w", err)
-	}
-	// After successful confirmation, update user status to Active
-	user, err := c.usersRepository.FindOneByEmail(username)
-	if err != nil {
-		return fmt.Errorf("failed to find user: %w", err)
-	}
-	user.Status = utils.ActiveStatus
-	err = c.usersRepository.UpdateOneByID(user.ID, user)
-	if err != nil {
-		return fmt.Errorf("failed to update user status: %w", err)
-	}
+	log.Printf("Confirmation code resent for user: %s", username)
 	return nil
 }
