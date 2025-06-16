@@ -51,7 +51,13 @@ func NewRouter(
 		r.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{fmt.Sprintf("http://%s", settingsInstance.FrontendDomain), fmt.Sprintf("https://%s", settingsInstance.FrontendDomain)},
+			AllowedOrigins: []string{
+				fmt.Sprintf("http://%s", settingsInstance.FrontendDomain),
+				fmt.Sprintf("https://%s", settingsInstance.FrontendDomain),
+				"https://app.relifaid.org", // Production frontend
+				"http://localhost:3000",    // Development frontend
+				"https://localhost:3000",   // Development frontend with HTTPS
+			},
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"*"},
 			ExposedHeaders:   []string{"*"},
