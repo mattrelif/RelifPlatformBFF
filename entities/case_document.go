@@ -14,7 +14,8 @@ type CaseDocument struct {
 	Description  string
 	Tags         []string
 	UploadedByID string
-	UploadedBy   User // Populated when needed
+	UploadedBy   User   // Populated when needed
+	FilePath     string // Relative path to the file in storage
 	DownloadURL  string
 	CreatedAt    time.Time
 }

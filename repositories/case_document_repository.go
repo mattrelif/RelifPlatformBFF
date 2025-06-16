@@ -59,6 +59,35 @@ func (r *CaseDocumentRepository) GetByID(ctx context.Context, id string) (*model
 	return &docModel, nil
 }
 
+func (r *CaseDocumentRepository) Update(ctx context.Context, id string, docModel models.CaseDocument) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return fmt.Errorf("invalid document ID: %w", err)
+	}
+
+	// Create update document excluding ID and timestamps
+	update := bson.M{
+		"$set": bson.M{
+			"document_name": docModel.DocumentName,
+			"document_type": docModel.DocumentType,
+			"description":   docModel.Description,
+			"tags":          docModel.Tags,
+			"updated_at":    docModel.CreatedAt, // Use current time
+		},
+	}
+
+	result, err := r.collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	if err != nil {
+		return fmt.Errorf("failed to update document: %w", err)
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("document not found")
+	}
+
+	return nil
+}
+
 func (r *CaseDocumentRepository) Delete(ctx context.Context, id string) error {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

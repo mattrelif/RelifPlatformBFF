@@ -16,6 +16,7 @@ import (
 	beneficiariesUseCases "relif/platform-bff/usecases/beneficiaries"
 	beneficiaryAllocationsUseCases "relif/platform-bff/usecases/beneficiary_allocations"
 	"relif/platform-bff/usecases/cases"
+	casesUseCases "relif/platform-bff/usecases/cases"
 	donationsUseCases "relif/platform-bff/usecases/donations"
 	filesUseCases "relif/platform-bff/usecases/files"
 	housingRoomsUseCases "relif/platform-bff/usecases/housing_rooms"
@@ -275,6 +276,9 @@ func main() {
 	userService := &UserServiceAdapter{usersRepository}
 	caseUseCase := cases.NewCaseUseCase(caseRepository, caseNoteRepository, beneficiaryService, userService)
 
+	// Case documents use cases
+	generateCaseDocumentUploadLinkUseCase := casesUseCases.NewGenerateDocumentUploadLink(generateUploadLinkUseCase)
+
 	/** Middlewares **/
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticateTokenUseCase)
 
@@ -303,7 +307,7 @@ func main() {
 	// Case handlers
 	casesHandler := handlers.NewCases(caseUseCase)
 	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository)
-	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository)
+	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository, generateCaseDocumentUploadLinkUseCase)
 
 	healthHandler := handlers.NewHealth(mongo)
 

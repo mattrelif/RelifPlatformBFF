@@ -236,10 +236,13 @@ func NewRouter(
 
 				r.Route("/{case_id}/documents", func(r chi.Router) {
 					r.Get("/", caseDocumentsHandler.ListByCaseID)
-					r.Post("/", caseDocumentsHandler.Upload)
+					r.Post("/generate-upload-link", caseDocumentsHandler.GenerateUploadLink)
+					r.Post("/", caseDocumentsHandler.Create)
+					r.Put("/{doc_id}", caseDocumentsHandler.Update)
 					r.Delete("/{doc_id}", caseDocumentsHandler.Delete)
 				})
 			})
+
 		})
 	})
 

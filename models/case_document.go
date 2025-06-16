@@ -18,6 +18,7 @@ type CaseDocument struct {
 	Description  string    `bson:"description,omitempty"`
 	Tags         []string  `bson:"tags,omitempty"`
 	UploadedByID string    `bson:"uploaded_by_id,omitempty"`
+	FilePath     string    `bson:"file_path,omitempty"`
 	DownloadURL  string    `bson:"download_url,omitempty"`
 	CreatedAt    time.Time `bson:"created_at,omitempty"`
 }
@@ -34,6 +35,7 @@ func (cd *CaseDocument) ToEntity() entities.CaseDocument {
 		Description:  cd.Description,
 		Tags:         cd.Tags,
 		UploadedByID: cd.UploadedByID,
+		FilePath:     cd.FilePath,
 		DownloadURL:  cd.DownloadURL,
 		CreatedAt:    cd.CreatedAt,
 	}
@@ -51,6 +53,7 @@ func NewCaseDocument(entity entities.CaseDocument) CaseDocument {
 		Description:  entity.Description,
 		Tags:         entity.Tags,
 		UploadedByID: entity.UploadedByID,
+		FilePath:     entity.FilePath,
 		DownloadURL:  entity.DownloadURL,
 		CreatedAt:    time.Now(),
 	}
@@ -68,6 +71,7 @@ func NewCaseDocumentFromEntity(entity entities.CaseDocument) *CaseDocument {
 		Description:  entity.Description,
 		Tags:         entity.Tags,
 		UploadedByID: entity.UploadedByID,
+		FilePath:     entity.FilePath,
 		DownloadURL:  entity.DownloadURL,
 		CreatedAt:    time.Now(),
 	}
