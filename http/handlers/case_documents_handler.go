@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"relif/platform-bff/entities"
+	"relif/platform-bff/guards"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
 	"relif/platform-bff/models"
@@ -37,7 +38,19 @@ func NewCaseDocuments(
 // GET /api/cases/{case_id}/documents
 func (h *CaseDocuments) ListByCaseID(w http.ResponseWriter, r *http.Request) {
 	caseID := chi.URLParam(r, "case_id")
-	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
+	user := r.Context().Value("user").(entities.User)
+
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	// Build filters from query parameters
 	filters := repositories.CaseDocumentFilters{
@@ -141,6 +154,18 @@ func (h *CaseDocuments) Create(w http.ResponseWriter, r *http.Request) {
 	caseID := chi.URLParam(r, "case_id")
 	user := r.Context().Value("user").(entities.User)
 
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -203,10 +228,22 @@ func (h *CaseDocuments) Create(w http.ResponseWriter, r *http.Request) {
 func (h *CaseDocuments) Delete(w http.ResponseWriter, r *http.Request) {
 	caseID := chi.URLParam(r, "case_id")
 	docID := chi.URLParam(r, "doc_id")
-	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
+	user := r.Context().Value("user").(entities.User)
+
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	// Delete from database
-	err := h.docRepo.Delete(r.Context(), docID)
+	err = h.docRepo.Delete(r.Context(), docID)
 	if err != nil {
 		http.Error(w, "Document not found", http.StatusNotFound)
 		return
@@ -222,8 +259,21 @@ func (h *CaseDocuments) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *CaseDocuments) Update(w http.ResponseWriter, r *http.Request) {
 	var req requests.UpdateCaseDocumentRequest
 
+	caseID := chi.URLParam(r, "case_id")
 	docID := chi.URLParam(r, "doc_id")
-	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
+	user := r.Context().Value("user").(entities.User)
+
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

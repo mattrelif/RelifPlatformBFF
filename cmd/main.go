@@ -277,7 +277,7 @@ func main() {
 	caseUseCase := cases.NewCaseUseCase(caseRepository, caseNoteRepository, beneficiaryService, userService)
 
 	// Case documents use cases
-	generateCaseDocumentUploadLinkUseCase := casesUseCases.NewGenerateDocumentUploadLink(generateUploadLinkUseCase)
+	generateCaseDocumentUploadLinkUseCase := casesUseCases.NewGenerateDocumentUploadLink(generateUploadLinkUseCase, caseRepository)
 
 	/** Middlewares **/
 	authenticateByCookieMiddleware := middlewares.NewAuthenticateByToken(authenticateTokenUseCase)
@@ -305,7 +305,7 @@ func main() {
 	joinPlatformAdminInvitesHandler := handlers.NewJoinPlatformAdminInvites(createJoinPlatformAdminInvitesUseCase, findManyJoinPlatformAdminInvitesPaginatedUseCase, consumeJoinPlatformAdminInviteByCodeUseCase)
 
 	// Case handlers
-	casesHandler := handlers.NewCases(caseUseCase)
+	casesHandler := handlers.NewCases(caseUseCase, caseRepository)
 	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository)
 	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository, generateCaseDocumentUploadLinkUseCase)
 

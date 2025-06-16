@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"relif/platform-bff/entities"
+	"relif/platform-bff/guards"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
 	"relif/platform-bff/models"
@@ -30,7 +31,19 @@ func NewCaseNotes(noteRepo *repositories.CaseNoteRepository, caseRepo repositori
 // GET /api/cases/{case_id}/notes
 func (h *CaseNotes) ListByCaseID(w http.ResponseWriter, r *http.Request) {
 	caseID := chi.URLParam(r, "case_id")
-	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
+	user := r.Context().Value("user").(entities.User)
+
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	// Build filters from query parameters
 	filters := repositories.CaseNoteFilters{
@@ -153,8 +166,21 @@ func (h *CaseNotes) Create(w http.ResponseWriter, r *http.Request) {
 
 // PUT /api/cases/{case_id}/notes/{note_id}
 func (h *CaseNotes) Update(w http.ResponseWriter, r *http.Request) {
+	caseID := chi.URLParam(r, "case_id")
 	noteID := chi.URLParam(r, "note_id")
-	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
+	user := r.Context().Value("user").(entities.User)
+
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	var req requests.UpdateCaseNoteRequest
 
@@ -212,9 +238,21 @@ func (h *CaseNotes) Update(w http.ResponseWriter, r *http.Request) {
 func (h *CaseNotes) Delete(w http.ResponseWriter, r *http.Request) {
 	caseID := chi.URLParam(r, "case_id")
 	noteID := chi.URLParam(r, "note_id")
-	_ = r.Context().Value("user").(entities.User) // TODO: Use for authorization
+	user := r.Context().Value("user").(entities.User)
 
-	err := h.noteRepo.Delete(r.Context(), noteID)
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	err = h.noteRepo.Delete(r.Context(), noteID)
 	if err != nil {
 		http.Error(w, "Note not found", http.StatusNotFound)
 		return
