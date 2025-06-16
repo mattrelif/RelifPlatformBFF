@@ -193,9 +193,9 @@ func (r *caseRepository) GetStats(ctx context.Context, organizationID string) (C
 		return CaseStats{}, err
 	}
 
-	// Open cases
-	openFilter := bson.M{"organization_id": organizationID, "status": "OPEN"}
-	openCount, err := r.collection.CountDocuments(ctx, openFilter)
+	// Pending cases (replacing "open")
+	pendingFilter := bson.M{"organization_id": organizationID, "status": "PENDING"}
+	pendingCount, err := r.collection.CountDocuments(ctx, pendingFilter)
 	if err != nil {
 		return CaseStats{}, err
 	}
@@ -236,7 +236,7 @@ func (r *caseRepository) GetStats(ctx context.Context, organizationID string) (C
 
 	return CaseStats{
 		TotalCases:        int(total),
-		OpenCases:         int(openCount),
+		OpenCases:         int(pendingCount),
 		InProgressCases:   int(progressCount),
 		OverdueCases:      int(overdueCount),
 		ClosedThisMonth:   int(closedCount),

@@ -25,7 +25,7 @@ type UpdateCase struct {
 func (req *UpdateCase) Validate() error {
 	return validation.ValidateStruct(req,
 		validation.Field(&req.Status, validation.When(req.Status != nil, validation.Required, validation.In(
-			"OPEN", "IN_PROGRESS", "PENDING", "ON_HOLD", "CLOSED",
+			"IN_PROGRESS", "PENDING", "ON_HOLD", "CLOSED", "CANCELLED",
 		))),
 		validation.Field(&req.Priority, validation.When(req.Priority != nil, validation.Required, validation.In(
 			"LOW", "MEDIUM", "HIGH", "URGENT",

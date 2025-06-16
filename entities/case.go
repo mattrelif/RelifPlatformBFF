@@ -7,7 +7,7 @@ type Case struct {
 	CaseNumber        string
 	Title             string
 	Description       string
-	Status            string // "OPEN", "IN_PROGRESS", "PENDING", "ON_HOLD", "CLOSED"
+	Status            string // "IN_PROGRESS", "PENDING", "ON_HOLD", "CLOSED", "CANCELLED"
 	Priority          string // "LOW", "MEDIUM", "HIGH", "URGENT"
 	UrgencyLevel      string // "IMMEDIATE", "WITHIN_WEEK", "WITHIN_MONTH", "FLEXIBLE"
 	CaseType          string // "HOUSING", "LEGAL", "MEDICAL", "SUPPORT", etc.

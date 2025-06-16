@@ -62,7 +62,7 @@ func (uc *CaseUseCase) CreateCase(ctx context.Context, req requests.CreateCase, 
 
 	// Create case entity using the request's ToEntity method
 	caseEntity := req.ToEntity(organizationID)
-	caseEntity.Status = "OPEN" // Always start as OPEN
+	caseEntity.Status = "PENDING" // Always start as PENDING
 	caseEntity.CreatedAt = time.Now()
 	caseEntity.UpdatedAt = time.Now()
 	caseEntity.LastActivity = time.Now()
