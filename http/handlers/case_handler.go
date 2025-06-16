@@ -201,3 +201,42 @@ func (h *Cases) GetStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stats)
 }
+
+// GET /beneficiaries/{id}/cases
+func (h *Cases) FindManyByBeneficiaryID(w http.ResponseWriter, r *http.Request) {
+	beneficiaryID := chi.URLParam(r, "id")
+	user := r.Context().Value("user").(entities.User)
+
+	// Build filters with beneficiary ID
+	filters := repositories.CaseFilters{
+		BeneficiaryID: &beneficiaryID,
+		SortBy:        "created_at",
+		SortOrder:     "desc",
+	}
+
+	// Parse pagination
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if page, err := strconv.Atoi(pageStr); err == nil {
+			filters.Page = page
+		}
+	}
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if limit, err := strconv.Atoi(limitStr); err == nil {
+			filters.Limit = limit
+		}
+	}
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if offset, err := strconv.Atoi(offsetStr); err == nil && filters.Limit > 0 {
+			filters.Page = (offset / filters.Limit) + 1
+		}
+	}
+
+	result, err := h.caseUC.ListByOrganization(r.Context(), user.OrganizationID, filters)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}

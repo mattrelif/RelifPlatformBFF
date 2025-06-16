@@ -195,6 +195,7 @@ func NewRouter(
 
 				r.Get("/{id}/allocations", beneficiaryAllocationsHandler.FindManyByBeneficiaryID)
 				r.Get("/{id}/donations", donationsHandler.FindManyByBeneficiaryID)
+				r.Get("/{id}/cases", casesHandler.FindManyByBeneficiaryID)
 
 				r.Post("/generate-profile-image-upload-link", beneficiariesHandler.GenerateProfileImageUploadLink)
 			})
