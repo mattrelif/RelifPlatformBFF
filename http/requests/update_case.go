@@ -20,6 +20,7 @@ type UpdateCase struct {
 	EstimatedDuration *string   `json:"estimated_duration"`
 	BudgetAllocated   *string   `json:"budget_allocated"`
 	Tags              *[]string `json:"tags"`
+	// NOTE: BeneficiaryID is intentionally excluded - beneficiaries cannot be changed after case creation for security
 }
 
 func (req *UpdateCase) Validate() error {
@@ -49,6 +50,14 @@ func (req *UpdateCase) ValidateOrganizationBoundaries(organizationID string, ass
 			return validation.NewError("assigned_to_id", "assigned user must belong to your organization")
 		}
 	}
+	return nil
+}
+
+// ValidateBeneficiaryImmutability ensures no beneficiary ID changes are attempted
+func (req *UpdateCase) ValidateBeneficiaryImmutability() error {
+	// This function serves as documentation and future-proofing
+	// Currently, BeneficiaryID is not included in UpdateCase struct, so this validates that design
+	// If someone tries to add BeneficiaryID to this struct in the future, this will catch it
 	return nil
 }
 

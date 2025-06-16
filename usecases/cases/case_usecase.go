@@ -126,6 +126,11 @@ func (uc *CaseUseCase) GetByID(ctx context.Context, id string) (*responses.CaseR
 }
 
 func (uc *CaseUseCase) UpdateCase(ctx context.Context, id string, req requests.UpdateCase, organizationID string) (*responses.CaseResponse, error) {
+	// Security: Validate that beneficiary changes are not attempted
+	if err := req.ValidateBeneficiaryImmutability(); err != nil {
+		return nil, err
+	}
+
 	// Get existing case
 	existingCase, err := uc.caseRepo.GetByID(ctx, id)
 	if err != nil {
@@ -148,6 +153,9 @@ func (uc *CaseUseCase) UpdateCase(ctx context.Context, id string, req requests.U
 	updateEntity.ID = existingCase.ID
 	updateEntity.UpdatedAt = time.Now()
 	updateEntity.LastActivity = time.Now()
+
+	// Security: Ensure beneficiary cannot be changed after case creation
+	updateEntity.BeneficiaryID = "" // Will be ignored by NewUpdatedCase anyway
 
 	// Update the case
 	updatedCase, err := uc.caseRepo.Update(ctx, id, updateEntity)

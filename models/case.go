@@ -121,6 +121,7 @@ func NewUpdatedCase(entity entities.Case) Case {
 		Tags:              entity.Tags,
 		LastActivity:      time.Now(),
 		UpdatedAt:         time.Now(),
+		// NOTE: BeneficiaryID is intentionally excluded - beneficiaries cannot be changed after case creation
 	}
 }
 
