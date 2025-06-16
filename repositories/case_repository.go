@@ -99,6 +99,9 @@ func (r *caseRepository) GetByOrganization(ctx context.Context, organizationID s
 	if filters.AssignedToID != nil {
 		filter["assigned_to_id"] = *filters.AssignedToID
 	}
+	if filters.BeneficiaryID != nil {
+		filter["beneficiary_id"] = *filters.BeneficiaryID
+	}
 	if filters.Search != nil && *filters.Search != "" {
 		searchRegex := primitive.Regex{
 			Pattern: *filters.Search,
