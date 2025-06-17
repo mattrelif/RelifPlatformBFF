@@ -43,7 +43,8 @@ type CaseResponse struct {
 	Status            string              `json:"status"`
 	Priority          string              `json:"priority"`
 	UrgencyLevel      *string             `json:"urgency_level,omitempty"`
-	CaseType          string              `json:"case_type"`
+	CaseType          string              `json:"case_type,omitempty"` // DEPRECATED: Use ServiceTypes instead
+	ServiceTypes      []string            `json:"service_types"`       // New field: Array of humanitarian service types
 	BeneficiaryID     string              `json:"beneficiary_id"`
 	Beneficiary       BeneficiaryResponse `json:"beneficiary"`
 	AssignedToID      string              `json:"assigned_to_id"`
@@ -162,6 +163,7 @@ func NewCaseResponse(c entities.Case) CaseResponse {
 		Priority:      c.Priority,
 		UrgencyLevel:  urgencyLevel,
 		CaseType:      c.CaseType,
+		ServiceTypes:  c.ServiceTypes,
 		BeneficiaryID: c.BeneficiaryID,
 		Beneficiary: BeneficiaryResponse{
 			ID:             c.Beneficiary.ID,

@@ -4,6 +4,8 @@ import (
 	"relif/platform-bff/entities"
 	"time"
 
+	"relif/platform-bff/utils"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
@@ -14,7 +16,8 @@ type UpdateCase struct {
 	Status            *string   `json:"status"`
 	Priority          *string   `json:"priority"`
 	UrgencyLevel      *string   `json:"urgency_level"`
-	CaseType          *string   `json:"case_type"`
+	CaseType          *string   `json:"case_type,omitempty"`     // DEPRECATED: Use ServiceTypes instead
+	ServiceTypes      *[]string `json:"service_types,omitempty"` // New field: Array of humanitarian service types
 	AssignedToID      *string   `json:"assigned_to_id"`
 	DueDate           *string   `json:"due_date"` // ISO date string
 	EstimatedDuration *string   `json:"estimated_duration"`
@@ -24,6 +27,15 @@ type UpdateCase struct {
 }
 
 func (req *UpdateCase) Validate() error {
+	// If ServiceTypes is provided, validate each one
+	if req.ServiceTypes != nil && len(*req.ServiceTypes) > 0 {
+		for _, serviceType := range *req.ServiceTypes {
+			if !utils.IsValidServiceType(serviceType) {
+				return validation.NewError("service_types", "invalid service type: "+serviceType)
+			}
+		}
+	}
+
 	return validation.ValidateStruct(req,
 		validation.Field(&req.Status, validation.When(req.Status != nil, validation.Required, validation.In(
 			"IN_PROGRESS", "PENDING", "ON_HOLD", "CLOSED", "CANCELLED",
@@ -34,6 +46,9 @@ func (req *UpdateCase) Validate() error {
 		validation.Field(&req.UrgencyLevel, validation.When(req.UrgencyLevel != nil, validation.In(
 			"IMMEDIATE", "WITHIN_WEEK", "WITHIN_MONTH", "FLEXIBLE", "",
 		))),
+		validation.Field(&req.ServiceTypes, validation.When(req.ServiceTypes != nil,
+			validation.Length(1, 10), // Allow 1-10 service types per case
+		)),
 		validation.Field(&req.CaseType, validation.When(req.CaseType != nil, validation.Required, validation.In(
 			"HOUSING", "LEGAL", "MEDICAL", "SUPPORT", "EDUCATION",
 			"EMPLOYMENT", "FINANCIAL", "FAMILY_REUNIFICATION",
@@ -81,6 +96,11 @@ func (req *UpdateCase) ToEntity() entities.Case {
 	}
 	if req.CaseType != nil {
 		entity.CaseType = *req.CaseType
+	}
+	if req.ServiceTypes != nil {
+		entity.ServiceTypes = *req.ServiceTypes
+	} else if req.CaseType != nil {
+		entity.ServiceTypes = utils.MigrateCaseTypeToServiceTypes(*req.CaseType)
 	}
 	if req.AssignedToID != nil {
 		entity.AssignedToID = *req.AssignedToID

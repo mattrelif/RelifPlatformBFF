@@ -27,7 +27,8 @@ type CaseFilters struct {
 	OrganizationID string     `json:"organization_id"`
 	Status         *string    `json:"status,omitempty"`
 	Priority       *string    `json:"priority,omitempty"`
-	CaseType       *string    `json:"case_type,omitempty"`
+	CaseType       *string    `json:"case_type,omitempty"`     // DEPRECATED: Use ServiceTypes instead
+	ServiceTypes   []string   `json:"service_types,omitempty"` // New field: Filter by service types
 	UrgencyLevel   *string    `json:"urgency_level,omitempty"`
 	AssignedToID   *string    `json:"assigned_to_id,omitempty"`
 	BeneficiaryID  *string    `json:"beneficiary_id,omitempty"`
@@ -93,7 +94,11 @@ func (r *caseRepository) GetByOrganization(ctx context.Context, organizationID s
 	if filters.Priority != nil {
 		filter["priority"] = *filters.Priority
 	}
-	if filters.CaseType != nil {
+	// Handle service types filtering (new approach)
+	if len(filters.ServiceTypes) > 0 {
+		filter["service_types"] = bson.M{"$in": filters.ServiceTypes}
+	} else if filters.CaseType != nil {
+		// Backwards compatibility: filter by case_type if service_types not provided
 		filter["case_type"] = *filters.CaseType
 	}
 	if filters.AssignedToID != nil {

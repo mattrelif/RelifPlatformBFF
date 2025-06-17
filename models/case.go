@@ -5,6 +5,8 @@ import (
 	"relif/platform-bff/entities"
 	"time"
 
+	"relif/platform-bff/utils"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -16,7 +18,8 @@ type Case struct {
 	Status            string     `bson:"status,omitempty"`
 	Priority          string     `bson:"priority,omitempty"`
 	UrgencyLevel      string     `bson:"urgency_level,omitempty"`
-	CaseType          string     `bson:"case_type,omitempty"`
+	CaseType          string     `bson:"case_type,omitempty"`     // DEPRECATED: Kept for backwards compatibility
+	ServiceTypes      []string   `bson:"service_types,omitempty"` // New field: Array of humanitarian service types
 	BeneficiaryID     string     `bson:"beneficiary_id,omitempty"`
 	AssignedToID      string     `bson:"assigned_to_id,omitempty"`
 	DueDate           *time.Time `bson:"due_date,omitempty"`
@@ -32,6 +35,12 @@ type Case struct {
 }
 
 func (c *Case) ToEntity() entities.Case {
+	// Migration logic: If ServiceTypes is empty but CaseType exists, migrate it
+	serviceTypes := c.ServiceTypes
+	if len(serviceTypes) == 0 && c.CaseType != "" {
+		serviceTypes = utils.MigrateCaseTypeToServiceTypes(c.CaseType)
+	}
+
 	return entities.Case{
 		ID:                c.ID,
 		CaseNumber:        c.CaseNumber,
@@ -41,6 +50,7 @@ func (c *Case) ToEntity() entities.Case {
 		Priority:          c.Priority,
 		UrgencyLevel:      c.UrgencyLevel,
 		CaseType:          c.CaseType,
+		ServiceTypes:      serviceTypes,
 		BeneficiaryID:     c.BeneficiaryID,
 		AssignedToID:      c.AssignedToID,
 		DueDate:           c.DueDate,
@@ -57,6 +67,12 @@ func (c *Case) ToEntity() entities.Case {
 }
 
 func NewCase(entity entities.Case) Case {
+	// Backwards compatibility: If entity has CaseType but no ServiceTypes, migrate it
+	serviceTypes := entity.ServiceTypes
+	if len(serviceTypes) == 0 && entity.CaseType != "" {
+		serviceTypes = utils.MigrateCaseTypeToServiceTypes(entity.CaseType)
+	}
+
 	return Case{
 		ID:                primitive.NewObjectID().Hex(),
 		CaseNumber:        generateCaseNumber(),
@@ -66,6 +82,7 @@ func NewCase(entity entities.Case) Case {
 		Priority:          entity.Priority,
 		UrgencyLevel:      entity.UrgencyLevel,
 		CaseType:          entity.CaseType,
+		ServiceTypes:      serviceTypes,
 		BeneficiaryID:     entity.BeneficiaryID,
 		AssignedToID:      entity.AssignedToID,
 		DueDate:           entity.DueDate,
@@ -82,6 +99,12 @@ func NewCase(entity entities.Case) Case {
 }
 
 func NewCaseFromEntity(entity entities.Case) *Case {
+	// Backwards compatibility: If entity has CaseType but no ServiceTypes, migrate it
+	serviceTypes := entity.ServiceTypes
+	if len(serviceTypes) == 0 && entity.CaseType != "" {
+		serviceTypes = utils.MigrateCaseTypeToServiceTypes(entity.CaseType)
+	}
+
 	return &Case{
 		ID:                primitive.NewObjectID().Hex(),
 		CaseNumber:        generateCaseNumber(),
@@ -91,6 +114,7 @@ func NewCaseFromEntity(entity entities.Case) *Case {
 		Priority:          entity.Priority,
 		UrgencyLevel:      entity.UrgencyLevel,
 		CaseType:          entity.CaseType,
+		ServiceTypes:      serviceTypes,
 		BeneficiaryID:     entity.BeneficiaryID,
 		AssignedToID:      entity.AssignedToID,
 		DueDate:           entity.DueDate,
@@ -107,6 +131,12 @@ func NewCaseFromEntity(entity entities.Case) *Case {
 }
 
 func NewUpdatedCase(entity entities.Case) Case {
+	// Backwards compatibility: If entity has CaseType but no ServiceTypes, migrate it
+	serviceTypes := entity.ServiceTypes
+	if len(serviceTypes) == 0 && entity.CaseType != "" {
+		serviceTypes = utils.MigrateCaseTypeToServiceTypes(entity.CaseType)
+	}
+
 	return Case{
 		Title:             entity.Title,
 		Description:       entity.Description,
@@ -114,6 +144,7 @@ func NewUpdatedCase(entity entities.Case) Case {
 		Priority:          entity.Priority,
 		UrgencyLevel:      entity.UrgencyLevel,
 		CaseType:          entity.CaseType,
+		ServiceTypes:      serviceTypes,
 		AssignedToID:      entity.AssignedToID,
 		DueDate:           entity.DueDate,
 		EstimatedDuration: entity.EstimatedDuration,

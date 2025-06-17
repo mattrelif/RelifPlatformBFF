@@ -4,6 +4,8 @@ import (
 	"relif/platform-bff/entities"
 	"time"
 
+	"relif/platform-bff/utils"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
@@ -21,7 +23,8 @@ type CreateCase struct {
 	AssignedToID      string                 `json:"assigned_to_id"`
 	Title             string                 `json:"title"`
 	Description       string                 `json:"description"`
-	CaseType          string                 `json:"case_type"`
+	CaseType          string                 `json:"case_type,omitempty"` // DEPRECATED: Use ServiceTypes instead
+	ServiceTypes      []string               `json:"service_types"`       // New field: Array of humanitarian service types
 	Priority          string                 `json:"priority"`
 	UrgencyLevel      string                 `json:"urgency_level"`
 	DueDate           string                 `json:"due_date"` // ISO date string
@@ -32,16 +35,33 @@ type CreateCase struct {
 }
 
 func (req *CreateCase) Validate() error {
+	// Custom validation for service types vs case type
+	if len(req.ServiceTypes) == 0 && req.CaseType == "" {
+		return validation.NewError("service_types", "either service_types or case_type must be provided")
+	}
+
+	// If ServiceTypes is provided, validate each one
+	if len(req.ServiceTypes) > 0 {
+		for _, serviceType := range req.ServiceTypes {
+			if !utils.IsValidServiceType(serviceType) {
+				return validation.NewError("service_types", "invalid service type: "+serviceType)
+			}
+		}
+	}
+
 	return validation.ValidateStruct(req,
 		validation.Field(&req.BeneficiaryID, validation.Required, is.MongoID),
 		validation.Field(&req.AssignedToID, validation.Required, is.MongoID),
 		validation.Field(&req.Title, validation.Required),
 		validation.Field(&req.Description, validation.Required),
-		validation.Field(&req.CaseType, validation.Required, validation.In(
+		validation.Field(&req.ServiceTypes, validation.When(len(req.ServiceTypes) > 0,
+			validation.Length(1, 10), // Allow 1-10 service types per case
+		)),
+		validation.Field(&req.CaseType, validation.When(req.CaseType != "", validation.In(
 			"HOUSING", "LEGAL", "MEDICAL", "SUPPORT", "EDUCATION",
 			"EMPLOYMENT", "FINANCIAL", "FAMILY_REUNIFICATION",
 			"DOCUMENTATION", "MENTAL_HEALTH", "OTHER",
-		)),
+		))),
 		validation.Field(&req.Priority, validation.Required, validation.In(
 			"LOW", "MEDIUM", "HIGH", "URGENT",
 		)),
@@ -84,12 +104,19 @@ func (req *CreateCase) ToEntity(organizationID string) entities.Case {
 		}
 	}
 
+	// Migration logic: Use ServiceTypes if provided, otherwise migrate from CaseType
+	serviceTypes := req.ServiceTypes
+	if len(serviceTypes) == 0 && req.CaseType != "" {
+		serviceTypes = utils.MigrateCaseTypeToServiceTypes(req.CaseType)
+	}
+
 	return entities.Case{
 		BeneficiaryID:     req.BeneficiaryID,
 		AssignedToID:      req.AssignedToID,
 		Title:             req.Title,
 		Description:       req.Description,
 		CaseType:          req.CaseType,
+		ServiceTypes:      serviceTypes,
 		Priority:          req.Priority,
 		UrgencyLevel:      req.UrgencyLevel,
 		DueDate:           dueDate,

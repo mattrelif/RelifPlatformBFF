@@ -76,7 +76,8 @@ func (h *Cases) FindManyByOrganization(w http.ResponseWriter, r *http.Request) {
 	filters := repositories.CaseFilters{
 		Status:       stringPtr(r.URL.Query().Get("status")),
 		Priority:     stringPtr(r.URL.Query().Get("priority")),
-		CaseType:     stringPtr(r.URL.Query().Get("case_type")),
+		CaseType:     stringPtr(r.URL.Query().Get("case_type")), // DEPRECATED: Use service_types instead
+		ServiceTypes: r.URL.Query()["service_types"],            // New field: Support multiple service types
 		AssignedToID: stringPtr(r.URL.Query().Get("assigned_to_id")),
 		Search:       stringPtr(r.URL.Query().Get("search")),
 		SortBy:       r.URL.Query().Get("sort_by"),
