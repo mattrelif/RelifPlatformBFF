@@ -38,7 +38,14 @@ func (r *CaseDocumentRepository) Create(ctx context.Context, docModel models.Cas
 		return "", fmt.Errorf("failed to create case document: %w", err)
 	}
 
-	return result.InsertedID.(primitive.ObjectID).Hex(), nil
+	switch id := result.InsertedID.(type) {
+	case primitive.ObjectID:
+		return id.Hex(), nil
+	case string:
+		return id, nil
+	default:
+		return "", fmt.Errorf("unexpected insertedID type %T", id)
+	}
 }
 
 func (r *CaseDocumentRepository) GetByID(ctx context.Context, id string) (*models.CaseDocument, error) {
