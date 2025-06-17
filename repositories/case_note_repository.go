@@ -40,7 +40,14 @@ func (r *CaseNoteRepository) Create(ctx context.Context, noteModel models.CaseNo
 		return "", fmt.Errorf("failed to create case note: %w", err)
 	}
 
-	return result.InsertedID.(primitive.ObjectID).Hex(), nil
+	switch id := result.InsertedID.(type) {
+	case primitive.ObjectID:
+		return id.Hex(), nil
+	case string:
+		return id, nil
+	default:
+		return "", fmt.Errorf("unexpected insertedID type %T", id)
+	}
 }
 
 func (r *CaseNoteRepository) GetByID(ctx context.Context, id string) (*models.CaseNote, error) {
