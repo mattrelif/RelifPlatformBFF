@@ -269,6 +269,7 @@ func NewRouter(
 			})
 		})
 	})
+        })
 
-	return router
+        return router
 }
