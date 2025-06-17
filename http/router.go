@@ -194,6 +194,7 @@ func NewRouter(
 			r.Route("/beneficiaries", func(r chi.Router) {
 				r.Get("/{id}", beneficiariesHandler.FindOneByID)
 				r.Put("/{id}", beneficiariesHandler.Update)
+				r.Put("/{id}/status", beneficiariesHandler.UpdateStatus)
 				r.Delete("/{id}", beneficiariesHandler.Delete)
 
 				r.Post("/{id}/allocate", beneficiaryAllocationsHandler.Allocate)

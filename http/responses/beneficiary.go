@@ -21,6 +21,7 @@ type Beneficiary struct {
 	Gender                string             `json:"gender"`
 	Occupation            string             `json:"occupation"`
 	Address               Address            `json:"address"`
+	Status                string             `json:"status"`
 	CurrentHousingID      string             `json:"current_housing_id"`
 	CurrentHousing        Housing            `json:"current_housing,omitempty"`
 	CurrentRoomID         string             `json:"current_room_id"`
@@ -59,6 +60,7 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		SpokenLanguages:       entity.SpokenLanguages,
 		Education:             entity.Education,
 		Gender:                entity.Gender,
+		Status:                entity.Status,
 		CurrentHousingID:      entity.CurrentHousingID,
 		CurrentHousing:        NewHousing(entity.CurrentHousing),
 		CurrentRoomID:         entity.CurrentRoomID,

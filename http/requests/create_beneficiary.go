@@ -1,9 +1,10 @@
 package requests
 
 import (
+	"relif/platform-bff/entities"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"relif/platform-bff/entities"
 )
 
 type CreateBeneficiary struct {
@@ -19,6 +20,7 @@ type CreateBeneficiary struct {
 	Occupation         string             `json:"occupation"`
 	Address            Address            `json:"address"`
 	Gender             string             `json:"gender"`
+	Status             string             `json:"status,omitempty"`
 	MedicalInformation MedicalInformation `json:"medical_information"`
 	EmergencyContacts  []EmergencyContact `json:"emergency_contacts"`
 	Notes              string             `json:"notes"`
@@ -42,6 +44,7 @@ func (req *CreateBeneficiary) Validate() error {
 		validation.Field(&req.SpokenLanguages, validation.Each(validation.Required)),
 		validation.Field(&req.Gender, validation.Required),
 		validation.Field(&req.Occupation, validation.Required),
+		validation.Field(&req.Status, validation.When(req.Status != "", validation.In("ACTIVE", "INACTIVE", "PENDING", "ARCHIVED"))),
 		validation.Field(&req.Address, validation.By(func(value interface{}) error {
 			if address, ok := value.(Address); ok {
 				return address.Validate()
@@ -87,6 +90,7 @@ func (req *CreateBeneficiary) ToEntity() entities.Beneficiary {
 		Gender:             req.Gender,
 		Occupation:         req.Occupation,
 		Address:            req.Address.ToEntity(),
+		Status:             req.Status,
 		MedicalInformation: req.MedicalInformation.ToEntity(),
 		EmergencyContacts:  contactsEntityList,
 		Notes:              req.Notes,

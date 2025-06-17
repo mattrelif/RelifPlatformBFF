@@ -1,10 +1,11 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"relif/platform-bff/entities"
 	"relif/platform-bff/utils"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type FindBeneficiary struct {
@@ -154,6 +155,11 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		documents = append(documents, NewDocument(document))
 	}
 
+	status := entity.Status
+	if status == "" {
+		status = utils.ActiveStatus
+	}
+
 	return Beneficiary{
 		ID:                    primitive.NewObjectID().Hex(),
 		CurrentOrganizationID: entity.CurrentOrganizationID,
@@ -169,7 +175,7 @@ func NewBeneficiary(entity entities.Beneficiary) Beneficiary {
 		Gender:                entity.Gender,
 		Occupation:            entity.Occupation,
 		Address:               NewAddress(entity.Address),
-		Status:                utils.ActiveStatus,
+		Status:                status,
 		MedicalInformation:    NewMedicalInformation(entity.MedicalInformation),
 		EmergencyContacts:     emergencyContacts,
 		CreatedAt:             time.Now(),

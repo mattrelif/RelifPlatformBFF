@@ -14,6 +14,7 @@ var (
 	PendingStatus   = "PENDING"
 	AcceptedStatus  = "ACCEPTED"
 	RejectedStatus  = "REJECTED"
+	ArchivedStatus  = "ARCHIVED"
 )
 
 var (
