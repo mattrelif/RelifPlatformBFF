@@ -277,6 +277,8 @@ func main() {
 	caseUseCase := cases.NewCaseUseCase(caseRepository, caseNoteRepository, beneficiaryService, userService)
 
 	// Case documents use cases
+	createDocumentUseCase := cases.NewCreateDocumentUseCase(caseRepository, caseDocumentRepository, usersRepository)
+	updateDocumentUseCase := cases.NewUpdateDocumentUseCase(caseRepository, caseDocumentRepository, usersRepository)
 	generateCaseDocumentUploadLinkUseCase := casesUseCases.NewGenerateDocumentUploadLink(generateUploadLinkUseCase, caseRepository)
 
 	/** Middlewares **/
@@ -307,7 +309,7 @@ func main() {
 	// Case handlers
 	casesHandler := handlers.NewCases(caseUseCase, caseRepository)
 	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository, usersRepository)
-	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository, usersRepository, generateCaseDocumentUploadLinkUseCase)
+	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository, usersRepository, createDocumentUseCase, updateDocumentUseCase, generateCaseDocumentUploadLinkUseCase)
 
 	healthHandler := handlers.NewHealth(mongo)
 

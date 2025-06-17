@@ -10,7 +10,6 @@ import (
 	"relif/platform-bff/guards"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/models"
 	"relif/platform-bff/repositories"
 	casesUseCases "relif/platform-bff/usecases/cases"
 
@@ -21,6 +20,8 @@ type CaseDocuments struct {
 	docRepo                           *repositories.CaseDocumentRepository
 	caseRepo                          repositories.CaseRepository
 	userRepo                          repositories.Users
+	createDocumentUseCase             casesUseCases.CreateDocumentUseCase
+	updateDocumentUseCase             casesUseCases.UpdateDocumentUseCase
 	generateDocumentUploadLinkUseCase casesUseCases.GenerateDocumentUploadLink
 }
 
@@ -28,12 +29,16 @@ func NewCaseDocuments(
 	docRepo *repositories.CaseDocumentRepository,
 	caseRepo repositories.CaseRepository,
 	userRepo repositories.Users,
+	createDocumentUseCase casesUseCases.CreateDocumentUseCase,
+	updateDocumentUseCase casesUseCases.UpdateDocumentUseCase,
 	generateDocumentUploadLinkUseCase casesUseCases.GenerateDocumentUploadLink,
 ) *CaseDocuments {
 	return &CaseDocuments{
 		docRepo:                           docRepo,
 		caseRepo:                          caseRepo,
 		userRepo:                          userRepo,
+		createDocumentUseCase:             createDocumentUseCase,
+		updateDocumentUseCase:             updateDocumentUseCase,
 		generateDocumentUploadLinkUseCase: generateDocumentUploadLinkUseCase,
 	}
 }
@@ -159,21 +164,8 @@ func (h *CaseDocuments) GenerateUploadLink(w http.ResponseWriter, r *http.Reques
 // POST /api/cases/{case_id}/documents
 func (h *CaseDocuments) Create(w http.ResponseWriter, r *http.Request) {
 	var req requests.CreateCaseDocumentRequest
-
 	caseID := chi.URLParam(r, "case_id")
 	user := r.Context().Value("user").(entities.User)
-
-	// Check authorization - get case and verify user has access to its organization
-	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
-	if err != nil {
-		http.Error(w, "Case not found", http.StatusNotFound)
-		return
-	}
-
-	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -192,43 +184,16 @@ func (h *CaseDocuments) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create document entity - S3 URL will be constructed from file key
-	docEntity := entities.CaseDocument{
-		CaseID:       caseID,
-		DocumentName: req.DocumentName,
-		FileName:     req.FileName,
-		DocumentType: req.DocumentType,
-		FileSize:     req.FileSize,
-		MimeType:     req.MimeType,
-		Description:  req.Description,
-		Tags:         req.Tags,
-		UploadedByID: user.ID,
-		UploadedBy:   user,
-		FilePath:     req.FileKey, // S3 object key
-	}
-
-	// Convert to model and create
-	docModel := models.NewCaseDocumentFromEntity(docEntity)
-	docID, err := h.docRepo.Create(r.Context(), *docModel)
+	docEntity := req.ToEntity() // Convert request to entity
+	createdDoc, err := h.createDocumentUseCase.Execute(r.Context(), user, caseID, docEntity)
 	if err != nil {
+		// The use case now handles errors, we just map them
+		// This part can be improved with custom error types like in the beneficiary handler
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Increment case documents count
-	h.caseRepo.UpdateDocumentsCount(r.Context(), caseID, 1)
-
-	// Get created document
-	createdDoc, err := h.docRepo.GetByID(r.Context(), docID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	docEntity = createdDoc.ToEntity()
-	// We already have the user object from the context, so just attach it
-	docEntity.UploadedBy = user
-	response := responses.NewCaseDocumentResponse(docEntity)
+	response := responses.NewCaseDocumentResponse(createdDoc)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -274,18 +239,6 @@ func (h *CaseDocuments) Update(w http.ResponseWriter, r *http.Request) {
 	docID := chi.URLParam(r, "doc_id")
 	user := r.Context().Value("user").(entities.User)
 
-	// Check authorization - get case and verify user has access to its organization
-	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
-	if err != nil {
-		http.Error(w, "Case not found", http.StatusNotFound)
-		return
-	}
-
-	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -303,36 +256,15 @@ func (h *CaseDocuments) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert to entity and then model for update
-	updateEntity := entities.CaseDocument{
-		DocumentName: req.DocumentName,
-		DocumentType: req.DocumentType,
-		Description:  req.Description,
-		Tags:         req.Tags,
-	}
+	updateEntity := req.ToEntity()
 
-	updateModel := models.NewCaseDocumentFromEntity(updateEntity)
-	err = h.docRepo.Update(r.Context(), docID, *updateModel)
-	if err != nil {
-		http.Error(w, "Document not found", http.StatusNotFound)
-		return
-	}
-
-	// Get updated document
-	updatedDoc, err := h.docRepo.GetByID(r.Context(), docID)
+	updatedDoc, err := h.updateDocumentUseCase.Execute(r.Context(), user, caseID, docID, updateEntity)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	docEntity := updatedDoc.ToEntity()
-	// Populate UploadedBy user information
-	if docEntity.UploadedByID != "" {
-		if user, err := h.userRepo.FindOneByID(docEntity.UploadedByID); err == nil {
-			docEntity.UploadedBy = user
-		}
-	}
-	response := responses.NewCaseDocumentResponse(docEntity)
+	response := responses.NewCaseDocumentResponse(updatedDoc)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
