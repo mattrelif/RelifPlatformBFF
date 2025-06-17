@@ -51,13 +51,16 @@ func (r *CaseNoteRepository) Create(ctx context.Context, noteModel models.CaseNo
 }
 
 func (r *CaseNoteRepository) GetByID(ctx context.Context, id string) (*models.CaseNote, error) {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid note ID: %w", err)
+	// Accept both ObjectID and plain string IDs
+	var filter bson.M
+	if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+		filter = bson.M{"_id": objID}
+	} else {
+		filter = bson.M{"_id": id}
 	}
 
 	var noteModel models.CaseNote
-	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&noteModel)
+	err := r.collection.FindOne(ctx, filter).Decode(&noteModel)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, fmt.Errorf("note not found")
@@ -69,16 +72,19 @@ func (r *CaseNoteRepository) GetByID(ctx context.Context, id string) (*models.Ca
 }
 
 func (r *CaseNoteRepository) Update(ctx context.Context, id string, updates bson.M) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("invalid note ID: %w", err)
+	// Accept both ObjectID and plain string IDs
+	var filter bson.M
+	if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+		filter = bson.M{"_id": objID}
+	} else {
+		filter = bson.M{"_id": id}
 	}
 
 	updates["updated_at"] = time.Now()
 
 	result, err := r.collection.UpdateOne(
 		ctx,
-		bson.M{"_id": objectID},
+		filter,
 		bson.M{"$set": updates},
 	)
 	if err != nil {
@@ -93,12 +99,15 @@ func (r *CaseNoteRepository) Update(ctx context.Context, id string, updates bson
 }
 
 func (r *CaseNoteRepository) Delete(ctx context.Context, id string) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("invalid note ID: %w", err)
+	// Accept both ObjectID and plain string IDs
+	var filter bson.M
+	if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+		filter = bson.M{"_id": objID}
+	} else {
+		filter = bson.M{"_id": id}
 	}
 
-	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	result, err := r.collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete note: %w", err)
 	}

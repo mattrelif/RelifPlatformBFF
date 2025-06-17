@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -49,13 +50,16 @@ func (r *CaseDocumentRepository) Create(ctx context.Context, docModel models.Cas
 }
 
 func (r *CaseDocumentRepository) GetByID(ctx context.Context, id string) (*models.CaseDocument, error) {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid document ID: %w", err)
+	// Accept both ObjectID and plain string IDs
+	var filter bson.M
+	if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+		filter = bson.M{"_id": objID}
+	} else {
+		filter = bson.M{"_id": id}
 	}
 
 	var docModel models.CaseDocument
-	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&docModel)
+	err := r.collection.FindOne(ctx, filter).Decode(&docModel)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, fmt.Errorf("document not found")
@@ -67,9 +71,12 @@ func (r *CaseDocumentRepository) GetByID(ctx context.Context, id string) (*model
 }
 
 func (r *CaseDocumentRepository) Update(ctx context.Context, id string, docModel models.CaseDocument) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("invalid document ID: %w", err)
+	// Accept both ObjectID and plain string IDs
+	var filter bson.M
+	if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+		filter = bson.M{"_id": objID}
+	} else {
+		filter = bson.M{"_id": id}
 	}
 
 	// Create update document excluding ID and timestamps
@@ -79,11 +86,11 @@ func (r *CaseDocumentRepository) Update(ctx context.Context, id string, docModel
 			"document_type": docModel.DocumentType,
 			"description":   docModel.Description,
 			"tags":          docModel.Tags,
-			"updated_at":    docModel.CreatedAt, // Use current time
+			"updated_at":    time.Now(),
 		},
 	}
 
-	result, err := r.collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+	result, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to update document: %w", err)
 	}
@@ -96,12 +103,15 @@ func (r *CaseDocumentRepository) Update(ctx context.Context, id string, docModel
 }
 
 func (r *CaseDocumentRepository) Delete(ctx context.Context, id string) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("invalid document ID: %w", err)
+	// Accept both ObjectID and plain string IDs
+	var filter bson.M
+	if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+		filter = bson.M{"_id": objID}
+	} else {
+		filter = bson.M{"_id": id}
 	}
 
-	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	result, err := r.collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete document: %w", err)
 	}

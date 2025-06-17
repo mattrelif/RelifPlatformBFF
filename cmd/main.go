@@ -15,7 +15,6 @@ import (
 	authenticationUseCases "relif/platform-bff/usecases/authentication"
 	beneficiariesUseCases "relif/platform-bff/usecases/beneficiaries"
 	beneficiaryAllocationsUseCases "relif/platform-bff/usecases/beneficiary_allocations"
-	"relif/platform-bff/usecases/cases"
 	casesUseCases "relif/platform-bff/usecases/cases"
 	donationsUseCases "relif/platform-bff/usecases/donations"
 	filesUseCases "relif/platform-bff/usecases/files"
@@ -274,11 +273,15 @@ func main() {
 	// Create case use cases - we'll use simple adapters for the interfaces
 	beneficiaryService := &BeneficiaryServiceAdapter{beneficiariesRepository}
 	userService := &UserServiceAdapter{usersRepository}
-	caseUseCase := cases.NewCaseUseCase(caseRepository, caseNoteRepository, beneficiaryService, userService)
+	caseUseCase := casesUseCases.NewCaseUseCase(caseRepository, caseNoteRepository, beneficiaryService, userService)
+
+	// Case notes and documents use cases
+	createNoteUseCase := casesUseCases.NewCreateNoteUseCase(caseRepository, caseNoteRepository, usersRepository)
+	updateNoteUseCase := casesUseCases.NewUpdateNoteUseCase(caseRepository, caseNoteRepository, usersRepository)
 
 	// Case documents use cases
-	createDocumentUseCase := cases.NewCreateDocumentUseCase(caseRepository, caseDocumentRepository, usersRepository)
-	updateDocumentUseCase := cases.NewUpdateDocumentUseCase(caseRepository, caseDocumentRepository, usersRepository)
+	createDocumentUseCase := casesUseCases.NewCreateDocumentUseCase(caseRepository, caseDocumentRepository, usersRepository)
+	updateDocumentUseCase := casesUseCases.NewUpdateDocumentUseCase(caseRepository, caseDocumentRepository, usersRepository)
 	generateCaseDocumentUploadLinkUseCase := casesUseCases.NewGenerateDocumentUploadLink(generateUploadLinkUseCase, caseRepository)
 
 	/** Middlewares **/
@@ -308,7 +311,7 @@ func main() {
 
 	// Case handlers
 	casesHandler := handlers.NewCases(caseUseCase, caseRepository)
-	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository, usersRepository)
+	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository, usersRepository, createNoteUseCase, updateNoteUseCase)
 	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository, usersRepository, createDocumentUseCase, updateDocumentUseCase, generateCaseDocumentUploadLinkUseCase)
 
 	healthHandler := handlers.NewHealth(mongo)

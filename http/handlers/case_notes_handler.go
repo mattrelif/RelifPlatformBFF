@@ -10,8 +10,8 @@ import (
 	"relif/platform-bff/guards"
 	"relif/platform-bff/http/requests"
 	"relif/platform-bff/http/responses"
-	"relif/platform-bff/models"
 	"relif/platform-bff/repositories"
+	casesUseCases "relif/platform-bff/usecases/cases"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -20,13 +20,24 @@ type CaseNotes struct {
 	noteRepo *repositories.CaseNoteRepository
 	caseRepo repositories.CaseRepository
 	userRepo repositories.Users
+
+	createNoteUseCase casesUseCases.CreateNoteUseCase
+	updateNoteUseCase casesUseCases.UpdateNoteUseCase
 }
 
-func NewCaseNotes(noteRepo *repositories.CaseNoteRepository, caseRepo repositories.CaseRepository, userRepo repositories.Users) *CaseNotes {
+func NewCaseNotes(
+	noteRepo *repositories.CaseNoteRepository,
+	caseRepo repositories.CaseRepository,
+	userRepo repositories.Users,
+	createNoteUseCase casesUseCases.CreateNoteUseCase,
+	updateNoteUseCase casesUseCases.UpdateNoteUseCase,
+) *CaseNotes {
 	return &CaseNotes{
-		noteRepo: noteRepo,
-		caseRepo: caseRepo,
-		userRepo: userRepo,
+		noteRepo:          noteRepo,
+		caseRepo:          caseRepo,
+		userRepo:          userRepo,
+		createNoteUseCase: createNoteUseCase,
+		updateNoteUseCase: updateNoteUseCase,
 	}
 }
 
@@ -161,32 +172,15 @@ func (h *CaseNotes) Create(w http.ResponseWriter, r *http.Request) {
 		Tags:        req.Tags,
 		NoteType:    req.NoteType,
 		IsImportant: req.IsImportant,
-		CreatedByID: user.ID,
-		CreatedBy:   user,
 	}
 
-	// Convert to model and create
-	noteModel := models.NewCaseNoteFromEntity(noteEntity) // This needs to be implemented
-	noteID, err := h.noteRepo.Create(r.Context(), *noteModel)
+	createdNote, err := h.createNoteUseCase.Execute(r.Context(), user, caseID, noteEntity)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Increment case notes count
-	h.caseRepo.UpdateNotesCount(r.Context(), caseID, 1)
-
-	// Get created note
-	createdNote, err := h.noteRepo.GetByID(r.Context(), noteID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	noteEntity = createdNote.ToEntity()
-	// Populate the CreatedBy user information since it's not stored in the note
-	noteEntity.CreatedBy = user
-	response := responses.NewCaseNoteResponse(noteEntity)
+	response := responses.NewCaseNoteResponse(createdNote)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -225,48 +219,31 @@ func (h *CaseNotes) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build updates map
-	updates := make(map[string]interface{})
+	// Build updates entity based on optional fields
+	updatesEntity := entities.CaseNote{}
 	if req.Title != nil {
-		updates["title"] = *req.Title
+		updatesEntity.Title = *req.Title
 	}
 	if req.Content != nil {
-		updates["content"] = *req.Content
+		updatesEntity.Content = *req.Content
 	}
 	if req.NoteType != nil {
-		updates["note_type"] = *req.NoteType
+		updatesEntity.NoteType = *req.NoteType
 	}
 	if req.IsImportant != nil {
-		updates["is_important"] = *req.IsImportant
+		updatesEntity.IsImportant = *req.IsImportant
 	}
 	if req.Tags != nil {
-		updates["tags"] = req.Tags
+		updatesEntity.Tags = req.Tags
 	}
 
-	err = h.noteRepo.Update(r.Context(), noteID, updates)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-
-	// Get updated note
-	updatedNote, err := h.noteRepo.GetByID(r.Context(), noteID)
+	updatedNote, err := h.updateNoteUseCase.Execute(r.Context(), user, caseID, noteID, updatesEntity)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	noteEntity := updatedNote.ToEntity()
-
-	// Populate CreatedBy user information
-	if noteEntity.CreatedByID != "" {
-		createdBy, err := h.userRepo.FindOneByID(noteEntity.CreatedByID)
-		if err == nil {
-			noteEntity.CreatedBy = createdBy
-		}
-	}
-
-	response := responses.NewCaseNoteResponse(noteEntity)
+	response := responses.NewCaseNoteResponse(updatedNote)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
