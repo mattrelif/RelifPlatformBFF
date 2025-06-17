@@ -20,17 +20,20 @@ import (
 type CaseDocuments struct {
 	docRepo                           *repositories.CaseDocumentRepository
 	caseRepo                          repositories.CaseRepository
+	userRepo                          repositories.Users
 	generateDocumentUploadLinkUseCase casesUseCases.GenerateDocumentUploadLink
 }
 
 func NewCaseDocuments(
 	docRepo *repositories.CaseDocumentRepository,
 	caseRepo repositories.CaseRepository,
+	userRepo repositories.Users,
 	generateDocumentUploadLinkUseCase casesUseCases.GenerateDocumentUploadLink,
 ) *CaseDocuments {
 	return &CaseDocuments{
 		docRepo:                           docRepo,
 		caseRepo:                          caseRepo,
+		userRepo:                          userRepo,
 		generateDocumentUploadLinkUseCase: generateDocumentUploadLinkUseCase,
 	}
 }
@@ -95,6 +98,12 @@ func (h *CaseDocuments) ListByCaseID(w http.ResponseWriter, r *http.Request) {
 	docResponses := make([]responses.CaseDocumentResponse, len(documents))
 	for i, doc := range documents {
 		docEntity := doc.ToEntity()
+		// Populate UploadedBy user information
+		if docEntity.UploadedByID != "" {
+			if user, err := h.userRepo.FindOneByID(docEntity.UploadedByID); err == nil {
+				docEntity.UploadedBy = user
+			}
+		}
 		docResponses[i] = responses.NewCaseDocumentResponse(docEntity)
 	}
 
@@ -217,6 +226,8 @@ func (h *CaseDocuments) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	docEntity = createdDoc.ToEntity()
+	// We already have the user object from the context, so just attach it
+	docEntity.UploadedBy = user
 	response := responses.NewCaseDocumentResponse(docEntity)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -307,5 +318,23 @@ func (h *CaseDocuments) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	// Get updated document
+	updatedDoc, err := h.docRepo.GetByID(r.Context(), docID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	docEntity := updatedDoc.ToEntity()
+	// Populate UploadedBy user information
+	if docEntity.UploadedByID != "" {
+		if user, err := h.userRepo.FindOneByID(docEntity.UploadedByID); err == nil {
+			docEntity.UploadedBy = user
+		}
+	}
+	response := responses.NewCaseDocumentResponse(docEntity)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

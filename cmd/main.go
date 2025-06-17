@@ -307,7 +307,7 @@ func main() {
 	// Case handlers
 	casesHandler := handlers.NewCases(caseUseCase, caseRepository)
 	caseNotesHandler := handlers.NewCaseNotes(caseNoteRepository, caseRepository, usersRepository)
-	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository, generateCaseDocumentUploadLinkUseCase)
+	caseDocumentsHandler := handlers.NewCaseDocuments(caseDocumentRepository, caseRepository, usersRepository, generateCaseDocumentUploadLinkUseCase)
 
 	healthHandler := handlers.NewHealth(mongo)
 
