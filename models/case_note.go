@@ -3,8 +3,6 @@ package models
 import (
 	"relif/platform-bff/entities"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type CaseNote struct {
@@ -37,7 +35,6 @@ func (cn *CaseNote) ToEntity() entities.CaseNote {
 
 func NewCaseNote(entity entities.CaseNote) CaseNote {
 	return CaseNote{
-		ID:          primitive.NewObjectID().Hex(),
 		CaseID:      entity.CaseID,
 		Title:       entity.Title,
 		Content:     entity.Content,
@@ -52,7 +49,6 @@ func NewCaseNote(entity entities.CaseNote) CaseNote {
 
 func NewCaseNoteFromEntity(entity entities.CaseNote) *CaseNote {
 	return &CaseNote{
-		ID:          primitive.NewObjectID().Hex(),
 		CaseID:      entity.CaseID,
 		Title:       entity.Title,
 		Content:     entity.Content,

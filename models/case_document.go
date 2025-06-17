@@ -3,8 +3,6 @@ package models
 import (
 	"relif/platform-bff/entities"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type CaseDocument struct {
@@ -43,7 +41,6 @@ func (cd *CaseDocument) ToEntity() entities.CaseDocument {
 
 func NewCaseDocument(entity entities.CaseDocument) CaseDocument {
 	return CaseDocument{
-		ID:           primitive.NewObjectID().Hex(),
 		CaseID:       entity.CaseID,
 		DocumentName: entity.DocumentName,
 		FileName:     entity.FileName,
@@ -61,7 +58,6 @@ func NewCaseDocument(entity entities.CaseDocument) CaseDocument {
 
 func NewCaseDocumentFromEntity(entity entities.CaseDocument) *CaseDocument {
 	return &CaseDocument{
-		ID:           primitive.NewObjectID().Hex(),
 		CaseID:       entity.CaseID,
 		DocumentName: entity.DocumentName,
 		FileName:     entity.FileName,
