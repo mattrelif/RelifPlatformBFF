@@ -21,6 +21,12 @@ func NewAuthenticateByToken(authenticateTokenUseCase authenticationUseCases.Auth
 
 func (middleware *AuthenticateByToken) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Allow OPTIONS requests to pass through for CORS preflight
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		header := r.Header.Get("Authorization")
 
 		if header == "" {

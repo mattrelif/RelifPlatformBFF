@@ -58,11 +58,12 @@ func NewRouter(
 				"http://localhost:3000",    // Development frontend
 				"https://localhost:3000",   // Development frontend with HTTPS
 			},
-			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-			AllowedHeaders:   []string{"*"},
-			ExposedHeaders:   []string{"*"},
-			AllowCredentials: true,
-			MaxAge:           300,
+			AllowedMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+			AllowedHeaders:     []string{"*"},
+			ExposedHeaders:     []string{"*"},
+			AllowCredentials:   true,
+			OptionsPassthrough: false,
+			MaxAge:             300,
 		}))
 
 		// Detailed health check with database status

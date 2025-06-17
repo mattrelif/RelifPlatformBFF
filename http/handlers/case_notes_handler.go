@@ -19,12 +19,14 @@ import (
 type CaseNotes struct {
 	noteRepo *repositories.CaseNoteRepository
 	caseRepo repositories.CaseRepository
+	userRepo repositories.Users
 }
 
-func NewCaseNotes(noteRepo *repositories.CaseNoteRepository, caseRepo repositories.CaseRepository) *CaseNotes {
+func NewCaseNotes(noteRepo *repositories.CaseNoteRepository, caseRepo repositories.CaseRepository, userRepo repositories.Users) *CaseNotes {
 	return &CaseNotes{
 		noteRepo: noteRepo,
 		caseRepo: caseRepo,
+		userRepo: userRepo,
 	}
 }
 
@@ -93,8 +95,16 @@ func (h *CaseNotes) ListByCaseID(w http.ResponseWriter, r *http.Request) {
 	// Convert to response format
 	noteResponses := make([]responses.CaseNoteResponse, len(notes))
 	for i, note := range notes {
-		// Convert model to entity (you'd need this method)
-		noteEntity := note.ToEntity() // This method needs to be implemented
+		noteEntity := note.ToEntity()
+
+		// Populate CreatedBy user information
+		if noteEntity.CreatedByID != "" {
+			createdBy, err := h.userRepo.FindOneByID(noteEntity.CreatedByID)
+			if err == nil {
+				noteEntity.CreatedBy = createdBy
+			}
+		}
+
 		noteResponses[i] = responses.NewCaseNoteResponse(noteEntity)
 	}
 
@@ -123,6 +133,23 @@ func (h *CaseNotes) Create(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.Unmarshal(body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = req.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check authorization - get case and verify user has access to its organization
+	caseEntity, err := h.caseRepo.GetByID(r.Context(), caseID)
+	if err != nil {
+		http.Error(w, "Case not found", http.StatusNotFound)
+		return
+	}
+
+	if err := guards.IsOrganizationAdmin(user, caseEntity.Organization); err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
@@ -157,6 +184,8 @@ func (h *CaseNotes) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	noteEntity = createdNote.ToEntity()
+	// Populate the CreatedBy user information since it's not stored in the note
+	noteEntity.CreatedBy = user
 	response := responses.NewCaseNoteResponse(noteEntity)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -228,6 +257,15 @@ func (h *CaseNotes) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	noteEntity := updatedNote.ToEntity()
+
+	// Populate CreatedBy user information
+	if noteEntity.CreatedByID != "" {
+		createdBy, err := h.userRepo.FindOneByID(noteEntity.CreatedByID)
+		if err == nil {
+			noteEntity.CreatedBy = createdBy
+		}
+	}
+
 	response := responses.NewCaseNoteResponse(noteEntity)
 
 	w.Header().Set("Content-Type", "application/json")
