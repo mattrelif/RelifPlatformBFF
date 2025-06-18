@@ -1,9 +1,10 @@
 package requests
 
 import (
+	"relif/platform-bff/entities"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"relif/platform-bff/entities"
 )
 
 type EmergencyContact struct {
@@ -19,6 +20,13 @@ func (req *EmergencyContact) Validate() error {
 		validation.Field(&req.FullName, validation.Required),
 		validation.Field(&req.Emails, validation.Each(validation.Required, is.Email)),
 		validation.Field(&req.Phones, validation.Each(validation.Required)),
+		// Require at least one email or phone
+		validation.Field(&req, validation.By(func(value interface{}) error {
+			if len(req.Emails) == 0 && len(req.Phones) == 0 {
+				return validation.NewError("contact_required", "At least one email or phone number is required")
+			}
+			return nil
+		})),
 	)
 }
 

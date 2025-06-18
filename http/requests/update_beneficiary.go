@@ -1,9 +1,10 @@
 package requests
 
 import (
+	"relif/platform-bff/entities"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"relif/platform-bff/entities"
 )
 
 type UpdateBeneficiary struct {
@@ -48,16 +49,12 @@ func (req *UpdateBeneficiary) Validate() error {
 			}
 			return nil
 		})),
-		validation.Field(&req.EmergencyContacts, validation.By(func(value interface{}) error {
-			if contacts, ok := value.([]EmergencyContact); ok {
-				for _, contact := range contacts {
-					if err := contact.Validate(); err != nil {
-						return err
-					}
-				}
+		validation.Field(&req.EmergencyContacts, validation.When(len(req.EmergencyContacts) > 0, validation.Each(validation.By(func(value interface{}) error {
+			if contact, ok := value.(EmergencyContact); ok {
+				return contact.Validate()
 			}
 			return nil
-		})),
+		})))),
 	)
 }
 
